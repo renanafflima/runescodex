@@ -1,0 +1,37 @@
+// RuneCodex — foundation schema (User + Character only)
+// Database: Neon PostgreSQL (production). URL comes from DATABASE_URL.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                String     @id @default(uuid())
+  email             String     @unique
+  passwordHash      String
+  activeCharacterId String?    @unique
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  characters        Character[]
+  activeCharacter   Character? @relation("ActiveCharacter", fields: [activeCharacterId], references: [id], onDelete: SetNull)
+}
+
+model Character {
+  id            String   @id @default(uuid())
+  userId        String
+  name          String
+  vocation      String
+  level         Int      @default(1)
+  world         String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeForUser User?    @relation("ActiveCharacter")
+
+  @@index([userId])
+}

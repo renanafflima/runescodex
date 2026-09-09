@@ -1,0 +1,25 @@
+# Render Blueprint for the RuneCodex API.
+# Secrets (DATABASE_URL, JWT_SECRET, CORS_ORIGINS) must be set in the dashboard.
+# Do not put real credentials in this file.
+
+services:
+  - type: web
+    name: runescodex-api
+    runtime: node
+    rootDir: apps/api
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: JWT_EXPIRES_IN
+        value: "7d"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
