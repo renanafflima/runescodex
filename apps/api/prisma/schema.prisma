@@ -1,5 +1,12 @@
-// RuneCodex — foundation schema (User + Character only)
+// RuneCodex — foundation schema.
 // Database: Neon PostgreSQL (production). URL comes from DATABASE_URL.
+//
+// Catalog rule: Creature is the single master record for hunts AND bestiary.
+// Charm recommendations belong to HuntCreature (hunt composition), never to Creature.
+//
+// Bestiary estimated time is NOT stored. It is derived as:
+//   ceil(BestiaryEntry.killsRequired / BestiaryEntry.estimatedKillsPerHour)
+// when estimatedKillsPerHour is present.
 
 generator client {
   provider = "prisma-client"
@@ -10,15 +17,55 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  VERY_HARD
+}
+
+enum ElementType {
+  PHYSICAL
+  FIRE
+  ICE
+  EARTH
+  ENERGY
+  HOLY
+  DEATH
+}
+
+/// Vocations used by HuntVocation only.
+/// Character.vocation remains a free-form String for compatibility with the existing User/Character flow.
+enum Vocation {
+  EK
+  RP
+  ED
+  MS
+}
+
+/// Offensive / unique-slot charms. All values in this enum occupy one charm slot per hunt.
+enum Charm {
+  WOUND
+  POISON
+  ENFLAME
+  FREEZE
+  ZAP
+  CURSE
+  DIVINE_WRATH
+  OVERPOWER
+  OVERFLUX
+}
+
 model User {
-  id                String     @id @default(uuid())
-  email             String     @unique
+  id                String                  @id @default(uuid())
+  email             String                  @unique
   passwordHash      String
-  activeCharacterId String?    @unique
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  activeCharacterId String?                 @unique
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
   characters        Character[]
-  activeCharacter   Character? @relation("ActiveCharacter", fields: [activeCharacterId], references: [id], onDelete: SetNull)
+  activeCharacter   Character?              @relation("ActiveCharacter", fields: [activeCharacterId], references: [id], onDelete: SetNull)
+  bestiaryProgress  UserBestiaryProgress[]
 }
 
 model Character {
@@ -34,4 +81,205 @@ model Character {
   activeForUser User?    @relation("ActiveCharacter")
 
   @@index([userId])
+}
+
+/// Master creature catalog. Shared by Hunts, Bestiary, and future features.
+model Creature {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  /// Asset path relative to apps/mobile/assets/, preserving real filenames.
+  image       String
+  hp          Int?
+  experience  Int?
+  difficulty  Difficulty?
+  description String?
+  youtubeUrl  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  elements          CreatureElement[]
+  locations         CreatureLocation[]
+  togetherFrom      CreatureTogether[]     @relation("CreatureTogetherFrom")
+  togetherTo        CreatureTogether[]     @relation("CreatureTogetherTo")
+  huntAppearances   HuntCreature[]
+  bestiaryEntry     BestiaryEntry?
+  userProgress      UserBestiaryProgress[]
+
+  @@index([isActive])
+}
+
+/// Elemental modifiers of a creature (e.g. HOLY = 120). Values are not categorized in the database.
+model CreatureElement {
+  id         String      @id @default(uuid())
+  creatureId String
+  element    ElementType
+  modifier   Int
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  creature   Creature    @relation(fields: [creatureId], references: [id], onDelete: Cascade)
+
+  @@unique([creatureId, element])
+  @@index([creatureId])
+}
+
+model CreatureLocation {
+  id         String   @id @default(uuid())
+  creatureId String
+  name       String
+  region     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  creature   Creature @relation(fields: [creatureId], references: [id], onDelete: Cascade)
+
+  @@unique([creatureId, name])
+  @@index([creatureId])
+}
+
+/// Recommended companions to kill together. Both sides point at Creature master records.
+model CreatureTogether {
+  id                String   @id @default(uuid())
+  creatureId        String
+  relatedCreatureId String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  creature          Creature @relation("CreatureTogetherFrom", fields: [creatureId], references: [id], onDelete: Cascade)
+  relatedCreature   Creature @relation("CreatureTogetherTo", fields: [relatedCreatureId], references: [id], onDelete: Cascade)
+
+  @@unique([creatureId, relatedCreatureId])
+  @@index([creatureId])
+  @@index([relatedCreatureId])
+}
+
+model Hunt {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  location    String
+  subLocation String?
+  difficulty  Difficulty
+  respawn     String?
+  description String?
+  /// Optional hunt-specific hero. Frontend may fall back to hunts_hero.webp when null.
+  heroImage   String?
+  /// Asset path relative to apps/mobile/assets/, e.g. maps/cyclops.png
+  mapImage    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vocations HuntVocation[]
+  creatures HuntCreature[]
+  loot      HuntLoot[]
+  videos    HuntVideo[]
+
+  @@index([isActive])
+}
+
+/// Per-vocation stats for a hunt. XP/h, profit/h and level live here, not on Hunt.
+model HuntVocation {
+  id             String      @id @default(uuid())
+  huntId         String
+  vocation       Vocation
+  isRecommended  Boolean     @default(false)
+  levelMin       Int
+  levelMax       Int?
+  xpPerHour      Int
+  profitPerHour  Int
+  difficulty     Difficulty?
+  notes          String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  hunt           Hunt        @relation(fields: [huntId], references: [id], onDelete: Cascade)
+
+  @@unique([huntId, vocation])
+  @@index([huntId])
+  @@index([vocation])
+}
+
+model HuntCreature {
+  id               String       @id @default(uuid())
+  huntId           String
+  creatureId       String
+  damageType       ElementType?
+  isPrimary        Boolean      @default(false)
+  quantity         Int?
+  /// Charm recommendation for THIS hunt composition. Never stored on Creature.
+  recommendedCharm Charm?
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  hunt             Hunt         @relation(fields: [huntId], references: [id], onDelete: Cascade)
+  creature         Creature     @relation(fields: [creatureId], references: [id], onDelete: Restrict)
+
+  @@unique([huntId, creatureId])
+  /// One unique-slot charm per hunt. PostgreSQL UNIQUE treats NULL as distinct,
+  /// so multiple creatures without a recommendation are allowed.
+  /// All current Charm values are unique-slot; a partial index would be needed
+  /// later if a stackable charm is introduced.
+  @@unique([huntId, recommendedCharm])
+  @@index([huntId])
+  @@index([creatureId])
+}
+
+model HuntLoot {
+  id             String   @id @default(uuid())
+  huntId         String
+  itemName       String
+  itemImage      String?
+  estimatedValue Int?
+  importance     Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  hunt           Hunt     @relation(fields: [huntId], references: [id], onDelete: Cascade)
+
+  @@index([huntId])
+}
+
+model HuntVideo {
+  id            String   @id @default(uuid())
+  huntId        String
+  title         String
+  url           String
+  channel       String?
+  isRecommended Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  hunt          Hunt     @relation(fields: [huntId], references: [id], onDelete: Cascade)
+
+  @@index([huntId])
+}
+
+/// Bestiary-specific official data. Name, image, HP, XP and difficulty come from Creature.
+model BestiaryEntry {
+  id                    String   @id @default(uuid())
+  creatureId            String   @unique
+  category              String?
+  killsRequired         Int
+  /// Reference rate used to derive estimated time: hours ≈ ceil(killsRequired / estimatedKillsPerHour).
+  estimatedKillsPerHour Int?
+  charmPoints           Int?
+  notes                 String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  creature              Creature @relation(fields: [creatureId], references: [id], onDelete: Cascade)
+}
+
+/// Per-user bestiary progress. Must not mix with official Creature / BestiaryEntry data.
+model UserBestiaryProgress {
+  id          String    @id @default(uuid())
+  userId      String
+  creatureId  String
+  kills       Int       @default(0)
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creature    Creature  @relation(fields: [creatureId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, creatureId])
+  @@index([userId])
+  @@index([creatureId])
 }

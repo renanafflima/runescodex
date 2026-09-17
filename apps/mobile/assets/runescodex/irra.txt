@@ -1,0 +1,23 @@
+@echo off
+setlocal
+
+set "ORIGEM=C:\Projetos\runescodexgit\apps\mobile\assets\criatures"
+set "DESTINO=C:\Projetos\runescodexgit\apps\mobile\assets\runescodex\creatures"
+
+if not exist "%DESTINO%" mkdir "%DESTINO%"
+
+echo.
+echo Movendo imagens...
+echo.
+
+for /r "%ORIGEM%" %%F in (*.png *.jpg *.jpeg *.webp) do (
+    move "%%F" "%DESTINO%\"
+)
+
+echo.
+echo ==========================================
+echo Imagens movidas para:
+echo %DESTINO%
+echo ==========================================
+echo.
+pause

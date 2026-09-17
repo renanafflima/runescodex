@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Pressable, Text, StyleSheet, Platform } from "react-native";
-import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Type } from "@/constants/theme";
@@ -10,11 +9,11 @@ const TAB_META: Record<string, { icon: keyof typeof Ionicons.glyphMap; iconActiv
   index: { icon: "home-outline", iconActive: "home", labelKey: "nav.home" },
   hunts: { icon: "flame-outline", iconActive: "flame", labelKey: "nav.hunts" },
   forum: { icon: "chatbubbles-outline", iconActive: "chatbubbles", labelKey: "nav.forum" },
-  tracker: { icon: "stats-chart-outline", iconActive: "stats-chart", labelKey: "nav.tracker" },
+  shop: { icon: "gift-outline", iconActive: "gift", labelKey: "nav.rewards" },
   profile: { icon: "person-outline", iconActive: "person", labelKey: "nav.profile" },
 };
 
-export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
+export default function CustomTabBar({ state, navigation }: any) {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
 
