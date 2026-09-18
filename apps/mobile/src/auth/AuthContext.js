@@ -30,6 +30,7 @@ import { STORAGE_KEYS } from "@/src/api/config";
  * @property {AuthUser | null} user
  * @property {Character[]} characters
  * @property {Character | null} activeCharacter
+ * @property {string} token
  * @property {(email: string, password: string) => Promise<void>} login
  * @property {(email: string, password: string) => Promise<void>} register
  * @property {() => Promise<void>} logout
@@ -249,6 +250,7 @@ export function AuthProvider({ children }) {
       setActiveCharacter: activate,
       fetchCharacter,
       reloadCharacters: () => (token ? loadCharacters(token) : Promise.resolve()),
+      token,
     }),
     [
       activate,

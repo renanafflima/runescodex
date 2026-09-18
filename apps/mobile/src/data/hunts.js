@@ -45,6 +45,7 @@ const CREATURE_IMAGES = {
 
 export const PTS = [1, 2, 3, 4];
 export const VOCS = ["Any", "EK", "RP", "MS", "ED"];
+export const DIFFICULTIES = ["Any", "EASY", "MEDIUM", "HARD", "VERY_HARD"];
 export const SORTS = ["Best XP", "Best Profit", "Level", "Name"];
 
 export const HUNTS = [
@@ -166,6 +167,25 @@ export function formatHuntLocation(location, subLocation) {
   return [location, subLocation].filter(Boolean).join(" - ");
 }
 
+export function formatDifficultyLabel(value) {
+  if (!value) return "";
+  return String(value).replace(/_/g, " ");
+}
+
+export function formatCharmLabel(value) {
+  if (!value) return "";
+  return String(value).replace(/_/g, " ");
+}
+
+export function formatLevelRange(levelMin, levelMax) {
+  if (levelMin == null && levelMax == null) return null;
+  if (levelMin != null && levelMax != null && Number(levelMin) !== Number(levelMax)) {
+    return `${levelMin}–${levelMax}`;
+  }
+  if (levelMin != null) return `${levelMin}+`;
+  return `≤${levelMax}`;
+}
+
 export function pickHuntVocation(vocations, preferred) {
   const list = Array.isArray(vocations) ? vocations : [];
   if (preferred && preferred !== "Any") {
@@ -181,73 +201,120 @@ function elementTypes(elements) {
     .filter(Boolean);
 }
 
-function videoUrlFromHunt(hunt) {
-  const videos = Array.isArray(hunt?.videos) ? hunt.videos : [];
-  const recommended = videos.find((item) => item?.isRecommended && item?.url);
-  return recommended?.url || videos[0]?.url || null;
+function mapVocations(vocations) {
+  return (Array.isArray(vocations) ? vocations : []).map((item) => ({
+    vocation: item?.vocation || null,
+    isRecommended: Boolean(item?.isRecommended),
+    levelMin: item?.levelMin ?? null,
+    levelMax: item?.levelMax ?? null,
+    xpPerHour: item?.xpPerHour ?? null,
+    profitPerHour: item?.profitPerHour ?? null,
+    difficulty: item?.difficulty || null,
+    notes: item?.notes || null,
+  }));
+}
+
+function mapHuntCreature(item) {
+  const nested = item?.creature && typeof item.creature === "object" ? item.creature : null;
+  const source = nested || item || {};
+  return {
+    id: item?.id || source.id || source.slug || source.name || null,
+    name: source.name || item?.name || "",
+    image: resolveCreatureImage(source.image || item?.image, source.name || item?.name),
+    hp: nested ? nested.hp ?? null : item?.hp ?? null,
+    xp: nested ? nested.experience ?? null : item?.experience ?? item?.xp ?? null,
+    elements: elementTypes(nested?.elements || item?.elements),
+    recommendedCharm: item?.recommendedCharm || null,
+    damageType: item?.damageType || null,
+    isPrimary: Boolean(item?.isPrimary),
+    quantity: item?.quantity ?? null,
+    notes: item?.notes || null,
+  };
+}
+
+function mapHuntVideos(videos) {
+  return (Array.isArray(videos) ? videos : [])
+    .filter((item) => item?.url)
+    .map((item) => ({
+      id: item.id || item.url,
+      title: item.title || null,
+      url: item.url,
+      channel: item.channel || null,
+      isRecommended: Boolean(item.isRecommended),
+    }));
+}
+
+function mapHuntLoot(loot) {
+  return (Array.isArray(loot) ? loot : [])
+    .filter((item) => item?.itemName)
+    .map((item) => ({
+      id: item.id || item.itemName,
+      itemName: item.itemName,
+      image: resolveCreatureImage(item.itemImage),
+      estimatedValue: item.estimatedValue ?? null,
+      importance: item.importance || null,
+    }));
 }
 
 export function mapHuntListItem(hunt, preferredVocation) {
-  const vocations = hunt?.vocations || [];
+  const vocations = mapVocations(hunt?.vocations);
   const vocation = pickHuntVocation(vocations, preferredVocation);
-  const creatures = hunt?.creatures || [];
-  const primary = creatures.find((item) => item.isPrimary) || creatures[0] || null;
+  const spawn = (hunt?.creatures || []).map(mapHuntCreature);
+  const primary = spawn.find((item) => item.isPrimary) || spawn[0] || null;
+  const videos = mapHuntVideos(hunt?.videos);
   return {
     id: hunt.id,
     slug: hunt.slug,
     name: hunt.name,
-    location: formatHuntLocation(hunt.location, hunt.subLocation),
+    location: hunt.location || null,
+    subLocation: hunt.subLocation || null,
+    displayLocation: formatHuntLocation(hunt.location, hunt.subLocation),
     difficulty: hunt.difficulty || null,
     respawn: hunt.respawn || null,
+    vocations,
     creature: primary?.name || "",
-    creatureImage: resolveCreatureImage(primary?.image, primary?.name),
+    creatureImage: primary?.image || null,
     xpH: vocation?.xpPerHour ?? null,
     profitH: vocation?.profitPerHour ?? null,
     levelMin: vocation?.levelMin ?? null,
+    levelMax: vocation?.levelMax ?? null,
     vocation: vocation?.vocation || null,
-    spawn: creatures.map((item) => ({
-      name: item.name,
-      image: resolveCreatureImage(item.image, item.name),
-      weaknesses: elementTypes(item.elements),
-      recommendedCharm: item.recommendedCharm || null,
-    })),
+    spawn,
+    mapImage: hunt.mapImage || null,
+    youtubeUrl: videos.find((item) => item.isRecommended)?.url || videos[0]?.url || null,
   };
 }
 
 export function mapHuntDetail(hunt, preferredVocation) {
-  const vocations = hunt?.vocations || [];
+  const vocations = mapVocations(hunt?.vocations);
   const vocation = pickHuntVocation(vocations, preferredVocation);
-  const creatures = hunt?.creatures || [];
-  const primary = creatures.find((item) => item.isPrimary) || creatures[0] || null;
-  const primaryCreature = primary?.creature || primary || null;
+  const spawn = (hunt?.creatures || []).map(mapHuntCreature);
+  const primary = spawn.find((item) => item.isPrimary) || spawn[0] || null;
+  const videos = mapHuntVideos(hunt?.videos);
   return {
     id: hunt.id,
     slug: hunt.slug,
     name: hunt.name,
-    location: formatHuntLocation(hunt.location, hunt.subLocation),
+    location: hunt.location || null,
+    subLocation: hunt.subLocation || null,
+    displayLocation: formatHuntLocation(hunt.location, hunt.subLocation),
     difficulty: hunt.difficulty || null,
     respawn: hunt.respawn || null,
-    creature: primaryCreature?.name || "",
-    creatureImage: resolveCreatureImage(primaryCreature?.image, primaryCreature?.name),
+    description: hunt.description || null,
+    creature: primary?.name || "",
+    creatureImage: primary?.image || null,
     heroImage: hunt.heroImage ? resolveCreatureImage(hunt.heroImage) : null,
     mapImage: hunt.mapImage || null,
+    vocations,
     xpH: vocation?.xpPerHour ?? null,
     profitH: vocation?.profitPerHour ?? null,
     levelMin: vocation?.levelMin ?? null,
+    levelMax: vocation?.levelMax ?? null,
     vocation: vocation?.vocation || null,
-    spawn: creatures.map((item) => {
-      const creature = item.creature || item;
-      return {
-        name: creature.name,
-        image: resolveCreatureImage(creature.image, creature.name),
-        weaknesses: elementTypes(creature.elements),
-        recommendedCharm: item.recommendedCharm || null,
-        damageType: item.damageType || null,
-      };
-    }),
-    youtubeUrl: videoUrlFromHunt(hunt),
-    loot: (hunt.loot || []).map((item) => item.itemName).filter(Boolean),
-    communityTips: [],
+    spawn,
+    videos,
+    youtubeUrl: videos.find((item) => item.isRecommended)?.url || videos[0]?.url || null,
+    loot: mapHuntLoot(hunt?.loot),
   };
 }
 
@@ -272,10 +339,33 @@ export function damageIcon(type) {
   return key ? DAMAGE_ICONS[key] : null;
 }
 
+const CHARM_ICON_KEYS = {
+  wound: "physical",
+  poison: "poison",
+  enflame: "fire",
+  freeze: "ice",
+  zap: "energy",
+  curse: "death",
+  divine_wrath: "holy",
+};
+
+export function charmIcon(value) {
+  const raw = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+  const key = CHARM_ICON_KEYS[raw];
+  return key ? DAMAGE_ICONS[key] : null;
+}
+
+export function formatElementLabel(value) {
+  return formatCharmLabel(value);
+}
+
 export function huntElements(hunt) {
   const seen = [];
   (hunt?.spawn || []).forEach((creature) => {
-    (creature.weaknesses || []).forEach((type) => {
+    (creature.elements || creature.weaknesses || []).forEach((type) => {
       const key = damageKey(type);
       if (key && !seen.includes(key)) seen.push(key);
     });
@@ -283,14 +373,25 @@ export function huntElements(hunt) {
   return seen;
 }
 
+export function hasNumericValue(n) {
+  if (n == null || n === "") return false;
+  return Number.isFinite(Number(n));
+}
+
 export function formatRate(n) {
-  const value = Number(n) || 0;
+  if (!hasNumericValue(n)) return null;
+  const value = Number(n);
   if (value >= 1000000) {
     const compact = value / 1000000;
     return `${compact % 1 === 0 ? compact.toFixed(0) : compact.toFixed(1).replace(".", ",")}M`;
   }
   if (value >= 1000) return `${Math.round(value / 1000)}k`;
   return String(value);
+}
+
+export function formatCount(n) {
+  if (!hasNumericValue(n)) return null;
+  return String(Math.round(Number(n)));
 }
 
 export function toNumberOrNull(v) {

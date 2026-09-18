@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { BestiaryModule } from './bestiary/bestiary.module';
 import { CharactersModule } from './characters/characters.module';
+import { ForumModule } from './forum/forum.module';
 import { HuntsModule } from './hunts/hunts.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -14,6 +15,7 @@ import { PrismaModule } from './prisma/prisma.module';
     CharactersModule,
     HuntsModule,
     BestiaryModule,
+    ForumModule,
   ],
   controllers: [AppController],
   providers: [AppService],

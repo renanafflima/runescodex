@@ -66,6 +66,8 @@ model User {
   characters        Character[]
   activeCharacter   Character?              @relation("ActiveCharacter", fields: [activeCharacterId], references: [id], onDelete: SetNull)
   bestiaryProgress  UserBestiaryProgress[]
+  forumThreads      ForumThread[]
+  forumReplies      ForumReply[]
 }
 
 model Character {
@@ -282,4 +284,40 @@ model UserBestiaryProgress {
   @@unique([userId, creatureId])
   @@index([userId])
   @@index([creatureId])
+}
+
+enum ForumThreadStatus {
+  OPEN
+  CLOSED
+}
+
+model ForumThread {
+  id        String            @id @default(uuid())
+  authorId  String
+  title     String
+  body      String
+  status    ForumThreadStatus @default(OPEN)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  replies   ForumReply[]
+
+  @@index([authorId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ForumReply {
+  id        String      @id @default(uuid())
+  threadId  String
+  authorId  String
+  body      String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([threadId])
+  @@index([authorId])
+  @@index([createdAt])
 }
