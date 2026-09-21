@@ -35,6 +35,7 @@ export class AuthService {
       select: {
         id: true,
         email: true,
+        role: true,
       },
     });
 
@@ -61,6 +62,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        role: user.role,
       },
       accessToken: await this.signToken(user.id, user.email),
     };
@@ -72,6 +74,7 @@ export class AuthService {
       select: {
         id: true,
         email: true,
+        role: true,
       },
     });
 

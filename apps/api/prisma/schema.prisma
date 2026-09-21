@@ -17,6 +17,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
 enum Difficulty {
   EASY
   MEDIUM
@@ -60,14 +65,24 @@ model User {
   id                String                  @id @default(uuid())
   email             String                  @unique
   passwordHash      String
+  role              UserRole                @default(USER)
   activeCharacterId String?                 @unique
   createdAt         DateTime                @default(now())
   updatedAt         DateTime                @updatedAt
   characters        Character[]
   activeCharacter   Character?              @relation("ActiveCharacter", fields: [activeCharacterId], references: [id], onDelete: SetNull)
   bestiaryProgress  UserBestiaryProgress[]
-  forumThreads      ForumThread[]
-  forumReplies      ForumReply[]
+  forumThreads           ForumThread[]
+  forumReplies           ForumReply[]
+  rewardWallet           RewardWallet?
+  missionProgress        UserMissionProgress[]
+  rewardRedemptions      RewardRedemption[]
+  rewardLedgerEntries    RewardLedgerEntry[]
+  rewardEventReceipts    RewardEventReceipt[]
+  approvedRedemptions    RewardRedemption[]              @relation("RedemptionApprovedBy")
+  deliveredRedemptions   RewardRedemption[]              @relation("RedemptionDeliveredBy")
+  cancelledRedemptions   RewardRedemption[]              @relation("RedemptionCancelledBy")
+  redemptionStatusEvents RewardRedemptionStatusEvent[]
 }
 
 model Character {
@@ -320,4 +335,204 @@ model ForumReply {
   @@index([threadId])
   @@index([authorId])
   @@index([createdAt])
+}
+
+enum RewardMissionPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum RewardMissionCategory {
+  BESTIARY
+  EXPLORATION
+  COMMUNITY
+  HUNT
+  RECRUITMENT
+  PROMOTION
+  KNOWLEDGE
+  MUSIC
+}
+
+enum RewardCurrency {
+  GOLD
+  DIAMOND
+}
+
+enum RewardRedemptionStatus {
+  PENDING
+  APPROVED
+  DELIVERED
+  CANCELLED
+}
+
+enum RewardLedgerType {
+  MISSION_REWARD
+  POINTS_TO_GOLD
+  GOLD_TO_DIAMOND
+  REDEMPTION
+  REFUND
+  ADJUSTMENT
+}
+
+/// One wallet per user. Balances must never go negative (enforced in SQL + service).
+model RewardWallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  points    Int      @default(0)
+  gold      Int      @default(0)
+  diamond   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ledger    RewardLedgerEntry[]
+  redemptions RewardRedemption[]
+
+  @@index([userId])
+}
+
+model RewardMission {
+  id           String                 @id @default(uuid())
+  title        String
+  description  String
+  category     RewardMissionCategory
+  period       RewardMissionPeriod
+  target       Int
+  pointsReward Int
+  imageKey     String
+  /// Real app event that increments this mission. Null = not automatable yet.
+  eventType    String?
+  active       Boolean                @default(true)
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  progress     UserMissionProgress[]
+  eventReceipts RewardEventReceipt[]
+
+  @@index([active, period])
+  @@index([category])
+  @@index([eventType, active])
+}
+
+/// Recurring progress is scoped by periodStart (daily/weekly/monthly window).
+model UserMissionProgress {
+  id          String        @id @default(uuid())
+  userId      String
+  missionId   String
+  progress    Int           @default(0)
+  completed   Boolean       @default(false)
+  completedAt DateTime?
+  periodStart DateTime
+  periodEnd   DateTime
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mission     RewardMission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, missionId, periodStart])
+  @@index([userId])
+  @@index([missionId])
+}
+
+/// Idempotency for real-world events (one reference per mission per period).
+model RewardEventReceipt {
+  id          String        @id @default(uuid())
+  userId      String
+  eventType   String
+  referenceId String
+  missionId   String
+  periodStart DateTime
+  createdAt   DateTime      @default(now())
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mission     RewardMission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventType, referenceId, missionId, periodStart])
+  @@index([userId, eventType])
+}
+
+model RewardCatalogItem {
+  id          String         @id @default(uuid())
+  name        String
+  description String
+  imageKey    String         @unique
+  currency    RewardCurrency
+  /// Commercial price. 0 means not configured yet; redeem is rejected until set.
+  price       Int            @default(0)
+  active      Boolean        @default(true)
+  sortOrder   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  redemptions RewardRedemption[]
+
+  @@index([active, sortOrder])
+}
+
+model RewardRedemption {
+  id                  String                 @id @default(uuid())
+  userId              String
+  walletId            String
+  catalogItemId       String
+  currency            RewardCurrency
+  /// Price charged at request time. Independent from later catalog changes.
+  amount              Int
+  quantity            Int                    @default(1)
+  status              RewardRedemptionStatus @default(PENDING)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  approvedAt          DateTime?
+  deliveredAt         DateTime?
+  cancelledAt         DateTime?
+  refundedAt          DateTime?
+  approvedByUserId    String?
+  deliveredByUserId   String?
+  cancelledByUserId   String?
+  adminNote           String?
+  cancellationReason  String?
+  deliveryNote        String?
+  user                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet              RewardWallet           @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  catalogItem         RewardCatalogItem      @relation(fields: [catalogItemId], references: [id], onDelete: Restrict)
+  approvedBy          User?                  @relation("RedemptionApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  deliveredBy         User?                  @relation("RedemptionDeliveredBy", fields: [deliveredByUserId], references: [id], onDelete: SetNull)
+  cancelledBy         User?                  @relation("RedemptionCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+  statusEvents        RewardRedemptionStatusEvent[]
+
+  @@index([userId, createdAt])
+  @@index([catalogItemId])
+  @@index([status])
+}
+
+/// Append-only status audit for redemptions.
+model RewardRedemptionStatusEvent {
+  id           String                  @id @default(uuid())
+  redemptionId String
+  fromStatus   RewardRedemptionStatus?
+  toStatus     RewardRedemptionStatus
+  actorUserId  String
+  note         String?
+  createdAt    DateTime                @default(now())
+  redemption   RewardRedemption        @relation(fields: [redemptionId], references: [id], onDelete: Cascade)
+  actor        User                    @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([redemptionId, createdAt])
+}
+
+/// Append-only economy log. Never update rows to "fix" a balance.
+model RewardLedgerEntry {
+  id            String           @id @default(uuid())
+  userId        String
+  walletId      String
+  type          RewardLedgerType
+  pointsDelta   Int              @default(0)
+  goldDelta     Int              @default(0)
+  diamondDelta  Int              @default(0)
+  referenceType String?
+  referenceId   String?
+  metadata      Json?
+  createdAt     DateTime         @default(now())
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet        RewardWallet     @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([walletId])
+  @@index([type])
 }

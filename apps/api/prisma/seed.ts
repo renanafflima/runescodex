@@ -18,6 +18,7 @@ import {
   CREATURES,
   HUNTS,
 } from "./seed/catalog.js";
+import { seedRewards } from "./seed/rewards.js";
 
 async function main() {
   const connectionString = process.env.DATABASE_URL;
@@ -234,6 +235,8 @@ async function main() {
         }
       }
     }
+
+    await seedRewards(prisma);
 
     console.log(
       `Seeded ${CREATURES.length} creatures, ${HUNTS.length} hunts, ${BESTIARY_ENTRIES.length} bestiary entries.`,

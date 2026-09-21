@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
+import { RewardsService } from '../rewards/rewards.service';
 import { ForumService } from './forum.service';
 
 jest.mock('../prisma/prisma.service', () => ({
@@ -38,6 +39,9 @@ function threadRow(overrides = {}) {
 
 describe('ForumService', () => {
   let service: ForumService;
+  const rewards = {
+    recordEvent: jest.fn().mockResolvedValue({ applied: [] }),
+  };
   const prisma = {
     forumThread: {
       findMany: jest.fn(),
@@ -53,7 +57,14 @@ describe('ForumService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
-      providers: [ForumService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        ForumService,
+        { provide: PrismaService, useValue: prisma },
+        {
+          provide: RewardsService,
+          useValue: rewards,
+        },
+      ],
     }).compile();
 
     service = moduleRef.get(ForumService);
@@ -114,6 +125,11 @@ describe('ForumService', () => {
       }),
     );
     expect(result.author.email).toBe('player@runescodex.test');
+    expect(rewards.recordEvent).toHaveBeenCalledWith(
+      'user-1',
+      'FORUM_TOPIC_CREATED',
+      { referenceType: 'ForumThread', referenceId: 'thread-1' },
+    );
   });
 
   it('rejects replies on a closed thread', async () => {

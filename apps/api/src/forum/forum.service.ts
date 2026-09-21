@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service';
+import { REWARD_EVENTS } from '../rewards/rewards.constants';
+import { RewardsService } from '../rewards/rewards.service';
 import { CreateForumReplyDto } from './dto/create-forum-reply.dto';
 import { CreateForumThreadDto } from './dto/create-forum-thread.dto';
 import { ListForumQueryDto } from './dto/list-forum-query.dto';
@@ -23,7 +25,10 @@ const LIST_REPLY_TAKE = 5;
 
 @Injectable()
 export class ForumService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly rewardsService: RewardsService,
+  ) {}
 
   async findAll(query: ListForumQueryDto) {
     const where: Prisma.ForumThreadWhereInput = {};
@@ -85,6 +90,12 @@ export class ForumService {
       },
     });
 
+    await this.rewardsService.recordEvent(
+      userId,
+      REWARD_EVENTS.FORUM_TOPIC_CREATED,
+      { referenceType: 'ForumThread', referenceId: thread.id },
+    );
+
     return this.serializeThread(thread);
   }
 
@@ -105,13 +116,19 @@ export class ForumService {
       throw new BadRequestException('Thread is closed');
     }
 
-    await this.prisma.forumReply.create({
+    const reply = await this.prisma.forumReply.create({
       data: {
         threadId,
         authorId: userId,
         body: dto.body.trim(),
       },
     });
+
+    await this.rewardsService.recordEvent(
+      userId,
+      REWARD_EVENTS.FORUM_COMMENT_CREATED,
+      { referenceType: 'ForumReply', referenceId: reply.id },
+    );
 
     return this.findById(threadId);
   }

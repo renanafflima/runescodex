@@ -49,6 +49,7 @@ describe('AuthService', () => {
     prisma.user.create.mockResolvedValue({
       id: 'user-1',
       email: 'user@email.com',
+      role: 'USER',
     });
 
     const result = await service.register({
@@ -61,9 +62,13 @@ describe('AuthService', () => {
         email: 'user@email.com',
         passwordHash: 'hashed-password',
       },
-      select: { id: true, email: true },
+      select: { id: true, email: true, role: true },
     });
-    expect(result.user).toEqual({ id: 'user-1', email: 'user@email.com' });
+    expect(result.user).toEqual({
+      id: 'user-1',
+      email: 'user@email.com',
+      role: 'USER',
+    });
     expect(result.accessToken).toBe('signed-token');
     expect(JSON.stringify(result)).not.toContain('hashed-password');
     expect(JSON.stringify(result)).not.toContain('password1');
@@ -83,6 +88,7 @@ describe('AuthService', () => {
       id: 'user-1',
       email: 'user@email.com',
       passwordHash: 'hashed-password',
+      role: 'USER',
     });
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
@@ -91,7 +97,11 @@ describe('AuthService', () => {
       password: 'password1',
     });
 
-    expect(result.user).toEqual({ id: 'user-1', email: 'user@email.com' });
+    expect(result.user).toEqual({
+      id: 'user-1',
+      email: 'user@email.com',
+      role: 'USER',
+    });
     expect(result.accessToken).toBe('signed-token');
     expect(JSON.stringify(result)).not.toContain('hashed-password');
   });
@@ -119,11 +129,13 @@ describe('AuthService', () => {
     prisma.user.findUnique.mockResolvedValue({
       id: 'user-1',
       email: 'user@email.com',
+      role: 'USER',
     });
 
     await expect(service.me('user-1')).resolves.toEqual({
       id: 'user-1',
       email: 'user@email.com',
+      role: 'USER',
     });
   });
 });
