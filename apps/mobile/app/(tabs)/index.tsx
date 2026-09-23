@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -11,13 +11,12 @@ import {
   Text,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { useAppStore } from "@/src/store/AppStore";
 import { useAuth } from "@/src/auth/AuthContext";
 import { useI18n } from "@/src/i18n";
+import { getRewardsMe, listRewardMissions } from "@/src/api/rewards";
 import { Colors, Spacing, Type } from "@/constants/theme";
 
 const appIcon = require("@/assets/ui/runescodex-icon.png");
@@ -26,9 +25,6 @@ const iconBestiary = require("@/assets/runescodex/home/bestiario.png");
 const iconHunts = require("@/assets/runescodex/home/hunt.png");
 const iconForum = require("@/assets/runescodex/home/forum.png");
 const iconRewards = require("@/assets/runescodex/home/rewards.png");
-const iconTracker = require("@/assets/runescodex/home/tracker.png");
-const iconMusic = require("@/assets/runescodex/home/music.png");
-const iconServices = require("@/assets/runescodex/home/services.png");
 
 const HOME_BANNERS = [
   {
@@ -78,33 +74,17 @@ const HOME_BANNERS = [
   },
 ];
 
-const FEATURED = [
-  {
-    id: "h2",
-    name: "Dragon Hunt",
-    vocation: "MS",
-    levelMin: 80,
-    image: require("@/assets/runescodex/creatures/Dragon.gif"),
-  },
-  {
-    id: "h3",
-    name: "Hydra Hunt",
-    vocation: "RP",
-    levelMin: 150,
-    image: require("@/assets/runescodex/creatures/Hydra.gif"),
-  },
-  {
-    id: "h1",
-    name: "Cyclops Hunt",
-    vocation: "EK",
-    levelMin: 40,
-    image: require("@/assets/runescodex/creatures/Cyclops.gif"),
-  },
-];
+const MISSION_PERIODS = ["DAILY", "WEEKLY", "MONTHLY"] as const;
 
-const dailyRewards: { id: string; done?: boolean }[] = [];
-const weeklyRewards: { id: string; done?: boolean }[] = [];
-const monthlyRewards: { id: string; done?: boolean }[] = [];
+type HomeMission = {
+  id: string;
+  title?: string;
+  period?: string;
+  current?: number;
+  target?: number;
+  rewardPoints?: number;
+  completed?: boolean;
+};
 
 const FLAGS: Record<string, string> = {
   "pt-BR": "🇧🇷",
@@ -113,17 +93,11 @@ const FLAGS: Record<string, string> = {
   pl: "🇵🇱",
 };
 
-const SHORTCUTS_ROW1 = [
+const SHORTCUTS = [
   { key: "bestiary", path: "/(tabs)/bestiary", image: iconBestiary },
   { key: "hunts", path: "/(tabs)/hunts", image: iconHunts },
   { key: "forum", path: "/(tabs)/forum", image: iconForum },
   { key: "rewards", path: "/(tabs)/shop", image: iconRewards },
-];
-
-const SHORTCUTS_ROW2 = [
-  { key: "tracker", path: "/(tabs)/tracker", image: iconTracker },
-  { key: "music", path: "/(tabs)/music", image: iconMusic },
-  { key: "services", path: "/(tabs)/services", image: iconServices },
 ];
 
 function bannerAspectRatio(source: number) {
@@ -132,10 +106,24 @@ function bannerAspectRatio(source: number) {
   return meta.width / meta.height;
 }
 
-function progressOf(items: { done?: boolean }[]) {
-  const total = items.length;
-  const done = items.filter((item) => item.done).length;
-  return { done, total };
+function periodLabel(period: string | undefined, t: (key: string) => string) {
+  if (period === "DAILY") return t("home.rewardsDaily");
+  if (period === "WEEKLY") return t("home.rewardsWeekly");
+  if (period === "MONTHLY") return t("home.rewardsMonthly");
+  return "";
+}
+
+function mapOpenMission(row: HomeMission): HomeMission | null {
+  if (!row?.id || row.completed === true) return null;
+  return {
+    id: String(row.id),
+    title: row.title,
+    period: row.period,
+    current: Number.isFinite(Number(row.current)) ? Number(row.current) : undefined,
+    target: Number.isFinite(Number(row.target)) ? Number(row.target) : undefined,
+    rewardPoints: Number.isFinite(Number(row.rewardPoints)) ? Number(row.rewardPoints) : undefined,
+    completed: false,
+  };
 }
 
 async function openExternalUrl(url?: string) {
@@ -151,8 +139,7 @@ async function openExternalUrl(url?: string) {
 
 export default function HomeTab() {
   const router = useRouter();
-  const { points } = useAppStore();
-  const { activeCharacter } = useAuth();
+  const { activeCharacter, token } = useAuth();
   const { t, locale, setLocale, locales } = useI18n();
   const screenW = Dimensions.get("window").width;
   const contentW = screenW - Spacing.lg * 2;
@@ -164,30 +151,63 @@ export default function HomeTab() {
   const [bannerIndex, setBannerIndex] = useState(0);
   const bannerRef = useRef<ScrollView>(null);
   const draggingRef = useRef(false);
+  const [openMissions, setOpenMissions] = useState<HomeMission[]>([]);
+  const [walletPoints, setWalletPoints] = useState<number | null>(null);
+  const [missionsError, setMissionsError] = useState("");
+  const rewardsRequestRef = useRef(0);
+  const shortcutWidth = Math.floor((contentW - 10) / 2);
+  const shortcutHeight = Math.max(124, Math.round(shortcutWidth * 0.78));
 
-  const rewardGroups = [
-    {
-      key: "daily",
-      icon: "sunny-outline" as const,
-      title: t("home.rewardsDaily"),
-      hint: t("home.rewardsDailyHint"),
-      ...progressOf(dailyRewards),
-    },
-    {
-      key: "weekly",
-      icon: "calendar-outline" as const,
-      title: t("home.rewardsWeekly"),
-      hint: t("home.rewardsWeeklyHint"),
-      ...progressOf(weeklyRewards),
-    },
-    {
-      key: "monthly",
-      icon: "trophy-outline" as const,
-      title: t("home.rewardsMonthly"),
-      hint: t("home.rewardsMonthlyHint"),
-      ...progressOf(monthlyRewards),
-    },
-  ];
+  const loadOpenMissions = useCallback(async () => {
+    if (!token) return;
+    const requestId = ++rewardsRequestRef.current;
+    setMissionsError("");
+    const describeError = (error: unknown) => {
+      const status = (error as { status?: number })?.status;
+      const code = (error as { code?: string })?.code;
+      if (code === "NETWORK") return t("auth.networkError");
+      if (status === 401) return t("auth.sessionExpired");
+      return t("auth.genericError");
+    };
+    try {
+      const me = await getRewardsMe(token);
+      if (requestId !== rewardsRequestRef.current) return;
+      const pointsValue = Number(me?.wallet?.points);
+      setWalletPoints(Number.isFinite(pointsValue) ? pointsValue : null);
+
+      const settled = await Promise.allSettled(
+        MISSION_PERIODS.map((period) => listRewardMissions(token, period)),
+      );
+      if (requestId !== rewardsRequestRef.current) return;
+
+      const open: HomeMission[] = [];
+      let missionError: unknown = null;
+      for (const result of settled) {
+        if (result.status !== "fulfilled") {
+          if (!missionError) missionError = result.reason;
+          continue;
+        }
+        if (!Array.isArray(result.value)) continue;
+        for (const row of result.value) {
+          const mission = mapOpenMission(row as HomeMission);
+          if (mission) open.push(mission);
+        }
+      }
+      setOpenMissions(open);
+      if (missionError && open.length === 0) setMissionsError(describeError(missionError));
+    } catch (error) {
+      if (requestId !== rewardsRequestRef.current) return;
+      setOpenMissions([]);
+      setWalletPoints(null);
+      setMissionsError(describeError(error));
+    }
+  }, [t, token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadOpenMissions();
+    }, [loadOpenMissions]),
+  );
 
   useEffect(() => {
     if (HOME_BANNERS.length < 2) return;
@@ -284,81 +304,73 @@ export default function HomeTab() {
 
           <View style={{ width: contentW, alignSelf: "center", gap: 14 }}>
             <Text style={styles.section}>{t("home.shortcuts")}</Text>
-            <View style={styles.shortcutRow}>
-              {SHORTCUTS_ROW1.map((item) => (
+            <View style={styles.shortcutGrid}>
+              {SHORTCUTS.map((item) => (
                 <Pressable
                   key={item.key}
                   onPress={() => router.push(item.path as any)}
-                  style={({ pressed }) => [styles.shortcut, pressed && styles.pressed]}
+                  style={({ pressed }) => [
+                    styles.shortcut,
+                    { width: shortcutWidth, height: shortcutHeight },
+                    pressed && styles.pressed,
+                  ]}
                 >
-                  <Image source={item.image} style={styles.shortcutImage} resizeMode="contain" />
-                  <Text style={styles.shortcutTitle}>{t(`home.${item.key}`)}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <View style={styles.shortcutRowCenter}>
-              {SHORTCUTS_ROW2.map((item) => (
-                <Pressable
-                  key={item.key}
-                  onPress={() => router.push(item.path as any)}
-                  style={({ pressed }) => [styles.shortcut, pressed && styles.pressed]}
-                >
-                  <Image source={item.image} style={styles.shortcutImage} resizeMode="contain" />
-                  <Text style={styles.shortcutTitle}>{t(`home.${item.key}`)}</Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Text style={styles.section}>{t("home.featuredHunts")}</Text>
-            {FEATURED.map((hunt) => (
-              <Pressable
-                key={hunt.id}
-                onPress={() => router.push("/(tabs)/hunts" as any)}
-                style={({ pressed }) => [styles.reco, pressed && styles.pressed]}
-              >
-                <Image source={hunt.image} style={styles.recoImage} resizeMode="contain" />
-                <View style={styles.recoCopy}>
-                  <Text style={styles.recoTitle}>{hunt.name}</Text>
-                  <Text style={styles.recoMeta}>
-                    {hunt.vocation} • Lvl {hunt.levelMin}
+                  <Image source={item.image} style={styles.shortcutImage} resizeMode="cover" />
+                  <LinearGradient
+                    colors={["rgba(7,11,20,0)", "rgba(7,11,20,0.58)"]}
+                    style={styles.shortcutShade}
+                    pointerEvents="none"
+                  />
+                  <Text style={styles.shortcutTitleGlow} numberOfLines={2}>
+                    {t(`home.${item.key}`)}
                   </Text>
-                  <Text style={styles.recoLink}>{t("home.openHunt")} ›</Text>
-                </View>
-              </Pressable>
-            ))}
+                  <Text style={styles.shortcutTitle} numberOfLines={2}>
+                    {t(`home.${item.key}`)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
-            <Pressable
-              onPress={() => router.push("/(tabs)/shop" as any)}
-              style={({ pressed }) => [styles.rewardsWrap, pressed && styles.pressed]}
-            >
+            <View style={styles.rewardsWrap}>
               <View style={styles.rewardsHead}>
                 <Text style={styles.sectionInline}>{t("home.rewardsTitle")}</Text>
-                <Text style={styles.rewardsPoints}>
-                  {t("home.points")}: {points ?? 0}
-                </Text>
+                {walletPoints != null ? (
+                  <Text style={styles.rewardsPoints}>
+                    {t("home.points")}: {walletPoints}
+                  </Text>
+                ) : null}
               </View>
-              {rewardGroups.map((group, index) => {
-                const ratio = group.total > 0 ? group.done / group.total : 0;
+              {missionsError ? <Text style={styles.missionsError}>{missionsError}</Text> : null}
+              {openMissions.map((mission) => {
+                const period = periodLabel(mission.period, t);
+                const hasProgress =
+                  mission.current != null && mission.target != null && mission.target > 0;
+                const hasPoints = mission.rewardPoints != null;
                 return (
-                  <View key={group.key} style={index > 0 ? styles.rewardsBlock : undefined}>
-                    <View style={styles.rewardsRow}>
-                      <Ionicons name={group.icon} size={18} color={Colors.goldLight} />
-                      <View style={styles.rewardsCopy}>
-                        <Text style={styles.rewardsCat}>{group.title}</Text>
-                        <Text style={styles.rewardsHint}>{group.hint}</Text>
-                      </View>
-                      <Text style={styles.rewardsCount}>
-                        {group.total > 0 ? `${group.done}/${group.total}` : "—"}
-                      </Text>
-                    </View>
-                    <View style={styles.track}>
-                      <View style={[styles.trackFill, { width: `${Math.round(ratio * 100)}%` }]} />
-                    </View>
-                  </View>
+                  <Pressable
+                    key={`${mission.period || "mission"}-${mission.id}`}
+                    onPress={() => router.push("/(tabs)/shop" as any)}
+                    style={({ pressed }) => [styles.missionRow, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.missionTitle} numberOfLines={2}>
+                      {mission.title || ""}
+                    </Text>
+                    <Text style={styles.missionMeta} numberOfLines={2}>
+                      {[
+                        period,
+                        hasProgress ? `${mission.current}/${mission.target}` : "",
+                        hasPoints ? `${mission.rewardPoints} pts` : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </Text>
+                  </Pressable>
                 );
               })}
-              <Text style={styles.rewardsCta}>{t("home.rewardsCta")} ›</Text>
-            </Pressable>
+              <Pressable onPress={() => router.push("/(tabs)/shop" as any)}>
+                <Text style={styles.rewardsCta}>{t("home.rewardsCta")} ›</Text>
+              </Pressable>
+            </View>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -412,26 +424,55 @@ const styles = StyleSheet.create({
   dotActive: { backgroundColor: Colors.goldLight, width: 14 },
   section: { color: Colors.text, fontSize: Type.section, fontWeight: "800", marginTop: 4 },
   sectionInline: { color: Colors.text, fontSize: Type.section, fontWeight: "800" },
-  shortcutRow: { flexDirection: "row", justifyContent: "space-between" },
-  shortcutRowCenter: { flexDirection: "row", justifyContent: "center", gap: 8 },
+  shortcutGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   shortcut: {
-    width: "24%",
-    alignItems: "center",
-    gap: 6,
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(212,167,44,0.28)",
+    backgroundColor: "#0b1220",
+    justifyContent: "flex-end",
   },
-  shortcutImage: { width: 72, height: 72 },
-  shortcutTitle: { color: Colors.text, fontWeight: "800", fontSize: Type.tiny, textAlign: "center" },
-  reco: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 8,
+  shortcutImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
   },
-  recoImage: { width: 56, height: 56 },
-  recoCopy: { flex: 1, gap: 3 },
-  recoTitle: { color: Colors.text, fontWeight: "800", fontSize: Type.card },
-  recoMeta: { color: Colors.textSecondary, fontSize: Type.secondary },
-  recoLink: { color: Colors.goldLight, fontWeight: "800", fontSize: Type.tiny },
+  shortcutShade: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: "46%",
+  },
+  shortcutTitleGlow: {
+    position: "absolute",
+    left: 8,
+    right: 8,
+    bottom: 12,
+    textAlign: "center",
+    color: "rgba(240,199,112,0.28)",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    textShadowColor: "rgba(240,199,112,0.95)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+  },
+  shortcutTitle: {
+    position: "absolute",
+    left: 8,
+    right: 8,
+    bottom: 12,
+    textAlign: "center",
+    color: "#f6f1e6",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    textShadowColor: "rgba(0,0,0,0.92)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
   rewardsWrap: { gap: 12, paddingTop: 4, paddingBottom: 8 },
   rewardsHead: {
     flexDirection: "row",
@@ -440,33 +481,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rewardsPoints: { color: Colors.goldLight, fontSize: Type.card, fontWeight: "800" },
-  rewardsBlock: {
-    paddingTop: 10,
+  missionRow: {
+    gap: 3,
+    paddingVertical: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: "rgba(212,167,44,0.22)",
   },
-  rewardsRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  rewardsCopy: { flex: 1, minWidth: 0 },
-  rewardsCat: {
-    color: Colors.goldLight,
-    fontWeight: "800",
-    fontSize: Type.card,
-    letterSpacing: 0.6,
-  },
-  rewardsHint: { color: Colors.textSecondary, fontSize: Type.tiny, marginTop: 2 },
-  rewardsCount: { color: Colors.text, fontWeight: "800", fontSize: Type.secondary },
-  track: {
-    height: 3,
-    borderRadius: 99,
-    backgroundColor: "rgba(248,250,252,0.12)",
-    marginTop: 8,
-    overflow: "hidden",
-  },
-  trackFill: {
-    height: "100%",
-    backgroundColor: Colors.gold,
-    borderRadius: 99,
-  },
+  missionTitle: { color: Colors.text, fontWeight: "800", fontSize: Type.card },
+  missionMeta: { color: Colors.textSecondary, fontSize: Type.tiny },
+  missionsError: { color: Colors.danger, fontSize: Type.secondary },
   rewardsCta: { color: Colors.goldLight, fontWeight: "800", fontSize: Type.secondary, marginTop: 2 },
   pressed: { opacity: 0.92 },
 });
