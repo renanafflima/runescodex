@@ -1,27 +1,70 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
+  Image,
+  ImageBackground,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "@/src/auth/AuthContext";
 import { useI18n } from "@/src/i18n";
-import { Colors, Radius, Spacing, Type } from "@/constants/theme";
+import { Colors, Radius, Type } from "@/constants/theme";
 import AppScreen from "@/components/ui/AppScreen";
-import AppButton from "@/components/ui/AppButton";
-import EmptyState from "@/components/ui/EmptyState";
 import {
   closeForumThread,
   createForumReply,
   createForumThread,
   listForumThreads,
 } from "@/src/api/forum";
+
+const GOLD = "#d9ad3f";
+const GOLD2 = "#f0cf70";
+const BLUE = "#8dccff";
+const LINE = "rgba(217,173,63,0.30)";
+
+const backgroundForum = require("../../assets/forum/background_forum.png");
+const heroForum = require("../../assets/forum/hero_forum.png");
+
+const CATEGORIES = [
+  {
+    id: "bestiary",
+    titleKey: "forum.catBestiary",
+    hintKey: "forum.catBestiaryHint",
+    image: require("../../assets/forum/bestiario.png"),
+  },
+  {
+    id: "hunts",
+    titleKey: "forum.catHunts",
+    hintKey: "forum.catHuntsHint",
+    image: require("../../assets/forum/hunt.png"),
+  },
+  {
+    id: "profit",
+    titleKey: "forum.catProfit",
+    hintKey: "forum.catProfitHint",
+    image: require("../../assets/forum/profit.png"),
+  },
+  {
+    id: "xp",
+    titleKey: "forum.catXp",
+    hintKey: "forum.catXpHint",
+    image: require("../../assets/forum/xphora.png"),
+  },
+  {
+    id: "tips",
+    titleKey: "forum.catTips",
+    hintKey: "forum.catTipsHint",
+    image: require("../../assets/forum/dicas.png"),
+  },
+];
 
 function mapError(error, t) {
   if (error?.code === "NETWORK") return t("auth.networkError");
@@ -34,18 +77,7 @@ function mapError(error, t) {
 function authorLabel(item) {
   const email = item?.author?.email;
   if (email && email.includes("@")) return email.split("@")[0];
-  return email || item?.createdByUserId || "";
-}
-
-function authorInitial(item) {
-  const label = authorLabel(item);
-  return label ? label.slice(0, 1).toUpperCase() : "?";
-}
-
-function viewCountOf(item) {
-  const value = item?.viewCount ?? item?.views ?? item?.visualizations;
-  const n = Number(value);
-  return Number.isFinite(n) && n >= 0 ? n : null;
+  return email || "";
 }
 
 function replyCountOf(item) {
@@ -53,6 +85,15 @@ function replyCountOf(item) {
     return Number(item.replyCount);
   }
   return Array.isArray(item?.comments) ? item.comments.length : 0;
+}
+
+function categoryOf(item) {
+  const value = item?.category ?? item?.categoryName ?? item?.topicCategory;
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function isFeatured(item) {
+  return item?.featured === true || item?.highlight === true || item?.pinned === true;
 }
 
 function formatRelativeTime(value) {
@@ -72,13 +113,13 @@ function formatRelativeTime(value) {
 }
 
 export default function ForumScreen() {
+  const { width } = useWindowDimensions();
   const { t } = useI18n();
   const router = useRouter();
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, user } = useAuth();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [commentText, setCommentText] = useState({});
-  const [tab, setTab] = useState("recent");
   const [query, setQuery] = useState("");
   const [composerOpen, setComposerOpen] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
@@ -108,36 +149,32 @@ export default function ForumScreen() {
     }, [loadThreads]),
   );
 
-  const visibleThreads = useMemo(() => {
+  const recentThreads = useMemo(() => {
     const search = query.trim().toLocaleLowerCase();
-    let list = threads.filter((item) => {
-      if (!search) return true;
-      return (
-        String(item.title || "").toLocaleLowerCase().includes(search) ||
-        String(item.body || "").toLocaleLowerCase().includes(search) ||
-        authorLabel(item).toLocaleLowerCase().includes(search)
-      );
-    });
+    return threads
+      .filter((item) => {
+        if (!search) return true;
+        return (
+          String(item.title || "").toLocaleLowerCase().includes(search) ||
+          String(item.body || "").toLocaleLowerCase().includes(search) ||
+          authorLabel(item).toLocaleLowerCase().includes(search) ||
+          categoryOf(item).toLocaleLowerCase().includes(search)
+        );
+      })
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  }, [query, threads]);
 
-    if (tab === "unanswered") {
-      list = list.filter((item) => replyCountOf(item) === 0);
-    }
+  const featuredThreads = useMemo(() => threads.filter(isFeatured), [threads]);
 
-    list = [...list].sort((a, b) => {
-      if (tab === "viewed") {
-        const aViews = viewCountOf(a);
-        const bViews = viewCountOf(b);
-        if (aViews != null || bViews != null) {
-          return (bViews ?? -1) - (aViews ?? -1);
-        }
-      }
-      const aTime = new Date(a.createdAt || 0).getTime();
-      const bTime = new Date(b.createdAt || 0).getTime();
-      return bTime - aTime;
-    });
-
-    return list;
-  }, [query, tab, threads]);
+  const columns = width >= 720 ? 3 : 2;
+  const pagePad = 16;
+  const sectionPad = 15;
+  const cardGap = 11;
+  const cardWidth = Math.floor(
+    (width - pagePad * 2 - sectionPad * 2 - cardGap * (columns - 1)) / columns,
+  );
+  const heroHeight = width < 400 ? 220 : 260;
+  const stackCta = width < 420;
 
   async function publishThread() {
     if (!isAuthenticated) {
@@ -197,340 +234,411 @@ export default function ForumScreen() {
     }
   }
 
-  const tabs = [
-    { id: "recent", label: t("forum.recent") },
-    { id: "viewed", label: t("forum.mostViewed") },
-    { id: "unanswered", label: t("forum.unanswered") },
-  ];
+  const canClose = (item) =>
+    isAuthenticated && item.status === "open" && user?.id && item.author?.id === user.id;
 
   return (
     <AppScreen>
-      <FlatList
-        data={error ? [] : visibleThreads}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.content}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <View style={styles.top}>
-              <View style={styles.topCopy}>
-                <Text style={styles.title}>{t("forum.title")}</Text>
-                <Text style={styles.subtitle}>{t("forum.subtitle")}</Text>
-              </View>
-              <Pressable
-                onPress={() => {
-                  setComposerOpen((open) => !open);
-                  setActionError("");
-                }}
-                style={styles.newBtn}
-                accessibilityLabel={t("forum.newTopic")}
-              >
-                <Ionicons name="add" size={26} color={Colors.goldLight} />
-              </Pressable>
+      <ImageBackground source={backgroundForum} resizeMode="cover" style={styles.bg}>
+        <LinearGradient
+          colors={["rgba(4,10,17,0.38)", "rgba(4,10,17,0.72)", "rgba(4,10,17,0.92)"]}
+          style={StyleSheet.absoluteFill}
+        />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.content}
+        >
+          <View style={[styles.hero, { height: heroHeight }]}>
+            <Image source={heroForum} style={styles.heroArt} resizeMode="cover" />
+            <LinearGradient
+              colors={["rgba(4,10,17,0.82)", "rgba(4,10,17,0.28)", "rgba(4,10,17,0.18)"]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <LinearGradient
+              colors={["transparent", "rgba(4,10,17,0.78)"]}
+              style={styles.heroBottom}
+            />
+            <View style={styles.heroCopy}>
+              <Text style={styles.heroKicker}>{t("forum.heroKicker")}</Text>
+              <Text style={styles.heroTitle}>{t("forum.heroTitle")}</Text>
+              <Text style={styles.heroSub}>{t("forum.heroSubtitle")}</Text>
             </View>
+          </View>
 
-            <View style={styles.tabs}>
-              {tabs.map((item) => (
-                <Pressable
-                  key={item.id}
-                  onPress={() => setTab(item.id)}
-                  style={[styles.tab, tab === item.id && styles.tabActive]}
-                >
-                  <Text style={[styles.tabText, tab === item.id && styles.tabTextActive]}>{item.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-
+          <View style={styles.search}>
+            <Ionicons name="search" size={18} color="#93a1b2" />
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder={t("forum.search")}
-              placeholderTextColor={Colors.textMuted}
-              style={styles.search}
+              placeholder={t("forum.searchPlaceholder")}
+              placeholderTextColor="#647386"
+              style={styles.searchInput}
               autoCapitalize="none"
               autoCorrect={false}
             />
-
-            {composerOpen ? (
-              <View style={styles.composer}>
-                <Text style={styles.composerTitle}>{t("forum.newTopic")}</Text>
-                <TextInput
-                  style={styles.input}
-                  value={title}
-                  onChangeText={setTitle}
-                  placeholder={t("forum.topicTitle")}
-                  placeholderTextColor={Colors.textMuted}
-                />
-                <TextInput
-                  style={[styles.input, styles.bodyInput]}
-                  value={body}
-                  onChangeText={setBody}
-                  placeholder={t("forum.topicBody")}
-                  placeholderTextColor={Colors.textMuted}
-                  multiline
-                />
-                <AppButton
-                  label={t("forum.publish")}
-                  disabled={busy || !isAuthenticated}
-                  onPress={publishThread}
-                />
-                {!isAuthenticated ? (
-                  <AppButton
-                    label={t("auth.login")}
-                    variant="ghost"
-                    onPress={() => router.push("/(auth)/login")}
-                  />
-                ) : null}
-                {actionError ? <Text style={styles.error}>{actionError}</Text> : null}
-              </View>
-            ) : actionError ? (
-              <Text style={styles.error}>{actionError}</Text>
-            ) : null}
-
-            {!isAuthenticated && !composerOpen ? (
-              <Text style={styles.loginHint}>{t("forum.loginRequired")}</Text>
-            ) : null}
           </View>
-        }
-        renderItem={({ item }) => {
-          const expanded = expandedId === item.id;
-          const views = viewCountOf(item);
-          const replies = replyCountOf(item);
-          const when = formatRelativeTime(item.createdAt);
-          const author = authorLabel(item);
-          return (
-            <Pressable
-              onPress={() => setExpandedId(expanded ? null : item.id)}
-              style={styles.thread}
-            >
-              <View style={styles.threadHead}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{authorInitial(item)}</Text>
-                </View>
-                <View style={styles.threadContent}>
-                  <Text style={styles.threadTitle} numberOfLines={2}>
-                    {item.title}
-                  </Text>
-                  <Text style={styles.author} numberOfLines={1}>
-                    {[author, when].filter(Boolean).join(" · ")}
-                  </Text>
-                </View>
-              </View>
 
-              {item.body ? (
-                <Text style={styles.preview} numberOfLines={expanded ? 6 : 2}>
-                  {item.body}
-                </Text>
-              ) : null}
-
-              <View style={styles.metrics}>
-                {views != null ? (
-                  <View style={styles.metric}>
-                    <Ionicons name="eye-outline" size={13} color={Colors.textMuted} />
-                    <Text style={styles.metricText}>
-                      <Text style={styles.metricStrong}>{views}</Text> {t("forum.views")}
-                    </Text>
-                  </View>
-                ) : null}
-                <View style={styles.metric}>
-                  <Ionicons name="chatbubble-outline" size={12} color={Colors.textMuted} />
-                  <Text style={styles.metricText}>
-                    <Text style={styles.metricStrong}>{replies}</Text> {t("forum.replies")}
-                  </Text>
-                </View>
-                <Text style={[styles.status, item.status !== "open" && styles.statusClosed]}>
-                  {item.status === "open" ? t("common.open") : t("common.closed")}
-                </Text>
-              </View>
-
-              {expanded ? (
-                <View style={styles.expanded}>
-                  <AppButton
-                    label={t("forum.closeTopic")}
-                    variant="ghost"
-                    disabled={busy || item.status !== "open" || !isAuthenticated}
-                    onPress={() => item.status === "open" && closeThread(item.id)}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    value={commentText[item.id] ?? ""}
-                    onChangeText={(value) => setCommentText((prev) => ({ ...prev, [item.id]: value }))}
-                    placeholder={t("forum.commentPlaceholder")}
-                    placeholderTextColor={Colors.textMuted}
-                    editable={item.status === "open"}
-                  />
-                  <AppButton
-                    label={t("forum.send")}
-                    variant="secondary"
-                    disabled={busy || item.status !== "open" || !isAuthenticated}
-                    onPress={() => sendComment(item.id)}
-                  />
-                  {(item.comments ?? []).slice(0, 5).map((comment) => (
-                    <View key={comment.id} style={styles.comment}>
-                      <Text style={styles.commentAuthor}>{authorLabel(comment)}</Text>
-                      <Text style={styles.commentBody}>{comment.text}</Text>
-                    </View>
-                  ))}
-                  {(item.comments ?? []).length > 5 || replies > 5 ? (
-                    <Text style={styles.more}>{t("forum.moreComments")}</Text>
-                  ) : null}
-                </View>
-              ) : null}
-            </Pressable>
-          );
-        }}
-        ListEmptyComponent={
-          loading ? (
-            <ActivityIndicator color={Colors.goldLight} style={{ marginTop: 16 }} />
-          ) : error ? (
-            <View style={{ gap: 12, marginTop: 8 }}>
-              <EmptyState title={error} />
-              <AppButton label={t("forum.retry")} onPress={loadThreads} />
+          <View style={[styles.composer, stackCta && styles.composerStack]}>
+            <View style={styles.composerCopy}>
+              <Text style={styles.composerTitle}>{t("forum.shareTitle")}</Text>
+              <Text style={styles.composerBody}>{t("forum.shareBody")}</Text>
             </View>
-          ) : (
-            <EmptyState title={t("forum.empty")} />
-          )
-        }
-        ListFooterComponent={
-          !loading && !error && visibleThreads.length ? (
-            <Text style={styles.footer}>{t("forum.communityFooter")}</Text>
-          ) : null
-        }
-      />
+            <Pressable
+              onPress={() => {
+                setComposerOpen((open) => !open);
+                setActionError("");
+              }}
+              style={[styles.cta, stackCta && styles.ctaFull]}
+            >
+              <Text style={styles.ctaText}>{t("forum.createDiscussion")}</Text>
+            </Pressable>
+          </View>
+
+          {composerOpen ? (
+            <View style={styles.form}>
+              <TextInput
+                style={styles.input}
+                value={title}
+                onChangeText={setTitle}
+                placeholder={t("forum.topicTitle")}
+                placeholderTextColor="#647386"
+              />
+              <TextInput
+                style={[styles.input, styles.bodyInput]}
+                value={body}
+                onChangeText={setBody}
+                placeholder={t("forum.topicBody")}
+                placeholderTextColor="#647386"
+                multiline
+              />
+              <Pressable
+                onPress={publishThread}
+                disabled={busy || !title.trim() || !body.trim()}
+                style={styles.cta}
+              >
+                <Text style={styles.ctaText}>{busy ? t("common.loading") : t("forum.publish")}</Text>
+              </Pressable>
+              {!isAuthenticated ? (
+                <Pressable onPress={() => router.push("/(auth)/login")}>
+                  <Text style={styles.link}>{t("auth.login")}</Text>
+                </Pressable>
+              ) : null}
+              {actionError ? <Text style={styles.error}>{actionError}</Text> : null}
+            </View>
+          ) : null}
+
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <View style={styles.sectionCopy}>
+                <Text style={styles.sectionTitle}>{t("forum.highlights")}</Text>
+                <Text style={styles.sectionHint}>{t("forum.highlightsHint")}</Text>
+              </View>
+              <Text style={styles.sectionMeta}>{t("forum.highlightsMeta")}</Text>
+            </View>
+            {featuredThreads.map((item) => (
+              <View key={item.id} style={styles.feature}>
+                {categoryOf(item) ? <Text style={styles.featureTag}>{categoryOf(item)}</Text> : null}
+                <Text style={styles.featureTitle}>{item.title}</Text>
+                {item.body ? (
+                  <Text style={styles.featureBody} numberOfLines={3}>
+                    {item.body}
+                  </Text>
+                ) : null}
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <View style={styles.sectionCopy}>
+                <Text style={styles.sectionTitle}>{t("forum.categoriesTitle")}</Text>
+                <Text style={styles.sectionHint}>{t("forum.categoriesHint")}</Text>
+              </View>
+            </View>
+            <View style={[styles.categoryGrid, { gap: cardGap }]}>
+              {CATEGORIES.map((item) => (
+                <View
+                  key={item.id}
+                  style={[styles.category, { width: cardWidth, minHeight: width < 400 ? 132 : 145 }]}
+                >
+                  <Image source={item.image} style={styles.categoryArt} resizeMode="cover" />
+                  <LinearGradient
+                    colors={["rgba(3,9,15,0.05)", "rgba(3,9,15,0.94)"]}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={styles.categoryCopy}>
+                    <Text style={styles.categoryTitle}>{t(item.titleKey)}</Text>
+                    <Text style={styles.categoryHint}>{t(item.hintKey)}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <View style={styles.sectionCopy}>
+                <Text style={styles.sectionTitle}>
+                  {t("forum.recentTitle")} <Text style={styles.sectionAccent}>{t("forum.recentAccent")}</Text>
+                </Text>
+                <Text style={styles.sectionHint}>{t("forum.recentHint")}</Text>
+              </View>
+            </View>
+
+            {loading ? <ActivityIndicator color={GOLD2} style={{ marginVertical: 12 }} /> : null}
+            {error ? (
+              <Pressable onPress={loadThreads}>
+                <Text style={styles.error}>{error}</Text>
+                <Text style={styles.link}>{t("forum.retry")}</Text>
+              </Pressable>
+            ) : null}
+            {!loading && !error && recentThreads.length === 0 ? (
+              <Text style={styles.empty}>{t("forum.empty")}</Text>
+            ) : null}
+
+            {recentThreads.map((item, index) => {
+              const expanded = expandedId === item.id;
+              const replies = replyCountOf(item);
+              const author = authorLabel(item);
+              const when = formatRelativeTime(item.createdAt);
+              const category = categoryOf(item);
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={() => setExpandedId(expanded ? null : item.id)}
+                  style={[styles.discussion, index > 0 && styles.discussionBorder]}
+                >
+                  <View style={styles.discussionMain}>
+                    <Text style={styles.discussionTitle}>{item.title}</Text>
+                    {item.body ? (
+                      <Text style={styles.discussionBody} numberOfLines={expanded ? 6 : 2}>
+                        {item.body}
+                      </Text>
+                    ) : null}
+                    <View style={styles.metaRow}>
+                      {category ? <Text style={styles.badge}>{category}</Text> : null}
+                      {author ? <Text style={styles.meta}>{t("forum.byAuthor", { name: author })}</Text> : null}
+                      {when ? <Text style={styles.meta}>{when}</Text> : null}
+                    </View>
+                    {expanded ? (
+                      <View style={styles.expanded}>
+                        {canClose(item) ? (
+                          <Pressable onPress={() => closeThread(item.id)} disabled={busy}>
+                            <Text style={styles.link}>{t("forum.closeTopic")}</Text>
+                          </Pressable>
+                        ) : null}
+                        <TextInput
+                          style={styles.input}
+                          value={commentText[item.id] ?? ""}
+                          onChangeText={(value) => setCommentText((prev) => ({ ...prev, [item.id]: value }))}
+                          placeholder={t("forum.commentPlaceholder")}
+                          placeholderTextColor="#647386"
+                          editable={item.status === "open"}
+                        />
+                        <Pressable
+                          onPress={() => sendComment(item.id)}
+                          disabled={busy || item.status !== "open"}
+                          style={styles.replyBtn}
+                        >
+                          <Text style={styles.replyText}>{t("forum.send")}</Text>
+                        </Pressable>
+                        {(item.comments ?? []).slice(0, 5).map((comment) => (
+                          <View key={comment.id} style={styles.comment}>
+                            <Text style={styles.commentAuthor}>{authorLabel(comment)}</Text>
+                            <Text style={styles.commentBody}>{comment.text}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                  </View>
+                  <View style={styles.replies}>
+                    <Text style={styles.repliesCount}>{replies}</Text>
+                    <Text style={styles.repliesLabel}>{t("forum.replies")}</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </ImageBackground>
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: Spacing.md, paddingTop: 18, paddingBottom: 30 },
-  header: { marginBottom: 4 },
-  top: {
+  bg: { flex: 1 },
+  content: { padding: 16, paddingBottom: 36, gap: 16 },
+  hero: {
+    borderRadius: 18,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: LINE,
+    backgroundColor: "#091522",
+  },
+  heroArt: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" },
+  heroBottom: { position: "absolute", left: 0, right: 0, bottom: 0, height: "58%" },
+  heroCopy: { position: "absolute", left: 18, right: 18, bottom: 18 },
+  heroKicker: {
+    color: GOLD2,
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1.6,
+    textTransform: "uppercase",
+  },
+  heroTitle: {
+    color: Colors.text,
+    fontFamily: "serif",
+    fontSize: 34,
+    fontWeight: "700",
+    marginTop: 4,
+    textTransform: "uppercase",
+  },
+  heroSub: { color: "#d5dde7", fontSize: 13, lineHeight: 19, marginTop: 6 },
+  search: {
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: "rgba(8,18,29,0.88)",
+    borderWidth: 1,
+    borderColor: "rgba(217,173,63,0.28)",
+  },
+  searchInput: { flex: 1, color: Colors.text, fontSize: 14, paddingVertical: 12 },
+  composer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
-    gap: 12,
-  },
-  topCopy: { flex: 1, minWidth: 0 },
-  title: { color: Colors.text, fontSize: 25, fontWeight: "800", letterSpacing: 0.3 },
-  subtitle: { color: Colors.textSecondary, fontSize: 12, marginTop: 3 },
-  newBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
+    gap: 14,
+    padding: 16,
+    borderRadius: 15,
     borderWidth: 1,
-    borderColor: "rgba(212,167,44,0.45)",
-    backgroundColor: "rgba(197,155,76,0.12)",
+    borderColor: LINE,
+    backgroundColor: "rgba(12,26,40,0.94)",
+  },
+  composerStack: { flexDirection: "column", alignItems: "stretch" },
+  composerCopy: { flex: 1, minWidth: 0, gap: 4 },
+  composerTitle: { color: Colors.text, fontFamily: "serif", fontSize: 18, fontWeight: "700" },
+  composerBody: { color: "#93a1b2", fontSize: 13, lineHeight: 18 },
+  cta: {
+    minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: GOLD,
   },
-  tabs: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
-  tab: {
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-    backgroundColor: "rgba(255,255,255,0.045)",
-    borderRadius: 10,
-    paddingHorizontal: 13,
-    paddingVertical: 8,
+  ctaFull: { alignSelf: "stretch" },
+  ctaText: {
+    color: "#101722",
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
   },
-  tabActive: {
-    backgroundColor: "rgba(197,155,76,0.16)",
-    borderColor: "rgba(197,155,76,0.35)",
-  },
-  tabText: { color: Colors.textMuted, fontSize: 12, fontWeight: "700" },
-  tabTextActive: { color: Colors.goldLight },
-  search: {
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-    backgroundColor: "rgba(255,255,255,0.045)",
-    color: Colors.text,
-    paddingHorizontal: 13,
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginBottom: 14,
-    fontWeight: "600",
-  },
-  loginHint: { color: Colors.textMuted, fontSize: 11, marginBottom: 8 },
-  composer: {
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.075)",
-    backgroundColor: "rgba(255,255,255,0.045)",
-    borderRadius: 14,
-    padding: 14,
-    gap: 10,
-    marginBottom: 12,
-  },
-  composerTitle: { color: Colors.text, fontSize: 15, fontWeight: "800" },
+  form: { gap: 10, marginTop: -6 },
   input: {
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgSecondary,
+    borderColor: "rgba(255,255,255,0.09)",
+    backgroundColor: "rgba(8,18,29,0.88)",
     borderRadius: Radius.md,
     padding: 12,
     color: Colors.text,
   },
-  bodyInput: { height: 80, textAlignVertical: "top" },
-  error: { color: Colors.danger, fontSize: Type.secondary, fontWeight: "700" },
-  thread: {
+  bodyInput: { minHeight: 88, textAlignVertical: "top" },
+  section: {
+    padding: 15,
+    borderRadius: 15,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.075)",
-    backgroundColor: "rgba(255,255,255,0.045)",
-    borderRadius: 14,
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-    marginBottom: 10,
+    borderColor: "rgba(255,255,255,0.07)",
+    backgroundColor: "rgba(9,20,33,0.92)",
+    gap: 12,
   },
-  threadHead: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  avatar: {
-    width: 34,
-    height: 34,
+  sectionHead: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  sectionCopy: { flex: 1, minWidth: 0, gap: 4 },
+  sectionTitle: { color: Colors.text, fontFamily: "serif", fontSize: 22, fontWeight: "700" },
+  sectionAccent: { color: GOLD2 },
+  sectionHint: { color: "#93a1b2", fontSize: 12, lineHeight: 16 },
+  sectionMeta: { color: "#647386", fontSize: 12 },
+  feature: {
+    borderWidth: 1,
+    borderColor: "rgba(76,169,255,0.20)",
+    backgroundColor: "rgba(7,18,30,0.72)",
+    borderRadius: 12,
+    padding: 14,
+    gap: 6,
+  },
+  featureTag: {
+    color: BLUE,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  featureTitle: { color: Colors.text, fontSize: 15, fontWeight: "700" },
+  featureBody: { color: "#93a1b2", fontSize: 12, lineHeight: 18 },
+  categoryGrid: { flexDirection: "row", flexWrap: "wrap" },
+  category: {
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(217,173,63,0.22)",
+    backgroundColor: "#0a1522",
+    justifyContent: "flex-end",
+  },
+  categoryArt: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" },
+  categoryCopy: { paddingHorizontal: 12, paddingBottom: 11, paddingTop: 28 },
+  categoryTitle: {
+    color: Colors.text,
+    fontFamily: "serif",
+    fontSize: 16,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  categoryHint: { color: "#aeb9c7", fontSize: 11, marginTop: 3 },
+  discussion: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 12 },
+  discussionBorder: { borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)" },
+  discussionMain: { flex: 1, minWidth: 0, gap: 4 },
+  discussionTitle: { color: Colors.text, fontSize: 14, fontWeight: "700" },
+  discussionBody: { color: "#93a1b2", fontSize: 12, lineHeight: 17 },
+  metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 4 },
+  badge: { color: GOLD2, fontSize: 11, fontWeight: "800" },
+  meta: { color: "#647386", fontSize: 11 },
+  replies: { alignItems: "flex-end", minWidth: 64 },
+  repliesCount: { color: Colors.text, fontSize: 17, fontWeight: "700" },
+  repliesLabel: { color: "#93a1b2", fontSize: 11 },
+  expanded: { marginTop: 8, gap: 8 },
+  replyBtn: {
+    alignSelf: "flex-start",
+    minHeight: 40,
+    paddingHorizontal: 14,
     borderRadius: 10,
-    backgroundColor: "rgba(197,155,76,0.13)",
+    borderWidth: 1,
+    borderColor: "rgba(76,169,255,0.35)",
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { color: Colors.gold, fontSize: 15, fontWeight: "800" },
-  threadContent: { flex: 1, minWidth: 0 },
-  threadTitle: { color: Colors.text, fontSize: 15, lineHeight: 19, fontWeight: "800" },
-  author: { color: Colors.textMuted, fontSize: 11, marginTop: 4 },
-  preview: {
-    marginTop: 9,
-    marginLeft: 44,
-    color: "#b6bfcc",
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  metrics: {
-    marginLeft: 44,
-    marginTop: 10,
-    paddingTop: 9,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.06)",
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 15,
-  },
-  metric: { flexDirection: "row", alignItems: "center", gap: 5 },
-  metricText: { color: Colors.textMuted, fontSize: 11 },
-  metricStrong: { color: "#c4ccd7", fontWeight: "700" },
-  status: { marginLeft: "auto", color: "#7fc58d", fontSize: 11, fontWeight: "700" },
-  statusClosed: { color: "#9aa3b1" },
-  expanded: { marginTop: 12, gap: 8 },
+  replyText: { color: BLUE, fontWeight: "800", fontSize: 12 },
   comment: {
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "rgba(255,255,255,0.07)",
     borderRadius: Radius.md,
     padding: 10,
-    backgroundColor: Colors.bgSecondary,
+    backgroundColor: "rgba(7,16,27,0.72)",
   },
   commentAuthor: { color: Colors.text, fontWeight: "800", fontSize: Type.secondary },
-  commentBody: { color: Colors.textSecondary, fontSize: Type.body, lineHeight: 18 },
-  more: { color: Colors.textMuted, fontSize: 11 },
-  footer: {
-    textAlign: "center",
-    color: "#687486",
-    fontSize: 10,
-    marginTop: 8,
-    marginBottom: 12,
-  },
+  commentBody: { color: "#d5dde7", fontSize: Type.body, lineHeight: 18, marginTop: 2 },
+  empty: { color: "#93a1b2", fontSize: 13 },
+  error: { color: Colors.danger, fontSize: Type.secondary, fontWeight: "700" },
+  link: { color: GOLD2, fontSize: 13, fontWeight: "700", marginTop: 4 },
 });
