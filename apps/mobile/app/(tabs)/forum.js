@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -24,6 +24,8 @@ import {
   createForumThread,
   listForumThreads,
 } from "@/src/api/forum";
+import { collectPages } from "@/src/api/page";
+import { createLatestRequest } from "@/src/runtime/focusWork";
 
 const GOLD = "#d9ad3f";
 const GOLD2 = "#f0cf70";
@@ -75,9 +77,9 @@ function mapError(error, t) {
 }
 
 function authorLabel(item) {
-  const email = item?.author?.email;
-  if (email && email.includes("@")) return email.split("@")[0];
-  return email || "";
+  const id = item?.author?.id || item?.createdByUserId;
+  if (!id) return "";
+  return String(id).slice(0, 8);
 }
 
 function replyCountOf(item) {
@@ -128,25 +130,36 @@ export default function ForumScreen() {
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
   const [busy, setBusy] = useState(false);
+  const threadRequests = useRef(createLatestRequest()).current;
 
   const loadThreads = useCallback(async () => {
+    const current = threadRequests.start();
     setLoading(true);
     setError("");
     try {
-      const data = await listForumThreads();
-      setThreads(Array.isArray(data) ? data : []);
+      const collected = await collectPages(async (page) => {
+        const data = await listForumThreads({ page, limit: 20 });
+        if (!current()) return { items: [], hasMore: false };
+        return data;
+      });
+      if (!current()) return;
+      setThreads(collected.items);
     } catch (err) {
+      if (!current()) return;
       setThreads([]);
       setError(mapError(err, t));
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
-  }, [t]);
+  }, [t, threadRequests]);
 
   useFocusEffect(
     useCallback(() => {
       loadThreads();
-    }, [loadThreads]),
+      return () => {
+        threadRequests.cancel();
+      };
+    }, [loadThreads, threadRequests]),
   );
 
   const recentThreads = useMemo(() => {
@@ -166,15 +179,11 @@ export default function ForumScreen() {
 
   const featuredThreads = useMemo(() => threads.filter(isFeatured), [threads]);
 
-  const columns = width >= 720 ? 3 : 2;
-  const pagePad = 16;
-  const sectionPad = 15;
-  const cardGap = 11;
-  const cardWidth = Math.floor(
-    (width - pagePad * 2 - sectionPad * 2 - cardGap * (columns - 1)) / columns,
-  );
-  const heroHeight = width < 400 ? 220 : 260;
-  const stackCta = width < 420;
+  const categoryColumns = width < 680 ? 2 : width < 980 ? 3 : 5;
+  const categoryRows = [];
+  for (let i = 0; i < CATEGORIES.length; i += categoryColumns) {
+    categoryRows.push(CATEGORIES.slice(i, i + categoryColumns));
+  }
 
   async function publishThread() {
     if (!isAuthenticated) {
@@ -249,7 +258,7 @@ export default function ForumScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.content}
         >
-          <View style={[styles.hero, { height: heroHeight }]}>
+          <View style={styles.hero}>
             <Image source={heroForum} style={styles.heroArt} resizeMode="cover" />
             <LinearGradient
               colors={["rgba(4,10,17,0.82)", "rgba(4,10,17,0.28)", "rgba(4,10,17,0.18)"]}
@@ -264,7 +273,9 @@ export default function ForumScreen() {
             <View style={styles.heroCopy}>
               <Text style={styles.heroKicker}>{t("forum.heroKicker")}</Text>
               <Text style={styles.heroTitle}>{t("forum.heroTitle")}</Text>
-              <Text style={styles.heroSub}>{t("forum.heroSubtitle")}</Text>
+              <Text style={styles.heroSub} numberOfLines={3}>
+                {t("forum.heroSubtitle")}
+              </Text>
             </View>
           </View>
 
@@ -281,7 +292,7 @@ export default function ForumScreen() {
             />
           </View>
 
-          <View style={[styles.composer, stackCta && styles.composerStack]}>
+          <View style={styles.composer}>
             <View style={styles.composerCopy}>
               <Text style={styles.composerTitle}>{t("forum.shareTitle")}</Text>
               <Text style={styles.composerBody}>{t("forum.shareBody")}</Text>
@@ -291,9 +302,11 @@ export default function ForumScreen() {
                 setComposerOpen((open) => !open);
                 setActionError("");
               }}
-              style={[styles.cta, stackCta && styles.ctaFull]}
+              style={styles.cta}
             >
-              <Text style={styles.ctaText}>{t("forum.createDiscussion")}</Text>
+              <Text style={styles.ctaText} maxFontSizeMultiplier={1.15}>
+                {t("forum.createDiscussion")}
+              </Text>
             </Pressable>
           </View>
 
@@ -330,26 +343,28 @@ export default function ForumScreen() {
             </View>
           ) : null}
 
-          <View style={styles.section}>
-            <View style={styles.sectionHead}>
-              <View style={styles.sectionCopy}>
-                <Text style={styles.sectionTitle}>{t("forum.highlights")}</Text>
-                <Text style={styles.sectionHint}>{t("forum.highlightsHint")}</Text>
+          {featuredThreads.length > 0 ? (
+            <View style={styles.section}>
+              <View style={styles.sectionHead}>
+                <View style={styles.sectionCopy}>
+                  <Text style={styles.sectionTitle}>{t("forum.highlights")}</Text>
+                  <Text style={styles.sectionHint}>{t("forum.highlightsHint")}</Text>
+                </View>
+                <Text style={styles.sectionMeta}>{t("forum.highlightsMeta")}</Text>
               </View>
-              <Text style={styles.sectionMeta}>{t("forum.highlightsMeta")}</Text>
+              {featuredThreads.map((item) => (
+                <View key={item.id} style={styles.feature}>
+                  {categoryOf(item) ? <Text style={styles.featureTag}>{categoryOf(item)}</Text> : null}
+                  <Text style={styles.featureTitle}>{item.title}</Text>
+                  {item.body ? (
+                    <Text style={styles.featureBody} numberOfLines={3}>
+                      {item.body}
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
             </View>
-            {featuredThreads.map((item) => (
-              <View key={item.id} style={styles.feature}>
-                {categoryOf(item) ? <Text style={styles.featureTag}>{categoryOf(item)}</Text> : null}
-                <Text style={styles.featureTitle}>{item.title}</Text>
-                {item.body ? (
-                  <Text style={styles.featureBody} numberOfLines={3}>
-                    {item.body}
-                  </Text>
-                ) : null}
-              </View>
-            ))}
-          </View>
+          ) : null}
 
           <View style={styles.section}>
             <View style={styles.sectionHead}>
@@ -358,21 +373,31 @@ export default function ForumScreen() {
                 <Text style={styles.sectionHint}>{t("forum.categoriesHint")}</Text>
               </View>
             </View>
-            <View style={[styles.categoryGrid, { gap: cardGap }]}>
-              {CATEGORIES.map((item) => (
-                <View
-                  key={item.id}
-                  style={[styles.category, { width: cardWidth, minHeight: width < 400 ? 132 : 145 }]}
-                >
-                  <Image source={item.image} style={styles.categoryArt} resizeMode="cover" />
-                  <LinearGradient
-                    colors={["rgba(3,9,15,0.05)", "rgba(3,9,15,0.94)"]}
-                    style={StyleSheet.absoluteFill}
-                  />
-                  <View style={styles.categoryCopy}>
-                    <Text style={styles.categoryTitle}>{t(item.titleKey)}</Text>
-                    <Text style={styles.categoryHint}>{t(item.hintKey)}</Text>
-                  </View>
+            <View style={styles.categoryGrid}>
+              {categoryRows.map((row, rowIndex) => (
+                <View key={`category-row-${rowIndex}`} style={styles.categoryRow}>
+                  {row.map((item) => (
+                    <View key={item.id} style={styles.category}>
+                      <Image source={item.image} style={styles.categoryArt} resizeMode="contain" />
+                      <LinearGradient
+                        colors={["rgba(3,9,15,0.02)", "rgba(3,9,15,0.88)"]}
+                        style={StyleSheet.absoluteFill}
+                      />
+                      <View style={styles.categoryCopy}>
+                        <Text style={styles.categoryTitle} numberOfLines={1}>
+                          {t(item.titleKey)}
+                        </Text>
+                        <Text style={styles.categoryHint} numberOfLines={2}>
+                          {t(item.hintKey)}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                  {row.length < categoryColumns
+                    ? Array.from({ length: categoryColumns - row.length }, (_, index) => (
+                        <View key={`category-spacer-${index}`} style={styles.categorySpacer} />
+                      ))
+                    : null}
                 </View>
               ))}
             </View>
@@ -443,7 +468,9 @@ export default function ForumScreen() {
                           disabled={busy || item.status !== "open"}
                           style={styles.replyBtn}
                         >
-                          <Text style={styles.replyText}>{t("forum.send")}</Text>
+                          <Text style={styles.replyText} maxFontSizeMultiplier={1.15}>
+                            {t("forum.send")}
+                          </Text>
                         </Pressable>
                         {(item.comments ?? []).slice(0, 5).map((comment) => (
                           <View key={comment.id} style={styles.comment}>
@@ -470,70 +497,67 @@ export default function ForumScreen() {
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
-  content: { padding: 16, paddingBottom: 36, gap: 16 },
+  content: { paddingHorizontal: 10, paddingTop: 8, paddingBottom: 36, gap: 12 },
   hero: {
+    width: "100%",
+    aspectRatio: 1.45,
     borderRadius: 18,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: LINE,
     backgroundColor: "#091522",
   },
-  heroArt: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" },
-  heroBottom: { position: "absolute", left: 0, right: 0, bottom: 0, height: "58%" },
-  heroCopy: { position: "absolute", left: 18, right: 18, bottom: 18 },
+  heroArt: { ...StyleSheet.absoluteFillObject },
+  heroBottom: { position: "absolute", left: 0, right: 0, bottom: 0, height: "62%" },
+  heroCopy: { position: "absolute", left: 16, right: 16, bottom: 16 },
   heroKicker: {
     color: GOLD2,
     fontSize: 11,
     fontWeight: "800",
-    letterSpacing: 1.6,
+    letterSpacing: 1.4,
     textTransform: "uppercase",
   },
   heroTitle: {
     color: Colors.text,
     fontFamily: "serif",
-    fontSize: 34,
+    fontSize: 28,
     fontWeight: "700",
     marginTop: 4,
-    textTransform: "uppercase",
   },
-  heroSub: { color: "#d5dde7", fontSize: 13, lineHeight: 19, marginTop: 6 },
+  heroSub: { color: "#d5dde7", fontSize: 13, lineHeight: 18, marginTop: 4 },
   search: {
-    minHeight: 48,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 14,
+    gap: 8,
+    paddingHorizontal: 12,
     borderRadius: 12,
     backgroundColor: "rgba(8,18,29,0.88)",
     borderWidth: 1,
     borderColor: "rgba(217,173,63,0.28)",
   },
-  searchInput: { flex: 1, color: Colors.text, fontSize: 14, paddingVertical: 12 },
+  searchInput: { flex: 1, minWidth: 0, color: Colors.text, fontSize: 14, paddingVertical: 10 },
   composer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 14,
-    padding: 16,
+    alignItems: "flex-start",
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderRadius: 15,
     borderWidth: 1,
     borderColor: LINE,
     backgroundColor: "rgba(12,26,40,0.94)",
   },
-  composerStack: { flexDirection: "column", alignItems: "stretch" },
-  composerCopy: { flex: 1, minWidth: 0, gap: 4 },
-  composerTitle: { color: Colors.text, fontFamily: "serif", fontSize: 18, fontWeight: "700" },
+  composerCopy: { alignSelf: "stretch", gap: 4 },
+  composerTitle: { color: Colors.text, fontFamily: "serif", fontSize: 17, fontWeight: "700" },
   composerBody: { color: "#93a1b2", fontSize: 13, lineHeight: 18 },
   cta: {
-    minHeight: 44,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
+    alignSelf: "flex-start",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: GOLD,
   },
-  ctaFull: { alignSelf: "stretch" },
   ctaText: {
     color: "#101722",
     fontSize: 12,
@@ -566,7 +590,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionCopy: { flex: 1, minWidth: 0, gap: 4 },
-  sectionTitle: { color: Colors.text, fontFamily: "serif", fontSize: 22, fontWeight: "700" },
+  sectionTitle: { color: Colors.text, fontFamily: "serif", fontSize: 18, fontWeight: "700" },
   sectionAccent: { color: GOLD2 },
   sectionHint: { color: "#93a1b2", fontSize: 12, lineHeight: 16 },
   sectionMeta: { color: "#647386", fontSize: 12 },
@@ -587,8 +611,11 @@ const styles = StyleSheet.create({
   },
   featureTitle: { color: Colors.text, fontSize: 15, fontWeight: "700" },
   featureBody: { color: "#93a1b2", fontSize: 12, lineHeight: 18 },
-  categoryGrid: { flexDirection: "row", flexWrap: "wrap" },
+  categoryGrid: { gap: 10 },
+  categoryRow: { flexDirection: "row", gap: 10 },
   category: {
+    flex: 1,
+    aspectRatio: 1.05,
     borderRadius: 12,
     overflow: "hidden",
     borderWidth: 1,
@@ -596,17 +623,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#0a1522",
     justifyContent: "flex-end",
   },
-  categoryArt: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" },
-  categoryCopy: { paddingHorizontal: 12, paddingBottom: 11, paddingTop: 28 },
+  categorySpacer: { flex: 1, aspectRatio: 1.05 },
+  categoryArt: { ...StyleSheet.absoluteFillObject },
+  categoryCopy: { position: "absolute", left: 10, right: 10, bottom: 10 },
   categoryTitle: {
     color: Colors.text,
     fontFamily: "serif",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
-    textTransform: "uppercase",
   },
   categoryHint: { color: "#aeb9c7", fontSize: 11, marginTop: 3 },
-  discussion: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 12 },
+  discussion: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingVertical: 10 },
   discussionBorder: { borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)" },
   discussionMain: { flex: 1, minWidth: 0, gap: 4 },
   discussionTitle: { color: Colors.text, fontSize: 14, fontWeight: "700" },
@@ -614,14 +641,14 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 4 },
   badge: { color: GOLD2, fontSize: 11, fontWeight: "800" },
   meta: { color: "#647386", fontSize: 11 },
-  replies: { alignItems: "flex-end", minWidth: 64 },
+  replies: { alignItems: "flex-end", flexShrink: 0 },
   repliesCount: { color: Colors.text, fontSize: 17, fontWeight: "700" },
   repliesLabel: { color: "#93a1b2", fontSize: 11 },
   expanded: { marginTop: 8, gap: 8 },
   replyBtn: {
     alignSelf: "flex-start",
-    minHeight: 40,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(76,169,255,0.35)",

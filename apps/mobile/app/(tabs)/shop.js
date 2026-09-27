@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,7 @@ import { useFocusEffect } from "expo-router";
 import { Colors } from "@/constants/theme";
 import AppScreen from "@/components/ui/AppScreen";
 import { useAuth } from "@/src/auth/AuthContext";
+import { createLatestRequest } from "@/src/runtime/focusWork";
 import { useI18n } from "@/src/i18n";
 import {
   convertRewards,
@@ -279,8 +280,46 @@ function ConversionCard({ item, diamond, onPress, busy }) {
             pressed && !disabled && styles.pressed,
           ]}
         >
-          <Text style={[styles.conversionBtnText, diamond && styles.conversionBtnTextDiamond]}>
+          <Text
+            maxFontSizeMultiplier={1.15}
+            style={[styles.conversionBtnText, diamond && styles.conversionBtnTextDiamond]}
+          >
             {diamond ? "INDISPONÍVEL" : busy ? "..." : "Converter"}
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function isSupremeReward(item) {
+  return item?.imageKey === "ferumbrasHat" || /ferumbras/i.test(String(item?.name || ""));
+}
+
+function SupremeReward({ item, onPress, busy }) {
+  const source = resolveAsset(item.imageKey);
+
+  return (
+    <View style={styles.supremeCard}>
+      <View style={styles.supremeArt}>
+        {source ? <Image source={source} style={styles.supremeImage} resizeMode="cover" /> : null}
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.55)"]}
+          style={styles.supremeShade}
+        />
+      </View>
+      <View style={styles.supremeBody}>
+        <Text style={styles.supremeKicker}>Recompensa lendária</Text>
+        <Text style={styles.supremeTitle}>{item.name}</Text>
+        {item.description ? <Text style={styles.supremeDesc}>{item.description}</Text> : null}
+        <Text style={styles.supremePrice}>{catalogPriceLabel(item)}</Text>
+        <Pressable
+          onPress={onPress}
+          disabled={busy}
+          style={({ pressed }) => [styles.supremeBtn, busy && { opacity: 0.55 }, pressed && !busy && styles.pressed]}
+        >
+          <Text style={styles.supremeBtnText} maxFontSizeMultiplier={1.15}>
+            {busy ? "..." : "Resgatar"}
           </Text>
         </Pressable>
       </View>
@@ -312,7 +351,10 @@ function RewardCard({ item, onPress, busy }) {
             pressed && !busy && styles.pressed,
           ]}
         >
-          <Text style={[styles.storeBtnText, premium && styles.storeBtnTextDiamond]}>
+          <Text
+            maxFontSizeMultiplier={1.15}
+            style={[styles.storeBtnText, premium && styles.storeBtnTextDiamond]}
+          >
             {busy ? "..." : "Resgatar"}
           </Text>
         </Pressable>
@@ -335,6 +377,7 @@ export default function ShopScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const rewardRequests = useRef(createLatestRequest()).current;
 
   const applyWallet = useCallback((next) => {
     if (!next) return;
@@ -347,7 +390,9 @@ export default function ShopScreen() {
 
   const loadAll = useCallback(
     async (nextPeriod = period) => {
+      const current = rewardRequests.start();
       if (!token) {
+        if (!current()) return;
         setError(t("auth.sessionExpired"));
         setLoading(false);
         return;
@@ -361,6 +406,7 @@ export default function ShopScreen() {
           listRewardCatalog(token),
           listRewardRedemptions(token),
         ]);
+        if (!current()) return;
         applyWallet(me?.wallet);
         setMissionSummary(me?.missions || {});
         if (Array.isArray(me?.conversions?.pointsToGold) && me.conversions.pointsToGold.length) {
@@ -381,25 +427,30 @@ export default function ShopScreen() {
         setCatalog(Array.isArray(catalogList) ? catalogList : []);
         setRedemptions(Array.isArray(history) ? history : []);
       } catch (err) {
+        if (!current()) return;
         setMissions([]);
         setCatalog([]);
         setRedemptions([]);
         setError(mapRewardsError(err, t));
       } finally {
-        setLoading(false);
+        if (current()) setLoading(false);
       }
     },
-    [applyWallet, period, t, token],
+    [applyWallet, period, rewardRequests, t, token],
   );
 
   useFocusEffect(
     useCallback(() => {
       loadAll(period);
-    }, [loadAll, period]),
+      return () => {
+        rewardRequests.cancel();
+      };
+    }, [loadAll, period, rewardRequests]),
   );
 
   const refreshAfterAction = useCallback(
     async (nextWallet) => {
+      const current = rewardRequests.start();
       applyWallet(nextWallet);
       if (!token) return;
       const [me, missionList, history] = await Promise.all([
@@ -407,19 +458,24 @@ export default function ShopScreen() {
         listRewardMissions(token, period),
         listRewardRedemptions(token),
       ]);
+      if (!current()) return;
       applyWallet(me?.wallet);
       setMissionSummary(me?.missions || {});
       setMissions(Array.isArray(missionList) ? missionList.map(mapMission) : []);
       setRedemptions(Array.isArray(history) ? history : []);
     },
-    [applyWallet, period, token],
+    [applyWallet, period, rewardRequests, token],
   );
 
   const visibleMissions = missions;
   const missionRows = useMemo(() => chunkPairs(visibleMissions), [visibleMissions]);
-  const catalogRows = useMemo(() => chunkPairs(catalog), [catalog]);
-  const goldRows = useMemo(() => chunkPairs(goldPackages), [goldPackages]);
-  const diamondRows = useMemo(() => chunkPairs(DIAMOND_CONVERSIONS), []);
+  const supremeReward = useMemo(() => catalog.find(isSupremeReward) || null, [catalog]);
+  const catalogRows = useMemo(
+    () => chunkPairs(catalog.filter((item) => !isSupremeReward(item))),
+    [catalog],
+  );
+  const goldRows = goldPackages;
+  const diamondRows = DIAMOND_CONVERSIONS;
   const periodMeta = PERIOD_TABS.find((tab) => tab.id === period);
   const completedCount =
     missionSummary?.[period]?.completed ?? visibleMissions.filter((m) => m.completed).length;
@@ -613,20 +669,16 @@ export default function ShopScreen() {
                   <Text style={styles.groupTitle}>Conversão para Gold</Text>
                   <View style={styles.groupLine} />
                 </View>
-                {goldRows.map((row, index) => (
-                  <View key={`gold-row-${index}`} style={styles.gridRow}>
-                    {row.map((item) => (
-                      <View key={item.id} style={styles.gridCol}>
-                        <ConversionCard
-                          item={item}
-                          busy={busy}
-                          onPress={() => confirmConvert(item)}
-                        />
-                      </View>
-                    ))}
-                    {row.length === 1 ? <View style={styles.gridCol} /> : null}
-                  </View>
-                ))}
+                <View style={styles.conversionList}>
+                  {goldRows.map((item) => (
+                    <ConversionCard
+                      key={item.id}
+                      item={item}
+                      busy={busy}
+                      onPress={() => confirmConvert(item)}
+                    />
+                  ))}
+                </View>
               </View>
 
               <View style={styles.economyGroup}>
@@ -634,16 +686,11 @@ export default function ShopScreen() {
                   <Text style={styles.groupTitle}>Conversão para Diamond</Text>
                   <View style={styles.groupLine} />
                 </View>
-                {diamondRows.map((row, index) => (
-                  <View key={`diamond-row-${index}`} style={styles.gridRow}>
-                    {row.map((item) => (
-                      <View key={item.id} style={styles.gridCol}>
-                        <ConversionCard item={item} diamond />
-                      </View>
-                    ))}
-                    {row.length === 1 ? <View style={styles.gridCol} /> : null}
-                  </View>
-                ))}
+                <View style={styles.conversionList}>
+                  {diamondRows.map((item) => (
+                    <ConversionCard key={item.id} item={item} diamond />
+                  ))}
+                </View>
               </View>
 
               <View style={styles.economyRule}>
@@ -672,6 +719,14 @@ export default function ShopScreen() {
               </View>
               <Text style={styles.sectionMeta}>{catalog.length} itens</Text>
             </View>
+
+            {supremeReward ? (
+              <SupremeReward
+                item={supremeReward}
+                busy={busy}
+                onPress={() => confirmRedeem(supremeReward)}
+              />
+            ) : null}
 
             {catalogRows.map((row, index) => (
               <View key={`store-row-${index}`} style={styles.gridRow}>
@@ -895,13 +950,13 @@ const styles = StyleSheet.create({
     borderColor: "rgba(217,173,63,0.34)",
     backgroundColor: "rgba(4,12,24,0.86)",
   },
-  missionImage: { width: "100%", aspectRatio: 300 / 332 },
+  missionImage: { width: "100%", aspectRatio: 257 / 348 },
   missionOverlay: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    height: "62%",
+    height: "46%",
   },
   missionBody: { position: "absolute", left: 10, right: 10, bottom: 10 },
   missionTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 6 },
@@ -949,17 +1004,28 @@ const styles = StyleSheet.create({
   groupTitle: { color: "#f0d273", fontSize: 14, fontWeight: "800" },
   groupLine: { flex: 1, height: 1, backgroundColor: "rgba(217,173,63,0.32)" },
 
+  conversionList: { gap: 10 },
   conversionCard: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 10,
     borderRadius: 13,
-    overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(217,173,63,0.24)",
     backgroundColor: "rgba(9,21,37,0.92)",
   },
   conversionCardDiamond: { borderColor: "rgba(78,178,255,0.28)" },
-  conversionArt: { width: "100%", aspectRatio: 1, backgroundColor: "#02050a" },
+  conversionArt: {
+    width: 88,
+    height: 88,
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: "#02050a",
+  },
   conversionImage: { width: "100%", height: "100%" },
-  conversionCopy: { padding: 10 },
+  conversionCopy: { flex: 1, minWidth: 0 },
   conversionKicker: {
     color: "#8494a8",
     fontSize: 8,
@@ -973,8 +1039,10 @@ const styles = StyleSheet.create({
   conversionBonus: { color: BLUE2, fontSize: 9, fontWeight: "800", marginTop: 4 },
   conversionHint: { color: "#8e9db0", fontSize: 9, lineHeight: 13, marginTop: 4 },
   conversionBtn: {
+    alignSelf: "flex-start",
     marginTop: 8,
-    paddingVertical: 7,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 7,
     borderWidth: 1,
     borderColor: "rgba(217,173,63,0.48)",
@@ -1002,6 +1070,44 @@ const styles = StyleSheet.create({
   ruleGold: { color: GOLD2, fontWeight: "800" },
   ruleBlue: { color: BLUE2, fontWeight: "800" },
 
+  supremeCard: {
+    width: "100%",
+    marginBottom: 14,
+    borderRadius: 18,
+    overflow: "hidden",
+    borderWidth: 1.5,
+    borderColor: "#f0cf70",
+    backgroundColor: "#070b12",
+    shadowColor: "#d9ad3f",
+    shadowOpacity: 0.55,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
+  },
+  supremeArt: { width: "100%", aspectRatio: 1, backgroundColor: "#05070c" },
+  supremeImage: { width: "100%", height: "100%" },
+  supremeShade: { position: "absolute", left: 0, right: 0, bottom: 0, height: "28%" },
+  supremeBody: { paddingHorizontal: 14, paddingVertical: 12, gap: 4 },
+  supremeKicker: {
+    color: GOLD2,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
+  supremeTitle: { color: Colors.text, fontSize: 20, fontWeight: "800" },
+  supremeDesc: { color: "#b8c5d5", fontSize: 12, lineHeight: 17 },
+  supremePrice: { color: GOLD2, fontSize: 14, fontWeight: "800", marginTop: 4 },
+  supremeBtn: {
+    alignSelf: "flex-start",
+    marginTop: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 9,
+    backgroundColor: GOLD,
+  },
+  supremeBtnText: { color: "#171106", fontWeight: "800", fontSize: 12 },
+
   storeItem: {
     borderRadius: 12,
     overflow: "hidden",
@@ -1028,8 +1134,10 @@ const styles = StyleSheet.create({
   storeCost: { color: GOLD2, fontWeight: "800", fontSize: 12, marginTop: 4 },
   storeCostDiamond: { color: BLUE2 },
   storeBtn: {
-    marginTop: 10,
-    paddingVertical: 10,
+    alignSelf: "flex-start",
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 9,
     alignItems: "center",
     borderWidth: 1,

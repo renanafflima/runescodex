@@ -1,6 +1,6 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { fetchMe, loginUser, registerUser } from "@/src/api/auth";
+import { fetchMe, loginUser, logoutUser, registerUser } from "@/src/api/auth";
 import {
   createCharacter,
   deleteCharacter,
@@ -75,11 +75,17 @@ export function AuthProvider({ children }) {
     await persistToken("");
   }, [persistToken]);
 
-  const loadCharacters = useCallback(async (authToken) => {
+  const characterLoads = useRef(0);
+
+  const loadCharacters = useCallback(async (authToken, options) => {
+    const requestId = ++characterLoads.current;
+    const stillCurrent = () =>
+      requestId === characterLoads.current && (options?.isCurrent ? options.isCurrent() : true);
     const [list, active] = await Promise.all([
       listCharacters(authToken),
       getActiveCharacter(authToken),
     ]);
+    if (!stillCurrent()) return;
     setCharacters(Array.isArray(list) ? list : []);
     setActive(active || null);
   }, []);
@@ -153,8 +159,15 @@ export function AuthProvider({ children }) {
   );
 
   const logout = useCallback(async () => {
+    if (token) {
+      try {
+        await logoutUser(token);
+      } catch {
+        // Local session is cleared even when the server is unreachable.
+      }
+    }
     await clearSession();
-  }, [clearSession]);
+  }, [clearSession, token]);
 
   const refreshMe = useCallback(async () => {
     if (!token) return;
@@ -233,6 +246,11 @@ export function AuthProvider({ children }) {
     [clearSession, token]
   );
 
+  const reloadCharacters = useCallback((options) => {
+    if (!token) return Promise.resolve();
+    return loadCharacters(token, options);
+  }, [loadCharacters, token]);
+
   const value = useMemo(
     () => ({
       isReady,
@@ -249,7 +267,7 @@ export function AuthProvider({ children }) {
       deleteCharacter: remove,
       setActiveCharacter: activate,
       fetchCharacter,
-      reloadCharacters: () => (token ? loadCharacters(token) : Promise.resolve()),
+      reloadCharacters,
       token,
     }),
     [
@@ -258,11 +276,11 @@ export function AuthProvider({ children }) {
       characters,
       create,
       fetchCharacter,
-      loadCharacters,
       login,
       logout,
       refreshMe,
       register,
+      reloadCharacters,
       remove,
       token,
       update,

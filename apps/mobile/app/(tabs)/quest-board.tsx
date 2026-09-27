@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -14,11 +14,13 @@ import {
   ImageBackground,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useAppStore } from "../../src/store/AppStore";
 import { useI18n } from "@/src/i18n";
 import { Colors as COLORS } from "@/constants/theme";
 import AppScreen from "@/components/ui/AppScreen";
+import { startWhileFocused } from "@/src/runtime/focusWork";
 
 const TYPES = ["Hunt", "Streamer", "Serviceiro", "Suggestion", "Quest", "Items", "Other"];
 const STATUS = ["all", "open", "resolved"];
@@ -64,16 +66,20 @@ export default function QuestBoardScreen() {
 
   const glow = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(glow, { toValue: 1, duration: 1400, useNativeDriver: true }),
-        Animated.timing(glow, { toValue: 0, duration: 1400, useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [glow]);
+  useFocusEffect(
+    useCallback(() => {
+      return startWhileFocused(true, () => {
+        const loop = Animated.loop(
+          Animated.sequence([
+            Animated.timing(glow, { toValue: 1, duration: 1400, useNativeDriver: true }),
+            Animated.timing(glow, { toValue: 0, duration: 1400, useNativeDriver: true }),
+          ])
+        );
+        loop.start();
+        return () => loop.stop();
+      });
+    }, [glow])
+  );
 
   const glowScale = glow.interpolate({
     inputRange: [0, 1],

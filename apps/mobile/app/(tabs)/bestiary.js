@@ -13,6 +13,7 @@ import {
 import { useI18n } from "@/src/i18n";
 import { Colors as COLORS } from "@/constants/theme";
 import AppScreen from "@/components/ui/AppScreen";
+import { openHttpsUrl } from "@/src/security/https-url";
 
 const youtubeIcon = require("../../assets/ui/youtube.png");
 const bestiaryBg = require("@/assets/runescodex/bestiary/bestiario_background.webp");
@@ -20,12 +21,7 @@ const bestiaryBg = require("@/assets/runescodex/bestiary/bestiario_background.we
 const DIFFS = ["All", "Easy", "Medium", "Hard", "Very Hard"];
 
 async function openUrl(url) {
-  if (!url) return;
-  try {
-    await Linking.openURL(url);
-  } catch {
-    // ignore
-  }
+  await openHttpsUrl(Linking, url);
 }
 
 // Imagens das criaturas

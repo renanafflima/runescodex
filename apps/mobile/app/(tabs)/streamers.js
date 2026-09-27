@@ -7,6 +7,7 @@ import AppScreen from "@/components/ui/AppScreen";
 import AppCard from "@/components/ui/AppCard";
 import AppButton from "@/components/ui/AppButton";
 import EmptyState from "@/components/ui/EmptyState";
+import { openHttpsUrl } from "@/src/security/https-url";
 
 export default function StreamersScreen() {
   const { t } = useI18n();
@@ -54,10 +55,10 @@ export default function StreamersScreen() {
             </View>
             <View style={styles.actions}>
               {item.youtube ? (
-                <AppButton label="YouTube" variant="secondary" onPress={() => Linking.openURL(item.youtube)} />
+                <AppButton label="YouTube" variant="secondary" onPress={() => openHttpsUrl(Linking, item.youtube)} />
               ) : null}
               {item.twitch ? (
-                <AppButton label="Twitch" variant="ghost" onPress={() => Linking.openURL(item.twitch)} />
+                <AppButton label="Twitch" variant="ghost" onPress={() => openHttpsUrl(Linking, item.twitch)} />
               ) : null}
             </View>
           </AppCard>

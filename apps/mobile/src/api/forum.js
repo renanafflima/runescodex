@@ -1,4 +1,5 @@
 import { apiRequest } from "./client";
+import { invalidateRewardReads } from "./rewardReads";
 
 function withQuery(path, params = {}) {
   const search = new URLSearchParams();
@@ -10,28 +11,32 @@ function withQuery(path, params = {}) {
   return query ? `${path}?${query}` : path;
 }
 
-export function listForumThreads({ status } = {}, token) {
-  return apiRequest(withQuery("/forum", { status }), { token });
+export function listForumThreads({ status, page, limit } = {}, token) {
+  return apiRequest(withQuery("/forum", { status, page, limit }), { token });
 }
 
 export function getForumThread(id, token) {
   return apiRequest(`/forum/${encodeURIComponent(id)}`, { token });
 }
 
-export function createForumThread(token, payload) {
-  return apiRequest("/forum", {
+export async function createForumThread(token, payload) {
+  const thread = await apiRequest("/forum", {
     method: "POST",
     token,
     body: payload,
   });
+  invalidateRewardReads(token);
+  return thread;
 }
 
-export function createForumReply(token, id, payload) {
-  return apiRequest(`/forum/${encodeURIComponent(id)}/replies`, {
+export async function createForumReply(token, id, payload) {
+  const thread = await apiRequest(`/forum/${encodeURIComponent(id)}/replies`, {
     method: "POST",
     token,
     body: payload,
   });
+  invalidateRewardReads(token);
+  return thread;
 }
 
 export function closeForumThread(token, id) {

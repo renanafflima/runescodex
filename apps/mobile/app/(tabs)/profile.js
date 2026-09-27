@@ -18,7 +18,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect } from "expo-router";
 import { useAuth } from "@/src/auth/AuthContext";
 import { useI18n } from "@/src/i18n";
-import { Colors, Radius, Spacing, Type } from "@/constants/theme";
+import { Colors, Radius, Type } from "@/constants/theme";
 import AppScreen from "@/components/ui/AppScreen";
 import { getProfileFrame } from "@/src/profile/getProfileFrame";
 
@@ -26,8 +26,15 @@ const GOLD = "#d6a84f";
 const GOLD2 = "#f0cb76";
 const BLUE = "#77a9c8";
 const LINE = "rgba(157,180,201,0.20)";
-const AVATAR_SIZE = 76;
-const FRAME_SIZE = 100;
+function avatarSizeFor(width) {
+  return Math.round(Math.min(92, Math.max(80, width * 0.22)));
+}
+
+function chunkRows(list, size) {
+  const rows = [];
+  for (let i = 0; i < list.length; i += size) rows.push(list.slice(i, i + size));
+  return rows;
+}
 
 const backgroundProfile = require("../../assets/profile/background_profile.png");
 const heroProfile = require("../../assets/profile/hero_profile.png");
@@ -119,14 +126,18 @@ export default function ProfileScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      reloadCharacters();
+      let active = true;
+      reloadCharacters({ isCurrent: () => active });
+      return () => {
+        active = false;
+      };
     }, [reloadCharacters]),
   );
 
-  const columns = width >= 720 ? 3 : 2;
-  const cardGap = 10;
-  const horizontalPad = Spacing.lg * 2;
-  const cardWidth = Math.floor((width - horizontalPad - cardGap * (columns - 1)) / columns);
+  const achievementColumns = width < 680 ? 2 : width < 900 ? 3 : 4;
+  const achievementRows = chunkRows(ACHIEVEMENTS, achievementColumns);
+  const avatarSize = avatarSizeFor(width);
+  const frameSize = Math.round(avatarSize * 1.42);
   const unlockedIds = unlockedAchievementIds();
   const unlockedCount = unlockedIds.length;
 
@@ -233,30 +244,58 @@ export default function ProfileScreen() {
           <View style={styles.hero}>
             <Image source={heroProfile} style={styles.heroArt} resizeMode="cover" />
             <LinearGradient
-              colors={["rgba(4,9,14,0.15)", "rgba(4,9,14,0.55)", "rgba(4,9,14,0.92)"]}
+              colors={["rgba(4,9,14,0.20)", "rgba(4,9,14,0.08)", "rgba(4,9,14,0.88)"]}
+              locations={[0, 0.42, 1]}
               style={styles.heroShade}
             />
-            <View style={styles.heroContent}>
+            <View
+              style={[
+                styles.heroContent,
+                {
+                  paddingHorizontal: Math.round((frameSize - avatarSize) / 2) + 8,
+                  paddingBottom: Math.round((frameSize - avatarSize) / 2) + 6,
+                },
+              ]}
+            >
               <Pressable
                 onPress={chooseAvatar}
                 accessibilityRole="button"
                 accessibilityLabel={t("profile.avatarHint")}
-                style={styles.avatarWrap}
+                style={[styles.avatarWrap, { width: avatarSize, height: avatarSize }]}
               >
                 <Image
                   source={getProfileFrame(unlockedCount)}
-                  style={styles.avatarFrame}
+                  style={[
+                    styles.avatarFrame,
+                    {
+                      width: frameSize,
+                      height: frameSize,
+                      marginLeft: -((frameSize - avatarSize) / 2),
+                      marginTop: -((frameSize - avatarSize) / 2),
+                    },
+                  ]}
                   resizeMode="contain"
                 />
                 {localAvatarUri ? (
-                  <Image source={{ uri: localAvatarUri }} style={styles.avatar} />
+                  <Image
+                    source={{ uri: localAvatarUri }}
+                    style={[styles.avatar, { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }]}
+                    resizeMode="cover"
+                  />
                 ) : (
-                  <View style={styles.avatarFallback}>
-                    <Text style={styles.avatarLetter}>{accountInitial(user?.email)}</Text>
+                  <View
+                    style={[
+                      styles.avatarFallback,
+                      { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 },
+                    ]}
+                  >
+                    <Text style={[styles.avatarLetter, { fontSize: Math.round(avatarSize * 0.38) }]}>
+                      {accountInitial(user?.email)}
+                    </Text>
                   </View>
                 )}
                 <View style={styles.avatarBadge}>
-                  <Ionicons name="camera-outline" size={14} color={GOLD2} />
+                  <Ionicons name="camera-outline" size={13} color={GOLD2} />
                 </View>
               </Pressable>
               <View style={styles.identity}>
@@ -276,10 +315,11 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t("profile.journeyTitle")}</Text>
             <View style={styles.panel}>
-              <View style={styles.levelRow}>
-                <Text style={styles.levelValue}>
-                  {level != null ? `${t("profile.levelLabel")} ${level}` : t("characters.noneActive")}
-                </Text>
+              <Text style={styles.levelValue} numberOfLines={2}>
+                {level != null ? `${t("profile.levelLabel")} ${level}` : t("characters.noneActive")}
+              </Text>
+              <View style={styles.progressTrack}>
+                <View style={styles.progressFill} />
               </View>
               <View style={styles.xpRow}>
                 <Text style={styles.xpLabel}>{t("profile.xpCurrent")}</Text>
@@ -299,29 +339,34 @@ export default function ProfileScreen() {
                 {t("profile.achievementsCount", { count: unlockedCount })}
               </Text>
             </View>
-            <View style={[styles.grid, { gap: cardGap }]}>
-              {ACHIEVEMENTS.map((item) => {
-                const unlocked = unlockedIds.includes(item.id);
-                return (
-                  <View
-                    key={item.id}
-                    accessibilityLabel={unlocked ? item.id : t("profile.lockedAchievement")}
-                    style={[
-                      styles.achievement,
-                      { width: cardWidth, height: Math.round(cardWidth * 1.35) },
-                      unlocked && styles.achievementUnlocked,
-                    ]}
-                  >
-                    {unlocked ? (
-                      <Image source={item.image} style={styles.achievementArt} resizeMode="cover" />
-                    ) : (
-                      <View style={styles.lockWrap}>
-                        <Ionicons name="lock-closed" size={22} color="rgba(157,180,201,0.55)" />
+            <View style={styles.grid}>
+              {achievementRows.map((row, rowIndex) => (
+                <View key={`achievement-row-${rowIndex}`} style={styles.gridRow}>
+                  {row.map((item) => {
+                    const unlocked = unlockedIds.includes(item.id);
+                    return (
+                      <View
+                        key={item.id}
+                        accessibilityLabel={unlocked ? item.id : t("profile.lockedAchievement")}
+                        style={[styles.achievement, unlocked && styles.achievementUnlocked]}
+                      >
+                        <Image source={item.image} style={styles.achievementArt} resizeMode="contain" />
+                        {!unlocked ? <View style={styles.lockShade} /> : null}
+                        {!unlocked ? (
+                          <View style={styles.lockBadge}>
+                            <Ionicons name="lock-closed" size={13} color="rgba(232,237,241,0.92)" />
+                          </View>
+                        ) : null}
                       </View>
-                    )}
-                  </View>
-                );
-              })}
+                    );
+                  })}
+                  {row.length < achievementColumns
+                    ? Array.from({ length: achievementColumns - row.length }, (_, index) => (
+                        <View key={`achievement-spacer-${index}`} style={styles.achievementSpacer} />
+                      ))
+                    : null}
+                </View>
+              ))}
             </View>
           </View>
 
@@ -345,11 +390,15 @@ export default function ProfileScreen() {
                     {isActive ? (
                       <View style={styles.activePill}>
                         <View style={styles.activeDot} />
-                        <Text style={styles.activeText}>{t("characters.active")}</Text>
+                        <Text style={styles.activeText} numberOfLines={1}>
+                          {t("characters.active")}
+                        </Text>
                       </View>
                     ) : (
                       <Pressable onPress={() => activate(item)} style={styles.activateBtn}>
-                        <Text style={styles.activateText}>{t("characters.setActive")}</Text>
+                        <Text style={styles.activateText} numberOfLines={1} maxFontSizeMultiplier={1.15}>
+                          {t("characters.setActive")}
+                        </Text>
                       </Pressable>
                     )}
                     <Pressable
@@ -435,49 +484,41 @@ function Field({ label, ...props }) {
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
-  content: { padding: Spacing.lg, gap: 18, paddingBottom: 36 },
+  content: { paddingHorizontal: 10, paddingTop: 8, gap: 12, paddingBottom: 36 },
   hero: {
-    minHeight: 220,
+    width: "100%",
+    aspectRatio: 1.7,
     borderRadius: 22,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: LINE,
+    justifyContent: "flex-end",
   },
-  heroArt: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" },
+  heroArt: { ...StyleSheet.absoluteFillObject },
   heroShade: { ...StyleSheet.absoluteFillObject },
   heroContent: {
-    flex: 1,
-    minHeight: 220,
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 14,
-    padding: 18,
+    paddingHorizontal: 18,
+    paddingBottom: 16,
+    paddingTop: 16,
   },
   avatarWrap: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
     alignItems: "center",
     justifyContent: "center",
     overflow: "visible",
   },
   avatarFrame: {
     position: "absolute",
-    width: FRAME_SIZE,
-    height: FRAME_SIZE,
     zIndex: 0,
   },
   avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
     borderWidth: 2,
     borderColor: GOLD,
     zIndex: 1,
   },
   avatarFallback: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
     borderWidth: 2,
     borderColor: GOLD,
     backgroundColor: "#10202c",
@@ -485,7 +526,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 1,
   },
-  avatarLetter: { color: GOLD2, fontSize: 28, fontWeight: "700" },
+  avatarLetter: { color: GOLD2, fontWeight: "700" },
   avatarBadge: {
     position: "absolute",
     right: -2,
@@ -508,48 +549,81 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
     textTransform: "uppercase",
   },
-  heroName: { color: Colors.text, fontSize: 26, fontWeight: "700", marginTop: 4 },
-  heroMeta: { color: BLUE, fontSize: Type.body, marginTop: 4 },
-  section: { gap: 12 },
+  heroName: { color: Colors.text, fontSize: 22, fontWeight: "700", marginTop: 2 },
+  heroMeta: { color: BLUE, fontSize: 13, marginTop: 2 },
+  section: {
+    gap: 10,
+    borderWidth: 1,
+    borderColor: LINE,
+    borderRadius: 18,
+    backgroundColor: "rgba(4,9,14,0.55)",
+    padding: 12,
+  },
   sectionHead: {
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
     gap: 10,
   },
-  sectionTitle: { color: Colors.text, fontSize: 20, fontWeight: "700", flexShrink: 1 },
+  sectionTitle: { color: Colors.text, fontSize: 18, fontWeight: "700", flexShrink: 1 },
   sectionMeta: { color: Colors.textMuted, fontSize: Type.secondary },
   panel: {
     borderWidth: 1,
     borderColor: LINE,
-    borderRadius: 16,
-    backgroundColor: "rgba(4,9,14,0.55)",
-    padding: 16,
-    gap: 10,
+    borderRadius: 14,
+    backgroundColor: "rgba(3,8,12,0.45)",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
   },
-  levelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  levelValue: { color: GOLD2, fontSize: 18, fontWeight: "700" },
+  levelValue: { color: GOLD2, fontSize: 16, fontWeight: "700" },
+  progressTrack: {
+    height: 8,
+    borderRadius: 99,
+    overflow: "hidden",
+    backgroundColor: "#03070a",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  progressFill: { width: "0%", height: "100%", backgroundColor: GOLD2 },
   xpRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
   xpLabel: { color: Colors.textMuted, fontSize: Type.secondary },
   xpValue: { color: Colors.textSecondary, fontSize: Type.secondary, fontWeight: "700" },
-  grid: { flexDirection: "row", flexWrap: "wrap" },
+  grid: { gap: 10 },
+  gridRow: { flexDirection: "row", gap: 10 },
   achievement: {
-    borderRadius: 16,
+    flex: 1,
+    aspectRatio: 1,
+    borderRadius: 14,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: LINE,
     backgroundColor: "#04080c",
   },
+  achievementSpacer: { flex: 1, aspectRatio: 1 },
   achievementUnlocked: { borderColor: "rgba(214,168,79,0.45)" },
-  achievementArt: { width: "100%", height: "100%" },
-  lockWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
+  achievementArt: { ...StyleSheet.absoluteFillObject },
+  lockShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.28)" },
+  lockBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.72)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+  },
   empty: { color: Colors.textSecondary, fontSize: Type.secondary },
   characterRow: {
-    minHeight: 64,
+    minHeight: 58,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingVertical: 10,
+    gap: 8,
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
@@ -562,14 +636,16 @@ const styles = StyleSheet.create({
     borderLeftColor: "#48be70",
   },
   characterCopy: { flex: 1, minWidth: 0, gap: 3 },
-  characterName: { color: "#f1e4c2", fontSize: 16, fontWeight: "700" },
+  characterName: { color: "#f1e4c2", fontSize: 15, fontWeight: "700" },
   characterMeta: { color: "#86a0b5", fontSize: 12 },
   activePill: {
+    flexGrow: 0,
+    flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: "rgba(72,190,112,0.48)",
@@ -584,7 +660,10 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   activateBtn: {
-    paddingHorizontal: 10,
+    flexGrow: 0,
+    flexShrink: 0,
+    alignSelf: "center",
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
@@ -599,7 +678,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   addRow: {
-    minHeight: 52,
+    minHeight: 46,
     borderRadius: 12,
     borderWidth: 1,
     borderStyle: "dashed",
@@ -655,7 +734,9 @@ const styles = StyleSheet.create({
   vocationTextOn: { color: GOLD2 },
   error: { color: Colors.danger, fontSize: Type.secondary },
   saveBtn: {
-    minHeight: 44,
+    alignSelf: "flex-start",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: Radius.md,
     alignItems: "center",
     justifyContent: "center",
@@ -663,7 +744,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(214,168,79,0.55)",
   },
-  saveText: { color: GOLD2, fontWeight: "800" },
-  cancelBtn: { minHeight: 40, alignItems: "center", justifyContent: "center" },
+  saveText: { color: GOLD2, fontWeight: "800", fontSize: 13 },
+  cancelBtn: { alignSelf: "flex-start", paddingVertical: 6, paddingHorizontal: 4 },
   cancelText: { color: Colors.textSecondary, fontWeight: "700" },
 });

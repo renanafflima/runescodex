@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -19,6 +19,9 @@ import { useI18n } from "@/src/i18n";
 import { Colors as COLORS, Radius } from "@/constants/theme";
 import AppScreen from "@/components/ui/AppScreen";
 import { listHunts } from "@/src/api/hunts";
+import { readPage } from "@/src/api/page";
+import { openHttpsUrl } from "@/src/security/https-url";
+import { createLatestRequest } from "@/src/runtime/focusWork";
 import {
   DIFFICULTIES,
   SORTS,
@@ -46,14 +49,7 @@ function includesQuery(value, query) {
 }
 
 async function openUrl(url) {
-  if (!url) return;
-  try {
-    const can = await Linking.canOpenURL(url);
-    if (can) await Linking.openURL(url);
-    else await Linking.openURL(url);
-  } catch {
-    // ignore
-  }
+  await openHttpsUrl(Linking, url);
 }
 
 function MetaRow({ icon, text, style }) {
@@ -83,33 +79,38 @@ export default function HuntsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [mapHunt, setMapHunt] = useState(null);
+  const huntRequests = useRef(createLatestRequest()).current;
 
   const loadHunts = useCallback(async () => {
+    const current = huntRequests.start();
     setLoading(true);
     setError("");
     try {
-      const level = toNumberOrNull(minLevel);
-      const data = await listHunts({
-        vocation: vocation === "Any" ? undefined : vocation,
-        difficulty: difficulty === "Any" ? undefined : difficulty,
-        level: level || undefined,
-      });
-      const mapped = (Array.isArray(data) ? data : []).map((hunt) =>
-        mapHuntListItem(hunt, vocation),
-      );
-      setHunts(mapped);
+      const data = await listHunts();
+      if (!current()) return;
+      const parsed = readPage(data);
+      setHunts(parsed.items);
     } catch (err) {
+      if (!current()) return;
       setHunts([]);
       setError(mapError(err, t));
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
-  }, [difficulty, minLevel, t, vocation]);
+  }, [huntRequests, t]);
 
   useFocusEffect(
     useCallback(() => {
       loadHunts();
-    }, [loadHunts]),
+      return () => {
+        huntRequests.cancel();
+      };
+    }, [huntRequests, loadHunts]),
+  );
+
+  const catalog = useMemo(
+    () => hunts.map((hunt) => mapHuntListItem(hunt, vocation)),
+    [hunts, vocation],
   );
 
   const filtered = useMemo(() => {
@@ -118,7 +119,10 @@ export default function HuntsScreen() {
     const profN = toNumberOrNull(minProfitH);
     const locN = toNumberOrNull(minLevel);
 
-    let arr = hunts.filter((h) => {
+    let arr = catalog.filter((h) => {
+      const matchVocation =
+        vocation === "Any" || (h.vocations || []).some((entry) => entry.vocation === vocation);
+      const matchDifficulty = difficulty === "Any" || h.difficulty === difficulty;
       const matchQ =
         !query ||
         includesQuery(h.name, query) ||
@@ -139,7 +143,7 @@ export default function HuntsScreen() {
             return true;
           })
         : true;
-      return matchQ && matchXp && matchProfit && matchLevel;
+      return matchVocation && matchDifficulty && matchQ && matchXp && matchProfit && matchLevel;
     });
 
     arr = [...arr].sort((a, b) => {
@@ -162,17 +166,14 @@ export default function HuntsScreen() {
     });
 
     return arr;
-  }, [hunts, minLevel, minProfitH, minXpH, q, sortBy]);
+  }, [catalog, difficulty, minLevel, minProfitH, minXpH, q, sortBy, vocation]);
 
   const mapSource = mapHunt ? resolveMapImage(mapHunt.mapImage, mapHunt.creature) : null;
 
   return (
     <AppScreen>
       <ImageBackground source={huntsBackground} resizeMode="cover" style={styles.bg}>
-        <LinearGradient
-          colors={["rgba(255,248,240,0.18)", "rgba(12,18,32,0.48)"]}
-          style={StyleSheet.absoluteFill}
-        />
+        <View style={styles.dim} />
         <FlatList
           data={error ? [] : filtered}
           keyExtractor={(item) => item.slug || item.id}
@@ -180,21 +181,37 @@ export default function HuntsScreen() {
           contentContainerStyle={styles.listContent}
           ListHeaderComponent={
             <View>
-              <Image source={huntsHero} style={styles.hero} resizeMode="cover" />
-              <View style={styles.headerWrap}>
-                <Text style={styles.title}>{t("hunts.title")}</Text>
-                <View style={styles.searchRow}>
-                  <TextInput
-                    value={q}
-                    onChangeText={setQ}
-                    placeholder={t("hunts.search")}
-                    placeholderTextColor={COLORS.textMuted}
-                    style={styles.searchInput}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
+              <View style={styles.hero}>
+                <Image source={huntsHero} style={styles.heroArt} resizeMode="cover" />
+                <LinearGradient
+                  colors={["rgba(5,8,14,0.05)", "rgba(5,8,14,0.25)", "rgba(5,8,14,0.88)"]}
+                  locations={[0, 0.45, 1]}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.heroCopy}>
+                  <Text style={styles.title}>{t("hunts.title")}</Text>
+                  <Text style={styles.subtitle} numberOfLines={2}>
+                    {t("hunts.subtitle")}
+                  </Text>
                 </View>
-                <Pressable onPress={() => setFiltersOpen((open) => !open)} hitSlop={8}>
+              </View>
+              <View style={styles.headerWrap}>
+                <View style={styles.searchCard}>
+                  <Text style={styles.searchTitle}>{t("hunts.title")}</Text>
+                  <View style={styles.searchRow}>
+                    <Ionicons name="search" size={16} color={COLORS.goldLight} />
+                    <TextInput
+                      value={q}
+                      onChangeText={setQ}
+                      placeholder={t("hunts.search")}
+                      placeholderTextColor={COLORS.textMuted}
+                      style={styles.searchInput}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+                </View>
+                <Pressable onPress={() => setFiltersOpen((open) => !open)} style={styles.filtersBtn}>
                   <Text style={styles.filtersToggle}>
                     {t("common.filters")} {filtersOpen ? "−" : "+"}
                   </Text>
@@ -204,7 +221,7 @@ export default function HuntsScreen() {
                     <Text style={styles.filterLabel}>{t("hunts.vocation")}</Text>
                     <View style={styles.chipsRow}>
                       {VOCS.map((v) => (
-                        <Pressable key={v} onPress={() => setVocation(v)}>
+                        <Pressable key={v} onPress={() => setVocation(v)} style={styles.chipBtn}>
                           <Text style={[styles.chip, vocation === v && styles.chipActive]}>{v}</Text>
                         </Pressable>
                       ))}
@@ -212,7 +229,7 @@ export default function HuntsScreen() {
                     <Text style={styles.filterLabel}>{t("hunts.difficulty")}</Text>
                     <View style={styles.chipsRow}>
                       {DIFFICULTIES.map((value) => (
-                        <Pressable key={value} onPress={() => setDifficulty(value)}>
+                        <Pressable key={value} onPress={() => setDifficulty(value)} style={styles.chipBtn}>
                           <Text style={[styles.chip, difficulty === value && styles.chipActive]}>
                             {value === "Any" ? value : formatDifficultyLabel(value)}
                           </Text>
@@ -249,7 +266,7 @@ export default function HuntsScreen() {
                     <Text style={styles.filterLabel}>{t("hunts.sort")}</Text>
                     <View style={styles.chipsRow}>
                       {SORTS.map((s) => (
-                        <Pressable key={s} onPress={() => setSortBy(s)}>
+                        <Pressable key={s} onPress={() => setSortBy(s)} style={styles.chipBtn}>
                           <Text style={[styles.chip, sortBy === s && styles.chipActive]}>{s}</Text>
                         </Pressable>
                       ))}
@@ -344,26 +361,39 @@ function HuntRow({ item, onPress, onOpenMap }) {
   const profitLabel = formatRate(item.profitH);
   const mapSource = resolveMapImage(item.mapImage, item.creature);
 
+  const art = item.creatureImage || huntsHero;
+
   return (
     <View style={styles.card}>
-      <View style={styles.cardTop}>
-        <Pressable onPress={onPress} style={styles.cardTitleHit} hitSlop={4}>
-          <Text style={styles.rowName} numberOfLines={2}>
-            {item.name}
-          </Text>
-        </Pressable>
-        <View style={styles.cardActions}>
-          {mapSource ? (
-            <Pressable onPress={onOpenMap} hitSlop={8} style={styles.iconBtn}>
-              <Ionicons name="map-outline" size={20} color={COLORS.goldLight} />
-            </Pressable>
-          ) : null}
-          {item.youtubeUrl ? (
-            <Pressable onPress={() => openUrl(item.youtubeUrl)} hitSlop={8} style={styles.iconBtn}>
-              <Image source={youtubeIcon} style={styles.ytIcon} resizeMode="contain" />
-            </Pressable>
-          ) : null}
+      <Pressable onPress={onPress} style={({ pressed }) => [pressed && styles.pressed]}>
+        <View style={styles.cardArt}>
+          <Image
+            source={art}
+            style={styles.cardImage}
+            resizeMode={item.creatureImage ? "contain" : "cover"}
+          />
+          <LinearGradient
+            colors={["rgba(5,8,14,0.05)", "rgba(5,8,14,0.82)"]}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.cardTitleRow} pointerEvents="box-none">
+            <Text style={styles.rowName} numberOfLines={2}>
+              {item.name}
+            </Text>
+          </View>
         </View>
+      </Pressable>
+      <View style={styles.cardActions}>
+        {mapSource ? (
+          <Pressable onPress={onOpenMap} hitSlop={8} style={styles.iconBtn}>
+            <Ionicons name="map-outline" size={16} color={COLORS.goldLight} />
+          </Pressable>
+        ) : null}
+        {item.youtubeUrl ? (
+          <Pressable onPress={() => openUrl(item.youtubeUrl)} hitSlop={8} style={styles.iconBtn}>
+            <Image source={youtubeIcon} style={styles.ytIcon} resizeMode="contain" />
+          </Pressable>
+        ) : null}
       </View>
 
       <Pressable onPress={onPress} style={({ pressed }) => [styles.cardBody, pressed && styles.pressed]}>
@@ -382,18 +412,56 @@ function HuntRow({ item, onPress, onOpenMap }) {
 }
 
 const styles = StyleSheet.create({
-  bg: { flex: 1 },
-  listContent: { paddingBottom: 120, flexGrow: 1 },
-  hero: { width: "100%", height: 168 },
-  headerWrap: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 8, gap: 10 },
-  title: { color: COLORS.text, fontSize: 26, fontWeight: "800" },
-  filtersToggle: { color: COLORS.goldLight, fontWeight: "800", fontSize: 14, letterSpacing: 0.4 },
+  bg: { flex: 1, backgroundColor: COLORS.bg },
+  dim: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(5,8,14,0.82)" },
+  listContent: { paddingBottom: 36, flexGrow: 1 },
+  hero: {
+    width: "100%",
+    aspectRatio: 1.5,
+    overflow: "hidden",
+    backgroundColor: "#070b12",
+    justifyContent: "flex-end",
+  },
+  heroArt: { ...StyleSheet.absoluteFillObject },
+  heroCopy: { paddingHorizontal: 16, paddingBottom: 16, paddingTop: 28 },
+  headerWrap: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8, gap: 10 },
+  title: { color: COLORS.text, fontSize: 28, fontWeight: "800" },
+  subtitle: { color: "#d6deea", fontSize: 13, lineHeight: 18, marginTop: 4 },
+  searchCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(212,167,44,0.32)",
+    backgroundColor: "rgba(8,14,24,0.92)",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  searchTitle: { color: COLORS.text, fontSize: 16, fontWeight: "800" },
+  filtersBtn: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(212,167,44,0.45)",
+    backgroundColor: "rgba(212,167,44,0.12)",
+  },
+  filtersToggle: { color: COLORS.goldLight, fontWeight: "800", fontSize: 12 },
   filters: { gap: 8, paddingTop: 4 },
-  searchRow: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(212,167,44,0.28)" },
-  searchInput: { color: COLORS.text, fontWeight: "700", paddingVertical: 8 },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  searchInput: { flex: 1, minWidth: 0, color: COLORS.text, fontWeight: "700", paddingVertical: 4 },
   filterLabel: { color: COLORS.textSecondary, fontWeight: "700", fontSize: 12, marginTop: 4 },
-  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 12, paddingRight: 8 },
-  chip: { color: COLORS.textMuted, fontWeight: "700", fontSize: 13 },
+  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chipBtn: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(212,167,44,0.28)",
+    backgroundColor: "rgba(8,14,24,0.72)",
+  },
+  chip: { color: COLORS.textMuted, fontWeight: "700", fontSize: 12 },
   chipActive: { color: COLORS.goldLight },
   inputsRow: { flexDirection: "row", gap: 10 },
   miniInput: {
@@ -410,28 +478,44 @@ const styles = StyleSheet.create({
   empty: { color: COLORS.textSecondary },
   retry: { color: COLORS.goldLight, fontWeight: "800", fontSize: 14 },
   card: {
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     marginBottom: 12,
-    padding: 14,
     borderRadius: Radius.lg,
-    backgroundColor: "rgba(17,24,39,0.72)",
+    overflow: "hidden",
+    backgroundColor: "rgba(10,16,28,0.94)",
     borderWidth: 1,
-    borderColor: COLORS.border,
-    gap: 6,
+    borderColor: "rgba(212,167,44,0.22)",
   },
-  cardTop: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
-  cardTitleHit: { flex: 1, minWidth: 0 },
-  cardBody: { gap: 6 },
-  cardActions: { flexDirection: "row", alignItems: "center", gap: 4 },
+  cardArt: {
+    width: "100%",
+    aspectRatio: 1.85,
+    backgroundColor: "#070b12",
+    justifyContent: "flex-end",
+  },
+  cardImage: { ...StyleSheet.absoluteFillObject },
+  cardTitleRow: {
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    paddingRight: 72,
+  },
+  cardBody: { gap: 6, paddingHorizontal: 12, paddingVertical: 10 },
+  cardActions: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
   iconBtn: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
   },
-  ytIcon: { width: 20, height: 20 },
+  ytIcon: { width: 18, height: 18 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8, minWidth: 0 },
-  rowName: { color: COLORS.text, fontSize: 18, fontWeight: "800" },
+  rowName: { color: COLORS.text, fontSize: 16, fontWeight: "800", flex: 1, minWidth: 0 },
   rowLoc: { color: COLORS.textSecondary, fontWeight: "600" },
   rowStat: { color: COLORS.text, fontWeight: "700", fontSize: 14, flex: 1, minWidth: 0 },
   pressed: { opacity: 0.88 },

@@ -1,3 +1,5 @@
+import { isSafeHttpsUrl } from "@/src/security/https-url";
+
 export const huntsBackground = require("@/assets/runescodex/hunts/hunts_background.webp");
 export const huntsHero = require("@/assets/runescodex/hunts/hunts_hero.webp");
 
@@ -234,11 +236,11 @@ function mapHuntCreature(item) {
 
 function mapHuntVideos(videos) {
   return (Array.isArray(videos) ? videos : [])
-    .filter((item) => item?.url)
+    .filter((item) => isSafeHttpsUrl(item?.url))
     .map((item) => ({
       id: item.id || item.url,
       title: item.title || null,
-      url: item.url,
+      url: item.url.trim(),
       channel: item.channel || null,
       isRecommended: Boolean(item.isRecommended),
     }));

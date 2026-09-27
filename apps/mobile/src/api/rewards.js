@@ -1,4 +1,5 @@
 import { apiRequest } from "./client";
+import { invalidateRewardReads, rewardReadKey, rewardReads } from "./rewardReads";
 
 function withQuery(path, params = {}) {
   const search = new URLSearchParams();
@@ -11,31 +12,37 @@ function withQuery(path, params = {}) {
 }
 
 export function getRewardsMe(token) {
-  return apiRequest("/rewards/me", { token });
+  const path = "/rewards/me";
+  return rewardReads.read(rewardReadKey(token, path), () => apiRequest(path, { token }));
 }
 
 export function listRewardMissions(token, period) {
-  return apiRequest(withQuery("/rewards/missions", { period }), { token });
+  const path = withQuery("/rewards/missions", { period });
+  return rewardReads.read(rewardReadKey(token, path), () => apiRequest(path, { token }));
 }
 
 export function listRewardCatalog(token) {
   return apiRequest("/rewards/catalog", { token });
 }
 
-export function convertRewards(token, conversion, amount) {
-  return apiRequest("/rewards/convert", {
+export async function convertRewards(token, conversion, amount) {
+  const wallet = await apiRequest("/rewards/convert", {
     method: "POST",
     token,
     body: { conversion, amount },
   });
+  invalidateRewardReads(token);
+  return wallet;
 }
 
-export function redeemReward(token, catalogItemId) {
-  return apiRequest("/rewards/redeem", {
+export async function redeemReward(token, catalogItemId) {
+  const result = await apiRequest("/rewards/redeem", {
     method: "POST",
     token,
     body: { catalogItemId },
   });
+  invalidateRewardReads(token);
+  return result;
 }
 
 export function listRewardRedemptions(token) {

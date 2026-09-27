@@ -1,18 +1,51 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from "expo-audio";
+import { useAudioPlayer, setAudioModeAsync } from "expo-audio";
+import { useFocusEffect } from "expo-router";
 import { useI18n } from "@/src/i18n";
 import { Colors, Radius, Spacing, Type } from "@/constants/theme";
 import AppScreen from "@/components/ui/AppScreen";
 import AppCard from "@/components/ui/AppCard";
+import { intervalWhileFocused } from "@/src/runtime/focusWork";
 
 const coverPlaceholder = require("@/assets/ui/music.png");
+const FOCUSED_UI_INTERVAL_MS = 500;
+const IDLE_PLAYER_INTERVAL_MS = 60_000;
+
+function readPlayerStatus(player) {
+  return {
+    playing: Boolean(player?.playing),
+    currentTime: Number(player?.currentTime) || 0,
+    duration: Number(player?.duration) || 0,
+    isLoaded: Boolean(player?.isLoaded),
+  };
+}
+
+function sameStatus(current, next) {
+  return (
+    current.playing === next.playing &&
+    current.currentTime === next.currentTime &&
+    current.duration === next.duration &&
+    current.isLoaded === next.isLoaded
+  );
+}
 
 export default function MusicDisplay() {
   const { t } = useI18n();
-  const player = useAudioPlayer(undefined, { updateInterval: 500 });
-  const status = useAudioPlayerStatus(player);
+  const player = useAudioPlayer(undefined, { updateInterval: IDLE_PLAYER_INTERVAL_MS });
+  const [status, setStatus] = useState(() => readPlayerStatus(player));
   const [volume, setVolume] = useState(1);
+
+  useFocusEffect(
+    useCallback(() => {
+      return intervalWhileFocused(true, FOCUSED_UI_INTERVAL_MS, () => {
+        setStatus((current) => {
+          const next = readPlayerStatus(player);
+          return sameStatus(current, next) ? current : next;
+        });
+      });
+    }, [player]),
+  );
 
   useEffect(() => {
     const configureAudio = async () => {

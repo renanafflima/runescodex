@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -18,6 +18,8 @@ import { useI18n } from "@/src/i18n";
 import { Colors as COLORS } from "@/constants/theme";
 import AppScreen from "@/components/ui/AppScreen";
 import { getHuntBySlug } from "@/src/api/hunts";
+import { createLatestRequest } from "@/src/runtime/focusWork";
+import { openHttpsUrl } from "@/src/security/https-url";
 import {
   charmIcon,
   damageIcon,
@@ -37,14 +39,7 @@ import {
 const youtubeIcon = require("@/assets/ui/youtube.png");
 
 async function openUrl(url) {
-  if (!url) return;
-  try {
-    const can = await Linking.canOpenURL(url);
-    if (can) await Linking.openURL(url);
-    else await Linking.openURL(url);
-  } catch {
-    // ignore
-  }
+  await openHttpsUrl(Linking, url);
 }
 
 function mapError(error, t) {
@@ -74,9 +69,12 @@ export default function HuntDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [mapOpen, setMapOpen] = useState(false);
+  const huntRequests = useRef(createLatestRequest()).current;
 
   const loadHunt = useCallback(async () => {
+    const current = huntRequests.start();
     if (!slug) {
+      if (!current()) return;
       setHunt(null);
       setError(t("hunts.empty"));
       setLoading(false);
@@ -86,19 +84,24 @@ export default function HuntDetailScreen() {
     setError("");
     try {
       const data = await getHuntBySlug(slug);
+      if (!current()) return;
       setHunt(mapHuntDetail(data));
     } catch (err) {
+      if (!current()) return;
       setHunt(null);
       setError(mapError(err, t));
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
-  }, [slug, t]);
+  }, [huntRequests, slug, t]);
 
   useFocusEffect(
     useCallback(() => {
       loadHunt();
-    }, [loadHunt]),
+      return () => {
+        huntRequests.cancel();
+      };
+    }, [huntRequests, loadHunt]),
   );
 
   const elements = useMemo(() => {

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -18,6 +18,8 @@ import { useAuth } from "@/src/auth/AuthContext";
 import { useI18n } from "@/src/i18n";
 import { getRewardsMe, listRewardMissions } from "@/src/api/rewards";
 import { Colors, Spacing, Type } from "@/constants/theme";
+import { isSafeHttpsUrl } from "@/src/security/https-url";
+import { createLatestRequest, intervalWhileFocused } from "@/src/runtime/focusWork";
 
 const appIcon = require("@/assets/ui/runescodex-icon.png");
 const homeBg = require("@/assets/runescodex/home/home_background.webp");
@@ -127,11 +129,11 @@ function mapOpenMission(row: HomeMission): HomeMission | null {
 }
 
 async function openExternalUrl(url?: string) {
-  if (!url || !/^https?:\/\//i.test(url)) return;
+  if (!isSafeHttpsUrl(url)) return;
   try {
-    const can = await Linking.canOpenURL(url);
-    if (can) await Linking.openURL(url);
-    else await Linking.openURL(url);
+    const can = await Linking.canOpenURL(url as string);
+    if (can) await Linking.openURL(url as string);
+    else await Linking.openURL(url as string);
   } catch {
     // ignore
   }
@@ -154,13 +156,13 @@ export default function HomeTab() {
   const [openMissions, setOpenMissions] = useState<HomeMission[]>([]);
   const [walletPoints, setWalletPoints] = useState<number | null>(null);
   const [missionsError, setMissionsError] = useState("");
-  const rewardsRequestRef = useRef(0);
+  const rewardsRequests = useRef(createLatestRequest()).current;
   const shortcutWidth = Math.floor((contentW - 10) / 2);
   const shortcutHeight = Math.max(124, Math.round(shortcutWidth * 0.78));
 
   const loadOpenMissions = useCallback(async () => {
     if (!token) return;
-    const requestId = ++rewardsRequestRef.current;
+    const current = rewardsRequests.start();
     setMissionsError("");
     const describeError = (error: unknown) => {
       const status = (error as { status?: number })?.status;
@@ -171,14 +173,14 @@ export default function HomeTab() {
     };
     try {
       const me = await getRewardsMe(token);
-      if (requestId !== rewardsRequestRef.current) return;
+      if (!current()) return;
       const pointsValue = Number(me?.wallet?.points);
       setWalletPoints(Number.isFinite(pointsValue) ? pointsValue : null);
 
       const settled = await Promise.allSettled(
         MISSION_PERIODS.map((period) => listRewardMissions(token, period)),
       );
-      if (requestId !== rewardsRequestRef.current) return;
+      if (!current()) return;
 
       const open: HomeMission[] = [];
       let missionError: unknown = null;
@@ -196,31 +198,34 @@ export default function HomeTab() {
       setOpenMissions(open);
       if (missionError && open.length === 0) setMissionsError(describeError(missionError));
     } catch (error) {
-      if (requestId !== rewardsRequestRef.current) return;
+      if (!current()) return;
       setOpenMissions([]);
       setWalletPoints(null);
       setMissionsError(describeError(error));
     }
-  }, [t, token]);
+  }, [rewardsRequests, t, token]);
 
   useFocusEffect(
     useCallback(() => {
       loadOpenMissions();
-    }, [loadOpenMissions]),
+      return () => {
+        rewardsRequests.cancel();
+      };
+    }, [loadOpenMissions, rewardsRequests]),
   );
 
-  useEffect(() => {
-    if (HOME_BANNERS.length < 2) return;
-    const timer = setInterval(() => {
-      if (draggingRef.current) return;
-      setBannerIndex((current) => {
-        const next = (current + 1) % HOME_BANNERS.length;
-        bannerRef.current?.scrollTo({ x: next * screenW, animated: true });
-        return next;
+  useFocusEffect(
+    useCallback(() => {
+      return intervalWhileFocused(HOME_BANNERS.length >= 2, 5000, () => {
+        if (draggingRef.current) return;
+        setBannerIndex((current) => {
+          const next = (current + 1) % HOME_BANNERS.length;
+          bannerRef.current?.scrollTo({ x: next * screenW, animated: true });
+          return next;
+        });
       });
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [screenW]);
+    }, [screenW]),
+  );
 
   function onBannerScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
     const next = Math.round(event.nativeEvent.contentOffset.x / screenW);

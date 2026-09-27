@@ -17,3 +17,7 @@ export function loginUser(email, password) {
 export function fetchMe(token) {
   return apiRequest("/auth/me", { token });
 }
+
+export function logoutUser(token) {
+  return apiRequest("/auth/logout", { method: "POST", token });
+}

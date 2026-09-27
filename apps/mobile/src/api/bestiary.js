@@ -10,12 +10,6 @@ function withQuery(path, params = {}) {
   return query ? `${path}?${query}` : path;
 }
 
-export function listHunts({ vocation, difficulty, location, level, page, limit } = {}) {
-  return apiRequest(
-    withQuery("/hunts", { vocation, difficulty, location, level, page, limit }),
-  );
-}
-
-export function getHuntBySlug(slug) {
-  return apiRequest(`/hunts/${encodeURIComponent(slug)}`);
+export function listBestiary({ difficulty, page, limit } = {}, token) {
+  return apiRequest(withQuery("/bestiary", { difficulty, page, limit }), { token });
 }
