@@ -9,10 +9,12 @@ import { ForumModule } from './forum/forum.module';
 import { HuntsModule } from './hunts/hunts.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RewardsModule } from './rewards/rewards.module';
+import { SecurityModule } from './common/security.module';
 
 @Module({
   imports: [
     PrismaModule,
+    SecurityModule,
     AuthModule,
     CharactersModule,
     HuntsModule,
