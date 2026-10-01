@@ -46,6 +46,7 @@ enum Vocation {
   RP
   ED
   MS
+  EM
 }
 
 /// Offensive / unique-slot charms. All values in this enum occupy one charm slot per hunt.
