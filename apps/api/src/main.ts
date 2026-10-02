@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { corsOptions } from './common/cors';
 
 function resolvePort(): number {
   const raw = process.env.PORT;
@@ -17,24 +18,10 @@ function resolvePort(): number {
   return port;
 }
 
-function resolveCorsOrigin(): boolean | string[] {
-  const configured = process.env.CORS_ORIGINS?.split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-
-  if (configured && configured.length > 0) {
-    return configured;
-  }
-
-  return process.env.NODE_ENV === 'production' ? false : true;
-}
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableShutdownHooks();
-  app.enableCors({
-    origin: resolveCorsOrigin(),
-  });
+  app.enableCors(corsOptions());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
