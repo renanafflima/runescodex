@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { CatalogSlugPipe } from '../common/catalog-slug.pipe';
 import type { AuthUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
@@ -30,7 +31,10 @@ export class BestiaryController {
 
   @Get(':slug')
   @UseGuards(OptionalJwtAuthGuard)
-  findOne(@Param('slug') slug: string, @CurrentUser() user?: AuthUser | null) {
+  findOne(
+    @Param('slug', CatalogSlugPipe) slug: string,
+    @CurrentUser() user?: AuthUser | null,
+  ) {
     return this.bestiaryService.findBySlug(slug, user?.userId);
   }
 
@@ -38,7 +42,7 @@ export class BestiaryController {
   @UseGuards(JwtAuthGuard)
   updateProgress(
     @CurrentUser() user: AuthUser,
-    @Param('slug') slug: string,
+    @Param('slug', CatalogSlugPipe) slug: string,
     @Body() dto: UpdateBestiaryProgressDto,
   ) {
     return this.bestiaryService.updateProgress(user.userId, slug, dto);

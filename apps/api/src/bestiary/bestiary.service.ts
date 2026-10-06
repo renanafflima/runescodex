@@ -1,6 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service';
+import { publicHttpsUrl } from '../common/https-url';
+import { pageResult, resolvePage } from '../common/pagination';
 import { ListBestiaryQueryDto } from './dto/list-bestiary-query.dto';
 import { UpdateBestiaryProgressDto } from './dto/update-bestiary-progress.dto';
 
@@ -31,82 +37,61 @@ const CREATURE_LIST_SELECT = {
   },
 } satisfies Prisma.CreatureSelect;
 
+const BESTIARY_ENTRY_SELECT = {
+  category: true,
+  killsRequired: true,
+  estimatedKillsPerHour: true,
+  charmPoints: true,
+} as const;
+
 @Injectable()
 export class BestiaryService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: ListBestiaryQueryDto, userId?: string) {
-    const entries = await this.prisma.bestiaryEntry.findMany({
-      where: {
-        creature: {
-          isActive: true,
-          ...(query.difficulty ? { difficulty: query.difficulty } : {}),
+    const where = this.creatureWhere(query);
+    const { page, limit, skip } = resolvePage(query);
+    const [total, creatures] = await Promise.all([
+      this.prisma.creature.count({ where }),
+      this.prisma.creature.findMany({
+        where,
+        select: {
+          ...CREATURE_LIST_SELECT,
+          bestiaryEntry: { select: BESTIARY_ENTRY_SELECT },
+          userProgress: this.progressSelect(userId),
         },
-      },
-      select: {
-        category: true,
-        killsRequired: true,
-        estimatedKillsPerHour: true,
-        charmPoints: true,
-        creature: {
-          select: {
-            ...CREATURE_LIST_SELECT,
-            userProgress: userId
-              ? {
-                  where: { userId },
-                  select: {
-                    kills: true,
-                    completed: true,
-                    completedAt: true,
-                  },
-                  take: 1,
-                }
-              : false,
-          },
-        },
-      },
-      orderBy: { creature: { name: 'asc' } },
-    });
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        skip,
+        take: limit,
+      }),
+    ]);
 
-    return entries.map((entry) => this.mapEntry(entry, userId));
+    return pageResult(
+      creatures.map((creature) => this.mapCreature(creature, userId)),
+      total,
+      page,
+      limit,
+    );
   }
 
   async findBySlug(slug: string, userId?: string) {
-    const entry = await this.prisma.bestiaryEntry.findFirst({
-      where: {
-        creature: { slug, isActive: true },
-      },
+    const creature = await this.prisma.creature.findFirst({
+      where: { slug, isActive: true },
       select: {
-        notes: true,
-        category: true,
-        killsRequired: true,
-        estimatedKillsPerHour: true,
-        charmPoints: true,
-        creature: {
-          select: {
-            ...CREATURE_LIST_SELECT,
-            description: true,
-            userProgress: userId
-              ? {
-                  where: { userId },
-                  select: {
-                    kills: true,
-                    completed: true,
-                    completedAt: true,
-                  },
-                  take: 1,
-                }
-              : false,
-          },
+        ...CREATURE_LIST_SELECT,
+        description: true,
+        bestiaryEntry: {
+          select: { ...BESTIARY_ENTRY_SELECT, notes: true },
         },
+        userProgress: this.progressSelect(userId),
       },
     });
 
-    if (!entry) {
-      throw new NotFoundException('Bestiary entry not found');
+    if (!creature) {
+      throw new NotFoundException('Creature not found');
     }
 
-    return this.mapEntry(entry, userId, entry.notes);
+    return this.mapCreature(creature, userId, true);
   }
 
   async updateProgress(
@@ -114,64 +99,191 @@ export class BestiaryService {
     slug: string,
     dto: UpdateBestiaryProgressDto,
   ) {
-    const entry = await this.prisma.bestiaryEntry.findFirst({
-      where: { creature: { slug, isActive: true } },
-      select: {
-        creatureId: true,
-        killsRequired: true,
-      },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const entry = await tx.bestiaryEntry.findFirst({
+        where: { creature: { slug, isActive: true } },
+        select: {
+          creatureId: true,
+          killsRequired: true,
+        },
+      });
 
-    if (!entry) {
-      throw new NotFoundException('Bestiary entry not found');
-    }
+      if (!entry) {
+        throw new NotFoundException('Bestiary entry not found');
+      }
 
-    const existing = await this.prisma.userBestiaryProgress.findUnique({
-      where: {
-        userId_creatureId: { userId, creatureId: entry.creatureId },
-      },
-      select: { completedAt: true },
-    });
+      const existing = await tx.userBestiaryProgress.findUnique({
+        where: {
+          userId_creatureId: { userId, creatureId: entry.creatureId },
+        },
+        select: { kills: true, completedAt: true },
+      });
 
-    const completed = dto.kills >= entry.killsRequired;
-    const completedAt = completed
-      ? (existing?.completedAt ?? new Date())
-      : null;
+      const currentKills = existing?.kills ?? 0;
+      if (dto.kills < currentKills) {
+        throw new BadRequestException('Bestiary progress cannot decrease');
+      }
 
-    const progress = await this.prisma.userBestiaryProgress.upsert({
-      where: {
-        userId_creatureId: { userId, creatureId: entry.creatureId },
-      },
-      create: {
-        userId,
+      const completed = dto.kills >= entry.killsRequired;
+      const completedAt = completed
+        ? (existing?.completedAt ?? new Date())
+        : null;
+      const data = {
+        kills: dto.kills,
+        completed,
+        completedAt,
+      };
+
+      if (!existing) {
+        await tx.userBestiaryProgress.createMany({
+          data: [
+            {
+              userId,
+              creatureId: entry.creatureId,
+              ...data,
+            },
+          ],
+          skipDuplicates: true,
+        });
+      }
+
+      const updated = await tx.userBestiaryProgress.updateMany({
+        where: {
+          userId,
+          creatureId: entry.creatureId,
+          kills: { lte: dto.kills },
+        },
+        data,
+      });
+      if (updated.count !== 1) {
+        throw new BadRequestException('Bestiary progress cannot decrease');
+      }
+
+      const progress = await tx.userBestiaryProgress.findUniqueOrThrow({
+        where: {
+          userId_creatureId: { userId, creatureId: entry.creatureId },
+        },
+        select: {
+          kills: true,
+          completed: true,
+          completedAt: true,
+        },
+      });
+
+      return {
         creatureId: entry.creatureId,
-        kills: dto.kills,
-        completed,
-        completedAt,
-      },
-      update: {
-        kills: dto.kills,
-        completed,
-        completedAt,
-      },
+        killsRequired: entry.killsRequired,
+        ...this.mapProgress(progress, entry.killsRequired, userId),
+      };
+    });
+  }
+
+  private creatureWhere(
+    query: ListBestiaryQueryDto,
+  ): Prisma.CreatureWhereInput {
+    const where: Prisma.CreatureWhereInput = { isActive: true };
+    if (query.difficulty) {
+      where.difficulty = query.difficulty;
+    }
+    const search = query.search?.trim();
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        {
+          locations: {
+            some: {
+              OR: [
+                { name: { contains: search, mode: 'insensitive' } },
+                { region: { contains: search, mode: 'insensitive' } },
+              ],
+            },
+          },
+        },
+        {
+          togetherFrom: {
+            some: {
+              relatedCreature: {
+                name: { contains: search, mode: 'insensitive' },
+              },
+            },
+          },
+        },
+      ];
+    }
+    return where;
+  }
+
+  private progressSelect(userId?: string) {
+    if (!userId) {
+      return false as const;
+    }
+    return {
+      where: { userId },
       select: {
         kills: true,
         completed: true,
         completedAt: true,
       },
-    });
-
-    return {
-      creatureId: entry.creatureId,
-      killsRequired: entry.killsRequired,
-      ...this.mapProgress(progress, entry.killsRequired, userId),
+      take: 1,
     };
+  }
+
+  private mapCreature(
+    creature: {
+      id: string;
+      name: string;
+      slug: string;
+      image: string;
+      hp: number | null;
+      experience: number | null;
+      difficulty: string | null;
+      youtubeUrl: string | null;
+      description?: string | null;
+      elements: { element: string; modifier: number }[];
+      locations: { name: string; region: string | null }[];
+      togetherFrom: {
+        relatedCreature: {
+          id: string;
+          name: string;
+          slug: string;
+          image: string;
+        };
+      }[];
+      bestiaryEntry: {
+        category: string | null;
+        killsRequired: number;
+        estimatedKillsPerHour: number | null;
+        charmPoints: number | null;
+        notes?: string | null;
+      } | null;
+      userProgress?: {
+        kills: number;
+        completed: boolean;
+        completedAt: Date | null;
+      }[];
+    },
+    userId?: string,
+    detail = false,
+  ) {
+    const entry = creature.bestiaryEntry;
+    const killsRequired = entry?.killsRequired ?? null;
+    return this.mapEntry(
+      {
+        category: entry?.category ?? null,
+        killsRequired,
+        estimatedKillsPerHour: entry?.estimatedKillsPerHour ?? null,
+        charmPoints: entry?.charmPoints ?? null,
+        creature,
+      },
+      userId,
+      detail ? (entry?.notes ?? null) : undefined,
+    );
   }
 
   private mapEntry(
     entry: {
       category: string | null;
-      killsRequired: number;
+      killsRequired: number | null;
       estimatedKillsPerHour: number | null;
       charmPoints: number | null;
       creature: {
@@ -213,7 +325,7 @@ export class BestiaryService {
       hp: creature.hp,
       experience: creature.experience,
       difficulty: creature.difficulty,
-      youtubeUrl: creature.youtubeUrl,
+      youtubeUrl: publicHttpsUrl(creature.youtubeUrl),
       ...(notes !== undefined
         ? { description: creature.description, notes }
         : {}),
@@ -221,18 +333,21 @@ export class BestiaryService {
       killsRequired: entry.killsRequired,
       estimatedKillsPerHour: entry.estimatedKillsPerHour,
       charmPoints: entry.charmPoints,
-      estimatedHours: estimatedHours(
-        entry.killsRequired,
-        entry.estimatedKillsPerHour,
-      ),
+      estimatedHours:
+        entry.killsRequired == null
+          ? null
+          : estimatedHours(entry.killsRequired, entry.estimatedKillsPerHour),
       elements: creature.elements,
       locations: creature.locations,
       together: creature.togetherFrom.map((item) => item.relatedCreature),
-      progress: this.mapProgress(
-        creature.userProgress?.[0],
-        entry.killsRequired,
-        userId,
-      ),
+      progress:
+        entry.killsRequired == null
+          ? null
+          : this.mapProgress(
+              creature.userProgress?.[0],
+              entry.killsRequired,
+              userId,
+            ),
     };
   }
 

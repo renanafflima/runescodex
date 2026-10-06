@@ -1,6 +1,9 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.service';
+import { ListBestiaryQueryDto } from './dto/list-bestiary-query.dto';
 import {
   BestiaryService,
   estimatedHours,
@@ -11,51 +14,62 @@ jest.mock('../prisma/prisma.service', () => ({
   PrismaService: class PrismaService {},
 }));
 
-const cyclopsEntry = {
-  category: 'Thais',
-  killsRequired: 1000,
-  estimatedKillsPerHour: 260,
-  charmPoints: null,
-  creature: {
-    id: 'c1',
-    name: 'Cyclops',
-    slug: 'cyclops',
-    image: 'runescodex/creatures/Cyclops.gif',
-    hp: 260,
-    experience: null,
-    difficulty: 'EASY',
-    youtubeUrl: null,
-    elements: [],
-    locations: [{ name: 'Cyclops Cave', region: 'Thais' }],
-    togetherFrom: [
-      {
-        relatedCreature: {
-          id: 'c-smith',
-          name: 'Cyclops Smith',
-          slug: 'cyclops-smith',
-          image: 'runescodex/creatures/Cyclops_Smith.gif',
-        },
+const cyclops = {
+  id: 'c1',
+  name: 'Cyclops',
+  slug: 'cyclops',
+  image: 'runescodex/creatures/Cyclops.gif',
+  hp: 260,
+  experience: null,
+  difficulty: 'EASY',
+  youtubeUrl: null,
+  elements: [],
+  locations: [{ name: 'Cyclops Cave', region: 'Thais' }],
+  togetherFrom: [
+    {
+      relatedCreature: {
+        id: 'c-smith',
+        name: 'Cyclops Smith',
+        slug: 'cyclops-smith',
+        image: 'runescodex/creatures/Cyclops_Smith.gif',
       },
-    ],
-    userProgress: [{ kills: 250, completed: false, completedAt: null }],
+    },
+  ],
+  bestiaryEntry: {
+    category: 'Thais',
+    killsRequired: 1000,
+    estimatedKillsPerHour: 260,
+    charmPoints: null,
   },
+  userProgress: [{ kills: 250, completed: false, completedAt: null }],
 };
 
 describe('BestiaryService', () => {
   let service: BestiaryService;
   const prisma = {
-    bestiaryEntry: {
+    $transaction: jest.fn(),
+    creature: {
+      count: jest.fn(),
       findMany: jest.fn(),
+      findFirst: jest.fn(),
+    },
+    bestiaryEntry: {
       findFirst: jest.fn(),
     },
     userBestiaryProgress: {
       findUnique: jest.fn(),
-      upsert: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
+      createMany: jest.fn(),
+      updateMany: jest.fn(),
     },
   };
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    prisma.$transaction.mockImplementation(
+      (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
+    prisma.creature.count.mockResolvedValue(1);
     const moduleRef = await Test.createTestingModule({
       providers: [
         BestiaryService,
@@ -66,33 +80,107 @@ describe('BestiaryService', () => {
     service = moduleRef.get(BestiaryService);
   });
 
-  it('lists bestiary entries in a single query without user progress', async () => {
-    prisma.bestiaryEntry.findMany.mockResolvedValue([
-      {
-        ...cyclopsEntry,
-        creature: { ...cyclopsEntry.creature, userProgress: undefined },
-      },
+  it('lists creatures in a single query without user progress', async () => {
+    prisma.creature.findMany.mockResolvedValue([
+      { ...cyclops, userProgress: undefined },
     ]);
 
     const result = await service.findAll({});
 
-    expect(prisma.bestiaryEntry.findMany).toHaveBeenCalledTimes(1);
-    expect(result[0].progress).toBeNull();
-    expect(result[0].together[0].slug).toBe('cyclops-smith');
-    expect(result[0].estimatedHours).toBe(4);
+    expect(prisma.creature.findMany).toHaveBeenCalledTimes(1);
+    expect(result.items[0].progress).toBeNull();
+    expect(result.items[0].together[0].slug).toBe('cyclops-smith');
+    expect(result.items[0].estimatedHours).toBe(4);
+    expect(prisma.creature.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 0, take: 20 }),
+    );
+  });
+
+  it('returns an empty page when no creature matches', async () => {
+    prisma.creature.count.mockResolvedValue(0);
+    prisma.creature.findMany.mockResolvedValue([]);
+
+    const result = await service.findAll({ difficulty: 'HARD' });
+
+    expect(result).toEqual({
+      items: [],
+      page: 1,
+      limit: 20,
+      total: 0,
+      hasMore: false,
+    });
+    expect(prisma.creature.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { isActive: true, difficulty: 'HARD' },
+      }),
+    );
+  });
+
+  it('keeps a creature that has no bestiary entry', async () => {
+    prisma.creature.findMany.mockResolvedValue([
+      { ...cyclops, bestiaryEntry: null, userProgress: undefined },
+    ]);
+
+    const result = await service.findAll({});
+
+    expect(result.items[0]).toEqual(
+      expect.objectContaining({
+        slug: 'cyclops',
+        killsRequired: null,
+        estimatedHours: null,
+        progress: null,
+      }),
+    );
+  });
+
+  it('filters by difficulty and search on the creature catalog', async () => {
+    prisma.creature.findMany.mockResolvedValue([]);
+
+    await service.findAll({ difficulty: 'EASY', search: '  cave ' });
+
+    expect(prisma.creature.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          isActive: true,
+          difficulty: 'EASY',
+          OR: [
+            { name: { contains: 'cave', mode: 'insensitive' } },
+            {
+              locations: {
+                some: {
+                  OR: [
+                    { name: { contains: 'cave', mode: 'insensitive' } },
+                    { region: { contains: 'cave', mode: 'insensitive' } },
+                  ],
+                },
+              },
+            },
+            {
+              togetherFrom: {
+                some: {
+                  relatedCreature: {
+                    name: { contains: 'cave', mode: 'insensitive' },
+                  },
+                },
+              },
+            },
+          ],
+        },
+      }),
+    );
   });
 
   it('returns the authenticated user progress without a per-row query', async () => {
-    prisma.bestiaryEntry.findMany.mockResolvedValue([cyclopsEntry]);
+    prisma.creature.findMany.mockResolvedValue([cyclops]);
 
     const result = await service.findAll({}, 'user-a');
 
-    expect(prisma.bestiaryEntry.findMany).toHaveBeenCalledWith(
+    expect(prisma.creature.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { creature: { isActive: true } },
+        where: { isActive: true },
       }),
     );
-    expect(result[0].progress).toEqual({
+    expect(result.items[0].progress).toEqual({
       kills: 250,
       completed: false,
       completedAt: null,
@@ -100,7 +188,23 @@ describe('BestiaryService', () => {
     });
   });
 
-  it('throws when the creature has no bestiary entry', async () => {
+  it('returns a creature even when the bestiary entry is missing', async () => {
+    prisma.creature.findFirst.mockResolvedValue({
+      ...cyclops,
+      description: 'A one-eyed giant.',
+      bestiaryEntry: null,
+      userProgress: undefined,
+    });
+
+    const result = await service.findBySlug('cyclops');
+
+    expect(result.slug).toBe('cyclops');
+    expect(result.description).toBe('A one-eyed giant.');
+    expect(result.killsRequired).toBeNull();
+  });
+
+  it('throws when the creature does not exist', async () => {
+    prisma.creature.findFirst.mockResolvedValue(null);
     prisma.bestiaryEntry.findFirst.mockResolvedValue(null);
 
     await expect(service.findBySlug('missing')).rejects.toBeInstanceOf(
@@ -109,17 +213,20 @@ describe('BestiaryService', () => {
     await expect(
       service.updateProgress('user-a', 'missing', { kills: 10 }),
     ).rejects.toBeInstanceOf(NotFoundException);
-    expect(prisma.userBestiaryProgress.upsert).not.toHaveBeenCalled();
+    expect(prisma.userBestiaryProgress.createMany).not.toHaveBeenCalled();
+    expect(prisma.userBestiaryProgress.updateMany).not.toHaveBeenCalled();
   });
 
-  it('upserts progress for the token user and marks completed from killsRequired', async () => {
+  it('stores a higher kill total and marks the entry completed', async () => {
     prisma.bestiaryEntry.findFirst.mockResolvedValue({
       creatureId: 'c1',
       killsRequired: 1000,
     });
     prisma.userBestiaryProgress.findUnique.mockResolvedValue(null);
     const completedAt = new Date('2026-09-17T00:00:00.000Z');
-    prisma.userBestiaryProgress.upsert.mockResolvedValue({
+    prisma.userBestiaryProgress.createMany.mockResolvedValue({ count: 1 });
+    prisma.userBestiaryProgress.updateMany.mockResolvedValue({ count: 1 });
+    prisma.userBestiaryProgress.findUniqueOrThrow.mockResolvedValue({
       kills: 1000,
       completed: true,
       completedAt,
@@ -129,68 +236,62 @@ describe('BestiaryService', () => {
       kills: 1000,
     });
 
-    expect(prisma.userBestiaryProgress.upsert).toHaveBeenCalledTimes(1);
-    const [[upsertArg]] = prisma.userBestiaryProgress.upsert.mock
-      .calls as unknown as Array<
-      [
-        {
-          where: { userId_creatureId: { userId: string; creatureId: string } };
-          create: {
-            userId: string;
-            creatureId: string;
-            kills: number;
-            completed: boolean;
-          };
-          update: {
-            kills: number;
-            completed: boolean;
-            completedAt: Date | null;
-          };
+    expect(prisma.userBestiaryProgress.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          userId: 'user-a',
+          creatureId: 'c1',
+          kills: 1000,
+          completed: true,
+        }),
+      ],
+      skipDuplicates: true,
+    });
+    expect(prisma.userBestiaryProgress.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId: 'user-a',
+          creatureId: 'c1',
+          kills: { lte: 1000 },
         },
-      ]
-    >;
-    expect(upsertArg.where).toEqual({
-      userId_creatureId: { userId: 'user-a', creatureId: 'c1' },
-    });
-    expect(upsertArg.create).toMatchObject({
-      userId: 'user-a',
-      creatureId: 'c1',
-      kills: 1000,
-      completed: true,
-    });
-    expect(upsertArg.update).toMatchObject({
-      kills: 1000,
-      completed: true,
-    });
+      }),
+    );
     expect(result.completed).toBe(true);
     expect(result.progressPercentage).toBe(100);
   });
 
-  it('clears completed when kills drop below the requirement', async () => {
+  it('rejects a kill total below the stored progress', async () => {
     prisma.bestiaryEntry.findFirst.mockResolvedValue({
       creatureId: 'c1',
       killsRequired: 1000,
     });
     prisma.userBestiaryProgress.findUnique.mockResolvedValue({
+      kills: 100,
       completedAt: new Date(),
     });
-    prisma.userBestiaryProgress.upsert.mockResolvedValue({
-      kills: 10,
-      completed: false,
-      completedAt: null,
+
+    await expect(
+      service.updateProgress('user-a', 'cyclops', { kills: 10 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.userBestiaryProgress.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('bestiary query validation', () => {
+  it('accepts a valid difficulty and rejects an invalid one', async () => {
+    const valid = plainToInstance(ListBestiaryQueryDto, {
+      difficulty: 'VERY_HARD',
+      page: '2',
+      limit: '20',
+      search: 'demon',
+    });
+    const invalid = plainToInstance(ListBestiaryQueryDto, {
+      difficulty: 'easy',
     });
 
-    await service.updateProgress('user-a', 'cyclops', { kills: 10 });
-
-    expect(prisma.userBestiaryProgress.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: {
-          kills: 10,
-          completed: false,
-          completedAt: null,
-        },
-      }),
-    );
+    expect(await validate(valid)).toHaveLength(0);
+    expect(valid.page).toBe(2);
+    expect(await validate(invalid)).not.toHaveLength(0);
   });
 });
 

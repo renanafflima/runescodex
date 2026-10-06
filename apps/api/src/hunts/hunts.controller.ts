@@ -1,4 +1,5 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
+import { CatalogSlugPipe } from '../common/catalog-slug.pipe';
 import { ListHuntsQueryDto } from './dto/list-hunts-query.dto';
 import { HuntsService } from './hunts.service';
 
@@ -12,7 +13,7 @@ export class HuntsController {
   }
 
   @Get(':slug')
-  findOne(@Param('slug') slug: string) {
+  findOne(@Param('slug', CatalogSlugPipe) slug: string) {
     return this.huntsService.findBySlug(slug);
   }
 }

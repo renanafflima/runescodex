@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service';
+import { publicHttpsUrl } from '../common/https-url';
+import { pageResult, resolvePage } from '../common/pagination';
 import { ListHuntsQueryDto } from './dto/list-hunts-query.dto';
 
 const VOCATION_SELECT = {
@@ -26,6 +28,11 @@ const ELEMENT_SELECT = {
   modifier: true,
 } as const;
 
+const HUNT_CREATURE_ORDER = [
+  { isPrimary: 'desc' as const },
+  { createdAt: 'asc' as const },
+];
+
 const HUNT_LIST_INCLUDE = {
   vocations: {
     select: VOCATION_SELECT,
@@ -35,9 +42,9 @@ const HUNT_LIST_INCLUDE = {
     select: {
       isPrimary: true,
       recommendedCharm: true,
-      creature: { select: CREATURE_SUMMARY_SELECT },
+      creatureId: true,
     },
-    orderBy: [{ isPrimary: 'desc' as const }, { createdAt: 'asc' as const }],
+    orderBy: HUNT_CREATURE_ORDER,
   },
 } satisfies Prisma.HuntInclude;
 
@@ -54,21 +61,9 @@ const HUNT_DETAIL_INCLUDE = {
       quantity: true,
       recommendedCharm: true,
       notes: true,
-      creature: {
-        select: {
-          ...CREATURE_SUMMARY_SELECT,
-          hp: true,
-          experience: true,
-          difficulty: true,
-          youtubeUrl: true,
-          elements: {
-            select: ELEMENT_SELECT,
-            orderBy: { modifier: 'desc' as const },
-          },
-        },
-      },
+      creatureId: true,
     },
-    orderBy: [{ isPrimary: 'desc' as const }, { createdAt: 'asc' as const }],
+    orderBy: HUNT_CREATURE_ORDER,
   },
   loot: {
     select: {
@@ -100,45 +95,72 @@ export class HuntsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: ListHuntsQueryDto) {
-    const hunts = await this.prisma.hunt.findMany({
-      where: this.listWhere(query),
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        location: true,
-        subLocation: true,
-        difficulty: true,
-        respawn: true,
-        heroImage: true,
-        mapImage: true,
-        vocations: HUNT_LIST_INCLUDE.vocations,
-        creatures: HUNT_LIST_INCLUDE.creatures,
-      },
-      orderBy: { name: 'asc' },
-    });
+    const where = this.listWhere(query);
+    const { page, limit, skip } = resolvePage(query);
+    const [total, hunts] = await Promise.all([
+      this.prisma.hunt.count({ where }),
+      this.prisma.hunt.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          location: true,
+          subLocation: true,
+          difficulty: true,
+          respawn: true,
+          heroImage: true,
+          mapImage: true,
+          vocations: HUNT_LIST_INCLUDE.vocations,
+          creatures: HUNT_LIST_INCLUDE.creatures,
+        },
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        skip,
+        take: limit,
+      }),
+    ]);
 
-    return hunts.map((hunt) => ({
-      id: hunt.id,
-      name: hunt.name,
-      slug: hunt.slug,
-      location: hunt.location,
-      subLocation: hunt.subLocation,
-      difficulty: hunt.difficulty,
-      respawn: hunt.respawn,
-      heroImage: hunt.heroImage,
-      mapImage: hunt.mapImage,
-      vocations: hunt.vocations,
-      creatures: hunt.creatures.map((item) => ({
-        id: item.creature.id,
-        name: item.creature.name,
-        slug: item.creature.slug,
-        image: item.creature.image,
-        isPrimary: item.isPrimary,
-        recommendedCharm: item.recommendedCharm,
-      })),
-      creatureCount: hunt.creatures.length,
-    }));
+    const creaturesById = await this.listCreaturesById(
+      hunts.flatMap((hunt) => hunt.creatures.map((item) => item.creatureId)),
+    );
+
+    return pageResult(
+      hunts.map((hunt) => {
+        const creatures = hunt.creatures.flatMap((item) => {
+          const creature = creaturesById.get(item.creatureId);
+          if (!creature) {
+            return [];
+          }
+          return [
+            {
+              id: creature.id,
+              name: creature.name,
+              slug: creature.slug,
+              image: creature.image,
+              isPrimary: item.isPrimary,
+              recommendedCharm: item.recommendedCharm,
+            },
+          ];
+        });
+        return {
+          id: hunt.id,
+          name: hunt.name,
+          slug: hunt.slug,
+          location: hunt.location,
+          subLocation: hunt.subLocation,
+          difficulty: hunt.difficulty,
+          respawn: hunt.respawn,
+          heroImage: hunt.heroImage,
+          mapImage: hunt.mapImage,
+          vocations: hunt.vocations,
+          creatures,
+          creatureCount: creatures.length,
+        };
+      }),
+      total,
+      page,
+      limit,
+    );
   }
 
   async findBySlug(slug: string) {
@@ -166,6 +188,10 @@ export class HuntsService {
       throw new NotFoundException('Hunt not found');
     }
 
+    const creaturesById = await this.detailCreaturesById(
+      hunt.creatures.map((item) => item.creatureId),
+    );
+
     return {
       id: hunt.id,
       name: hunt.name,
@@ -178,27 +204,41 @@ export class HuntsService {
       heroImage: hunt.heroImage,
       mapImage: hunt.mapImage,
       vocations: hunt.vocations,
-      creatures: hunt.creatures.map((item) => ({
-        id: item.id,
-        isPrimary: item.isPrimary,
-        quantity: item.quantity,
-        recommendedCharm: item.recommendedCharm,
-        damageType: item.damageType,
-        notes: item.notes,
-        creature: {
-          id: item.creature.id,
-          name: item.creature.name,
-          slug: item.creature.slug,
-          image: item.creature.image,
-          hp: item.creature.hp,
-          experience: item.creature.experience,
-          difficulty: item.creature.difficulty,
-          youtubeUrl: item.creature.youtubeUrl,
-          elements: item.creature.elements,
-        },
-      })),
+      creatures: hunt.creatures.flatMap((item) => {
+        const creature = creaturesById.get(item.creatureId);
+        if (!creature) {
+          return [];
+        }
+        return [
+          {
+            id: item.id,
+            isPrimary: item.isPrimary,
+            quantity: item.quantity,
+            recommendedCharm: item.recommendedCharm,
+            damageType: item.damageType,
+            notes: item.notes,
+            creature: {
+              id: creature.id,
+              name: creature.name,
+              slug: creature.slug,
+              image: creature.image,
+              hp: creature.hp,
+              experience: creature.experience,
+              difficulty: creature.difficulty,
+              youtubeUrl: publicHttpsUrl(creature.youtubeUrl),
+              elements: creature.elements,
+            },
+          },
+        ];
+      }),
       loot: hunt.loot,
-      videos: hunt.videos,
+      videos: hunt.videos.flatMap((video) => {
+        const url = publicHttpsUrl(video.url);
+        if (!url) {
+          return [];
+        }
+        return [{ ...video, url }];
+      }),
     };
   }
 
@@ -211,6 +251,27 @@ export class HuntsService {
     }
     if (location) {
       where.location = { contains: location, mode: 'insensitive' };
+    }
+    const search = query.search?.trim();
+    if (search) {
+      where.AND = [
+        {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { location: { contains: search, mode: 'insensitive' } },
+            { subLocation: { contains: search, mode: 'insensitive' } },
+            {
+              creatures: {
+                some: {
+                  creature: {
+                    name: { contains: search, mode: 'insensitive' },
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ];
     }
     if (query.vocation || query.level != null) {
       const vocationWhere: Prisma.HuntVocationWhereInput = {};
@@ -228,5 +289,46 @@ export class HuntsService {
     }
 
     return where;
+  }
+
+  private async listCreaturesById(creatureIds: string[]) {
+    const ids = [...new Set(creatureIds)];
+    if (ids.length === 0) {
+      return new Map<
+        string,
+        Prisma.CreatureGetPayload<{ select: typeof CREATURE_SUMMARY_SELECT }>
+      >();
+    }
+    const creatures = await this.prisma.creature.findMany({
+      where: { id: { in: ids } },
+      select: CREATURE_SUMMARY_SELECT,
+    });
+    return new Map(creatures.map((creature) => [creature.id, creature]));
+  }
+
+  private async detailCreaturesById(creatureIds: string[]) {
+    const ids = [...new Set(creatureIds)];
+    const select = {
+      ...CREATURE_SUMMARY_SELECT,
+      hp: true,
+      experience: true,
+      difficulty: true,
+      youtubeUrl: true,
+      elements: {
+        select: ELEMENT_SELECT,
+        orderBy: { modifier: 'desc' as const },
+      },
+    } satisfies Prisma.CreatureSelect;
+    if (ids.length === 0) {
+      return new Map<
+        string,
+        Prisma.CreatureGetPayload<{ select: typeof select }>
+      >();
+    }
+    const creatures = await this.prisma.creature.findMany({
+      where: { id: { in: ids } },
+      select,
+    });
+    return new Map(creatures.map((creature) => [creature.id, creature]));
   }
 }
