@@ -75,6 +75,8 @@ model User {
   bestiaryProgress  UserBestiaryProgress[]
   forumThreads           ForumThread[]
   forumReplies           ForumReply[]
+  huntComments           HuntComment[]
+  huntCommentLikes       HuntCommentLike[]
   rewardWallet           RewardWallet?
   missionProgress        UserMissionProgress[]
   rewardRedemptions      RewardRedemption[]
@@ -191,6 +193,7 @@ model Hunt {
   creatures HuntCreature[]
   loot      HuntLoot[]
   videos    HuntVideo[]
+  comments  HuntComment[]
 
   @@index([isActive])
 }
@@ -267,6 +270,44 @@ model HuntVideo {
   hunt          Hunt     @relation(fields: [huntId], references: [id], onDelete: Cascade)
 
   @@index([huntId])
+}
+
+/// Public hunt discussion. Replies point at a top-level comment. Removal is a soft delete.
+model HuntComment {
+  id        String   @id @default(uuid())
+  huntId    String
+  userId    String
+  parentId  String?
+  content   String
+  isEdited  Boolean  @default(false)
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  hunt    Hunt              @relation(fields: [huntId], references: [id], onDelete: Cascade)
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  HuntComment?      @relation("HuntCommentThread", fields: [parentId], references: [id], onDelete: Restrict)
+  replies HuntComment[]     @relation("HuntCommentThread")
+  likes   HuntCommentLike[]
+
+  @@index([huntId])
+  @@index([userId])
+  @@index([parentId])
+  @@index([createdAt])
+  @@index([huntId, parentId, createdAt, id])
+}
+
+model HuntCommentLike {
+  id        String   @id @default(uuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment HuntComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([userId])
 }
 
 /// Bestiary-specific official data. Name, image, HP, XP and difficulty come from Creature.
