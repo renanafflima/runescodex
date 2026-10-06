@@ -18,6 +18,18 @@ export function readPage(payload) {
   };
 }
 
+export async function loadEntireCatalog(fetchPage) {
+  const first = await fetchPage();
+  const parsed = readPage(first);
+  if (!parsed.hasMore) {
+    return parsed.items;
+  }
+  const collected = await collectPages((page) =>
+    fetchPage({ page, limit: 50 }),
+  );
+  return collected.items;
+}
+
 export async function collectPages(loadPage, maxPages = 100) {
   const items = [];
   let page = 1;

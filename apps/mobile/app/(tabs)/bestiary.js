@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   Image,
@@ -10,9 +10,14 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useFocusEffect } from "expo-router";
 import { useI18n } from "@/src/i18n";
 import { Colors as COLORS } from "@/constants/theme";
 import AppScreen from "@/components/ui/AppScreen";
+import { listAllBestiary } from "@/src/api/bestiary";
+import { bestiaryCardFields } from "@/src/data/bestiary";
+import { resolveCreatureImage } from "@/src/data/hunts";
+import { createLatestRequest } from "@/src/runtime/focusWork";
 import { openHttpsUrl } from "@/src/security/https-url";
 
 const youtubeIcon = require("../../assets/ui/youtube.png");
@@ -24,82 +29,55 @@ async function openUrl(url) {
   await openHttpsUrl(Linking, url);
 }
 
-// Imagens das criaturas
-const CREATURES = [
-  {
-    id: "c1",
-    name: "Cyclops",
-    image: require("@/assets/runescodex/creatures/Cyclops.gif"),
-    difficulty: "Easy",
-    location: "Cyclops Cave",
-    region: "Thais",
-    hp: 260,
-    killTogether: ["Cyclops Smith", "Cyclops Drone"],
-    bestiaryKills: 500,
-    killsPerHour: 260,
-    recommendedLevel: 25,
-    vocation: "Any",
-    weaknesses: ["Physical", "Energy"],
-    youtubeUrl: "https://www.youtube.com/results?search_query=tibia+cyclops+hunt",
-  },
-  {
-    id: "c2",
-    name: "Dragon",
-    image: require("@/assets/runescodex/creatures/Dragon.gif"),
-    difficulty: "Medium",
-    location: "Darashia - Dragon Lair",
-    region: "Desert",
-    hp: 1000,
-    killTogether: ["Dragon Hatchling", "Dragon Lord Hatchling"],
-    bestiaryKills: 1000,
-    killsPerHour: 180,
-    recommendedLevel: 60,
-    vocation: "Any",
-    weaknesses: ["Ice"],
-    youtubeUrl: "https://www.youtube.com/results?search_query=tibia+dragon+hunt",
-  },
-  {
-    id: "c3",
-    name: "Hydra",
-    image: require("@/assets/runescodex/creatures/Hydra.gif"),
-    difficulty: "Hard",
-    location: "Tiquanda - Hydra Cave",
-    region: "Jungle",
-    hp: 2350,
-    killTogether: ["Serpent Spawn", "Medusa"],
-    bestiaryKills: 1000,
-    killsPerHour: 110,
-    recommendedLevel: 150,
-    vocation: "EK",
-    weaknesses: ["Ice", "Energy"],
-    youtubeUrl: "https://www.youtube.com/results?search_query=tibia+hydra+hunt",
-  },
-  {
-    id: "c4",
-    name: "Demon",
-    image: require("@/assets/runescodex/creatures/Demon.gif"),
-    difficulty: "Very Hard",
-    location: "Edron - Demon Pits",
-    region: "Hell",
-    hp: 8200,
-    killTogether: ["Hellhound", "Fire Elemental"],
-    bestiaryKills: 1000,
-    killsPerHour: 55,
-    recommendedLevel: 250,
-    vocation: "Any",
-    weaknesses: ["Holy", "Ice"],
-    youtubeUrl: "https://www.youtube.com/results?search_query=tibia+demon+hunt",
-  },
-];
+function mapError(error, t) {
+  if (error?.code === "NETWORK") return t("auth.networkError");
+  return t("auth.genericError");
+}
 
 export default function BestiaryScreen() {
   const { t } = useI18n();
   const [q, setQ] = useState("");
   const [difficulty, setDifficulty] = useState("All");
+  const [creatures, setCreatures] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const requests = useRef(createLatestRequest()).current;
+
+  const loadCreatures = useCallback(async () => {
+    const current = requests.start();
+    setLoading(true);
+    setError("");
+    try {
+      const items = await listAllBestiary();
+      if (!current()) return;
+      setCreatures(items.map((entry) => {
+        const card = bestiaryCardFields(entry);
+        return {
+          ...card,
+          image: resolveCreatureImage(card.imagePath, card.name),
+        };
+      }));
+    } catch (err) {
+      if (!current()) return;
+      setCreatures([]);
+      setError(mapError(err, t));
+    } finally {
+      if (current()) setLoading(false);
+    }
+  }, [requests, t]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadCreatures();
+      return () => {
+        requests.cancel();
+      };
+    }, [loadCreatures, requests]),
+  );
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
-    return CREATURES.filter((c) => {
+    return creatures.filter((c) => {
       const matchDiff = difficulty === "All" || c.difficulty === difficulty;
       const matchQ =
         !query ||
@@ -109,13 +87,13 @@ export default function BestiaryScreen() {
         (c.killTogether || []).some((name) => String(name).toLowerCase().includes(query));
       return matchDiff && matchQ;
     });
-  }, [q, difficulty]);
+  }, [creatures, q, difficulty]);
 
   return (
     <AppScreen>
       <ImageBackground source={bestiaryBg} resizeMode="cover" style={styles.bg}>
         <FlatList
-          data={filtered}
+          data={error ? [] : filtered}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           ListHeaderComponent={
@@ -155,22 +133,32 @@ export default function BestiaryScreen() {
             </View>
           }
           ListEmptyComponent={
-            <Text style={styles.empty}>{t("bestiary.empty")}</Text>
+            <Text style={styles.empty}>
+              {loading ? "" : error || t("bestiary.empty")}
+            </Text>
           }
           renderItem={({ item }) => {
-            const hours = Math.max(1, Math.ceil(item.bestiaryKills / item.killsPerHour));
+            const meta = [item.difficulty, item.vocation, item.recommendedLevel != null ? `Lvl ${item.recommendedLevel}` : null]
+              .filter(Boolean)
+              .join(" • ");
+            const where = [item.location, item.region ? `(${item.region})` : null].filter(Boolean).join(" ");
+            const hours = item.estimatedHours;
             return (
               <View style={styles.card}>
                 <View style={styles.row}>
-                  <Image source={item.image} style={styles.avatar} resizeMode="contain" />
+                  {item.image ? (
+                    <Image source={item.image} style={styles.avatar} resizeMode="contain" />
+                  ) : (
+                    <View style={styles.avatar} />
+                  )}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{item.name}</Text>
-                    <Text style={styles.meta}>
-                      {item.difficulty} • {item.vocation} • Lvl {item.recommendedLevel}
-                    </Text>
-                    <Text style={styles.meta}>
-                      {t("bestiary.where")}: {item.location} ({item.region})
-                    </Text>
+                    {meta ? <Text style={styles.meta}>{meta}</Text> : null}
+                    {where ? (
+                      <Text style={styles.meta}>
+                        {t("bestiary.where")}: {where}
+                      </Text>
+                    ) : null}
                   </View>
                   <Pressable onPress={() => openUrl(item.youtubeUrl)} style={styles.ytBtn}>
                     <Image source={youtubeIcon} style={styles.ytIcon} resizeMode="contain" />
@@ -186,7 +174,7 @@ export default function BestiaryScreen() {
                   {t("bestiary.kills", { kills: item.bestiaryKills, kph: item.killsPerHour })}
                 </Text>
                 <Text style={styles.meta}>
-                  {t("bestiary.time")}: ~{hours}h • HP {item.hp}
+                  {hours != null ? `${t("bestiary.time")}: ~${hours}h • ` : ""}HP {item.hp ?? ""}
                 </Text>
               </View>
             );

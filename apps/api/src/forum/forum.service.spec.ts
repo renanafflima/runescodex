@@ -43,7 +43,9 @@ describe('ForumService', () => {
     recordEvent: jest.fn().mockResolvedValue({ applied: [] }),
   };
   const prisma = {
+    $transaction: jest.fn(),
     forumThread: {
+      count: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -56,6 +58,11 @@ describe('ForumService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    prisma.$transaction.mockImplementation(
+      (fn: (tx: typeof prisma) => unknown) => fn(prisma),
+    );
+    prisma.forumThread.count.mockResolvedValue(1);
+    rewards.recordEvent.mockResolvedValue({ applied: [] });
     const moduleRef = await Test.createTestingModule({
       providers: [
         ForumService,
@@ -78,23 +85,32 @@ describe('ForumService', () => {
     expect(prisma.forumThread.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {},
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: 0,
+        take: 20,
       }),
     );
-    expect(result[0].status).toBe('open');
-    expect(result[0].createdByUserId).toBe('user-1');
-    expect(result[0].replyCount).toBe(1);
-    expect(result[0].comments[0].text).toBe('Thais cave.');
+    expect(result.items[0].status).toBe('open');
+    expect(result.items[0].createdByUserId).toBe('user-1');
+    expect(result.items[0].author).toEqual({ id: 'user-1' });
+    expect(result.items[0].comments[0].author).toEqual({ id: 'user-1' });
+    expect(JSON.stringify(result)).not.toContain('email');
+    expect(JSON.stringify(result)).not.toContain('player@');
+    expect(result.items[0].replyCount).toBe(1);
+    expect(result.items[0].comments[0].text).toBe('Thais cave.');
+    expect(result.items[0].comments).toHaveLength(1);
   });
 
   it('filters threads by status', async () => {
     prisma.forumThread.findMany.mockResolvedValue([]);
+    prisma.forumThread.count.mockResolvedValue(0);
 
     await service.findAll({ status: 'CLOSED' });
 
     expect(prisma.forumThread.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { status: 'CLOSED' },
+        take: 20,
       }),
     );
   });
@@ -124,11 +140,14 @@ describe('ForumService', () => {
         },
       }),
     );
-    expect(result.author.email).toBe('player@runescodex.test');
+    expect(result.author).toEqual({ id: 'user-1' });
+    expect(result.author).not.toHaveProperty('email');
     expect(rewards.recordEvent).toHaveBeenCalledWith(
       'user-1',
       'FORUM_TOPIC_CREATED',
       { referenceType: 'ForumThread', referenceId: 'thread-1' },
+      expect.any(Date),
+      prisma,
     );
   });
 

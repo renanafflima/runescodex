@@ -5,7 +5,6 @@ import {
   Image,
   ImageBackground,
   Linking,
-  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -16,10 +15,11 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useI18n } from "@/src/i18n";
+import { useAuth } from "@/src/auth/AuthContext";
 import { Colors as COLORS, Radius } from "@/constants/theme";
 import AppScreen from "@/components/ui/AppScreen";
-import { listHunts } from "@/src/api/hunts";
-import { readPage } from "@/src/api/page";
+import HuntMapScreen from "@/components/hunts/HuntMapScreen";
+import { listAllHunts } from "@/src/api/hunts";
 import { openHttpsUrl } from "@/src/security/https-url";
 import { createLatestRequest } from "@/src/runtime/focusWork";
 import {
@@ -32,7 +32,9 @@ import {
   hasNumericValue,
   huntsBackground,
   huntsHero,
+  huntCompatibility,
   mapHuntListItem,
+  normalizeVocation,
   resolveMapImage,
   toNumberOrNull,
 } from "@/src/data/hunts";
@@ -67,9 +69,12 @@ function MetaRow({ icon, text, style }) {
 export default function HuntsScreen() {
   const { t } = useI18n();
   const router = useRouter();
+  const { activeCharacter } = useAuth();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [q, setQ] = useState("");
   const [vocation, setVocation] = useState("Any");
+  const preferredVocation =
+    vocation !== "Any" ? vocation : normalizeVocation(activeCharacter?.vocation);
   const [difficulty, setDifficulty] = useState("Any");
   const [minXpH, setMinXpH] = useState("");
   const [minProfitH, setMinProfitH] = useState("");
@@ -86,10 +91,9 @@ export default function HuntsScreen() {
     setLoading(true);
     setError("");
     try {
-      const data = await listHunts();
+      const items = await listAllHunts();
       if (!current()) return;
-      const parsed = readPage(data);
-      setHunts(parsed.items);
+      setHunts(items);
     } catch (err) {
       if (!current()) return;
       setHunts([]);
@@ -109,8 +113,8 @@ export default function HuntsScreen() {
   );
 
   const catalog = useMemo(
-    () => hunts.map((hunt) => mapHuntListItem(hunt, vocation)),
-    [hunts, vocation],
+    () => hunts.map((hunt) => mapHuntListItem(hunt, preferredVocation)),
+    [hunts, preferredVocation],
   );
 
   const filtered = useMemo(() => {
@@ -147,6 +151,9 @@ export default function HuntsScreen() {
     });
 
     arr = [...arr].sort((a, b) => {
+      const compatibilityDiff =
+        huntCompatibility(b, activeCharacter) - huntCompatibility(a, activeCharacter);
+      if (compatibilityDiff) return compatibilityDiff;
       if (sortBy === "Best XP") {
         const aXp = hasNumericValue(a.xpH) ? Number(a.xpH) : -1;
         const bXp = hasNumericValue(b.xpH) ? Number(b.xpH) : -1;
@@ -166,7 +173,7 @@ export default function HuntsScreen() {
     });
 
     return arr;
-  }, [catalog, difficulty, minLevel, minProfitH, minXpH, q, sortBy, vocation]);
+  }, [activeCharacter, catalog, difficulty, minLevel, minProfitH, minXpH, q, sortBy, vocation]);
 
   const mapSource = mapHunt ? resolveMapImage(mapHunt.mapImage, mapHunt.creature) : null;
 
@@ -189,6 +196,7 @@ export default function HuntsScreen() {
                   style={StyleSheet.absoluteFill}
                 />
                 <View style={styles.heroCopy}>
+                  <Text style={styles.eyebrow}>{t("hunts.heroKicker")}</Text>
                   <Text style={styles.title}>{t("hunts.title")}</Text>
                   <Text style={styles.subtitle} numberOfLines={2}>
                     {t("hunts.subtitle")}
@@ -196,26 +204,36 @@ export default function HuntsScreen() {
                 </View>
               </View>
               <View style={styles.headerWrap}>
-                <View style={styles.searchCard}>
-                  <Text style={styles.searchTitle}>{t("hunts.title")}</Text>
-                  <View style={styles.searchRow}>
-                    <Ionicons name="search" size={16} color={COLORS.goldLight} />
-                    <TextInput
-                      value={q}
-                      onChangeText={setQ}
-                      placeholder={t("hunts.search")}
-                      placeholderTextColor={COLORS.textMuted}
-                      style={styles.searchInput}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                  </View>
+                <View style={styles.searchRow}>
+                  <Ionicons name="search" size={18} color={COLORS.goldLight} />
+                  <TextInput
+                    value={q}
+                    onChangeText={setQ}
+                    placeholder={t("hunts.search")}
+                    placeholderTextColor={COLORS.textMuted}
+                    style={styles.searchInput}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
                 </View>
-                <Pressable onPress={() => setFiltersOpen((open) => !open)} style={styles.filtersBtn}>
-                  <Text style={styles.filtersToggle}>
-                    {t("common.filters")} {filtersOpen ? "−" : "+"}
-                  </Text>
-                </Pressable>
+                <View style={styles.contextRow}>
+                  <View style={styles.contextCopy}>
+                    <Text style={styles.sectionKicker}>{t("hunts.recommendedHunts")}</Text>
+                    {activeCharacter ? (
+                      <Text style={styles.contextText} numberOfLines={1}>
+                        {t("hunts.forCharacter", { name: activeCharacter.name })}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Pressable onPress={() => setFiltersOpen((open) => !open)} style={styles.filtersBtn}>
+                    <Ionicons
+                      name={filtersOpen ? "options" : "options-outline"}
+                      size={15}
+                      color={COLORS.goldLight}
+                    />
+                    <Text style={styles.filtersToggle}>{t("common.filters")}</Text>
+                  </Pressable>
+                </View>
                 {filtersOpen ? (
                   <View style={styles.filters}>
                     <Text style={styles.filterLabel}>{t("hunts.vocation")}</Text>
@@ -290,31 +308,19 @@ export default function HuntsScreen() {
           renderItem={({ item }) => (
             <HuntRow
               item={item}
+              recommended={huntCompatibility(item, activeCharacter) === 4}
               onPress={() => router.push(`/(tabs)/hunt/${item.slug}`)}
               onOpenMap={() => setMapHunt(item)}
             />
           )}
         />
 
-        <Modal visible={Boolean(mapHunt)} transparent animationType="fade" onRequestClose={() => setMapHunt(null)}>
-          <View style={styles.modalBackdrop}>
-            <View style={styles.modalCard}>
-              <View style={styles.modalHead}>
-                <Text style={styles.modalTitle}>
-                  {t("hunts.mapTitle", { name: mapHunt?.creature || mapHunt?.name || "" })}
-                </Text>
-                <Pressable onPress={() => setMapHunt(null)}>
-                  <Text style={styles.link}>{t("common.close")}</Text>
-                </Pressable>
-              </View>
-              {mapSource ? (
-                <Image source={mapSource} style={styles.mapImage} resizeMode="contain" />
-              ) : (
-                <Text style={styles.empty}>{t("hunts.mapMissing")}</Text>
-              )}
-            </View>
-          </View>
-        </Modal>
+        <HuntMapScreen
+          visible={Boolean(mapHunt)}
+          title={mapHunt ? t("hunts.mapTitle", { name: mapHunt.name }) : ""}
+          source={mapSource}
+          onClose={() => setMapHunt(null)}
+        />
       </ImageBackground>
     </AppScreen>
   );
@@ -350,7 +356,7 @@ function ListState({ loading, error, huntsCount, onRetry }) {
   );
 }
 
-function HuntRow({ item, onPress, onOpenMap }) {
+function HuntRow({ item, recommended, onPress, onOpenMap }) {
   const { t } = useI18n();
   const levelLabel = formatLevelRange(item.levelMin, item.levelMax);
   const vocationLabels = (item.vocations || [])
@@ -377,36 +383,60 @@ function HuntRow({ item, onPress, onOpenMap }) {
             style={StyleSheet.absoluteFill}
           />
           <View style={styles.cardTitleRow} pointerEvents="box-none">
-            <Text style={styles.rowName} numberOfLines={2}>
-              {item.name}
-            </Text>
+            <View style={styles.cardTitleCopy}>
+              {recommended ? <Text style={styles.matchLabel}>{t("hunts.goodMatch")}</Text> : null}
+              <Text style={styles.rowName} numberOfLines={2}>
+                {item.name}
+              </Text>
+              <MetaRow icon="location-outline" text={item.displayLocation} style={styles.rowLoc} />
+            </View>
           </View>
         </View>
       </Pressable>
-      <View style={styles.cardActions}>
-        {mapSource ? (
-          <Pressable onPress={onOpenMap} hitSlop={8} style={styles.iconBtn}>
-            <Ionicons name="map-outline" size={16} color={COLORS.goldLight} />
-          </Pressable>
-        ) : null}
-        {item.youtubeUrl ? (
-          <Pressable onPress={() => openUrl(item.youtubeUrl)} hitSlop={8} style={styles.iconBtn}>
-            <Image source={youtubeIcon} style={styles.ytIcon} resizeMode="contain" />
-          </Pressable>
-        ) : null}
-      </View>
-
       <Pressable onPress={onPress} style={({ pressed }) => [styles.cardBody, pressed && styles.pressed]}>
-        <MetaRow icon="location-outline" text={item.displayLocation} style={styles.rowLoc} />
-        <MetaRow icon="trending-up-outline" text={levelLabel ? `${t("hunts.level")} ${levelLabel}` : null} />
-        <MetaRow icon="person-outline" text={uniqueVocations.length ? uniqueVocations.join(" · ") : null} />
-        <MetaRow
-          icon="alert-circle-outline"
-          text={item.difficulty ? formatDifficultyLabel(item.difficulty) : null}
-        />
-        <MetaRow icon="flash-outline" text={xpLabel ? `${xpLabel} ${t("hunts.xpH")}` : null} />
-        <MetaRow icon="cash-outline" text={profitLabel ? `${profitLabel} ${t("hunts.profitH")}` : null} />
+        <View style={styles.factsRow}>
+          <HuntFact icon="trending-up-outline" value={levelLabel ? `${t("hunts.level")} ${levelLabel}` : null} />
+          <HuntFact icon="flash-outline" value={xpLabel ? `${xpLabel} ${t("hunts.xpH")}` : null} />
+          <HuntFact icon="cash-outline" value={profitLabel ? `${profitLabel} ${t("hunts.profitH")}` : null} accent />
+        </View>
+        <View style={styles.secondaryFacts}>
+          <Text style={styles.secondaryText} numberOfLines={1}>
+            {uniqueVocations.join(" · ")}
+          </Text>
+          {item.difficulty ? <Text style={styles.dot}>·</Text> : null}
+          <Text style={styles.secondaryText}>{formatDifficultyLabel(item.difficulty)}</Text>
+        </View>
       </Pressable>
+      <View style={styles.actionRow}>
+        {item.youtubeUrl ? (
+          <Pressable onPress={() => openUrl(item.youtubeUrl)} style={styles.actionButton}>
+            <Image source={youtubeIcon} style={styles.ytIcon} resizeMode="contain" />
+            <Text style={styles.actionText}>{t("hunts.watchYoutube")}</Text>
+          </Pressable>
+        ) : null}
+        {mapSource ? (
+          <Pressable onPress={onOpenMap} style={styles.actionButton}>
+            <Ionicons name="map-outline" size={17} color={COLORS.textSecondary} />
+            <Text style={styles.actionText}>{t("hunts.seeMap")}</Text>
+          </Pressable>
+        ) : null}
+        <Pressable onPress={onPress} style={styles.detailButton}>
+          <Text style={styles.detailText}>{t("hunts.seeDetails")}</Text>
+          <Ionicons name="chevron-forward" size={15} color={COLORS.goldLight} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function HuntFact({ icon, value, accent }) {
+  if (!value) return null;
+  return (
+    <View style={styles.fact}>
+      <Ionicons name={icon} size={14} color={accent ? COLORS.success : COLORS.goldLight} />
+      <Text style={[styles.factText, accent && styles.profitText]} numberOfLines={1}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -425,20 +455,39 @@ const styles = StyleSheet.create({
   heroArt: { ...StyleSheet.absoluteFillObject },
   heroCopy: { paddingHorizontal: 16, paddingBottom: 16, paddingTop: 28 },
   headerWrap: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8, gap: 10 },
+  eyebrow: {
+    color: COLORS.goldLight,
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    marginBottom: 5,
+  },
   title: { color: COLORS.text, fontSize: 28, fontWeight: "800" },
   subtitle: { color: "#d6deea", fontSize: 13, lineHeight: 18, marginTop: 4 },
-  searchCard: {
+  searchRow: {
+    minHeight: 46,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(212,167,44,0.32)",
     backgroundColor: "rgba(8,14,24,0.92)",
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
   },
-  searchTitle: { color: COLORS.text, fontSize: 16, fontWeight: "800" },
+  contextRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  contextCopy: { flex: 1, minWidth: 0 },
+  sectionKicker: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  contextText: { color: COLORS.textSecondary, fontSize: 12, marginTop: 2 },
   filtersBtn: {
-    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 999,
@@ -448,7 +497,6 @@ const styles = StyleSheet.create({
   },
   filtersToggle: { color: COLORS.goldLight, fontWeight: "800", fontSize: 12 },
   filters: { gap: 8, paddingTop: 4 },
-  searchRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   searchInput: { flex: 1, minWidth: 0, color: COLORS.text, fontWeight: "700", paddingVertical: 4 },
   filterLabel: { color: COLORS.textSecondary, fontWeight: "700", fontSize: 12, marginTop: 4 },
   chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
@@ -495,39 +543,59 @@ const styles = StyleSheet.create({
   cardImage: { ...StyleSheet.absoluteFillObject },
   cardTitleRow: {
     paddingHorizontal: 12,
-    paddingBottom: 10,
-    paddingRight: 72,
+    paddingBottom: 12,
   },
-  cardBody: { gap: 6, paddingHorizontal: 12, paddingVertical: 10 },
-  cardActions: {
-    position: "absolute",
-    top: 8,
-    right: 8,
+  cardTitleCopy: { flex: 1, minWidth: 0, gap: 4 },
+  matchLabel: {
+    color: COLORS.goldLight,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
+  cardBody: {
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(148,163,184,0.16)",
+  },
+  factsRow: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  fact: { flexDirection: "row", alignItems: "center", gap: 5 },
+  factText: { color: COLORS.text, fontSize: 13, fontWeight: "800" },
+  profitText: { color: "#8bddaa" },
+  secondaryFacts: { flexDirection: "row", alignItems: "center", minWidth: 0 },
+  secondaryText: { color: COLORS.textSecondary, fontSize: 12, fontWeight: "600", flexShrink: 1 },
+  dot: { color: COLORS.textMuted, marginHorizontal: 7 },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: 44,
+    paddingHorizontal: 10,
+    gap: 2,
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 40,
+    paddingHorizontal: 7,
+  },
+  actionText: { color: COLORS.textSecondary, fontSize: 11, fontWeight: "700" },
+  detailButton: {
+    marginLeft: "auto",
     flexDirection: "row",
     alignItems: "center",
     gap: 2,
+    minHeight: 40,
+    paddingLeft: 8,
   },
-  iconBtn: {
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  detailText: { color: COLORS.goldLight, fontSize: 12, fontWeight: "800" },
   ytIcon: { width: 18, height: 18 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8, minWidth: 0 },
   rowName: { color: COLORS.text, fontSize: 16, fontWeight: "800", flex: 1, minWidth: 0 },
   rowLoc: { color: COLORS.textSecondary, fontWeight: "600" },
   rowStat: { color: COLORS.text, fontWeight: "700", fontSize: 14, flex: 1, minWidth: 0 },
   pressed: { opacity: 0.88 },
-  link: { color: COLORS.goldLight, fontWeight: "800" },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.72)",
-    justifyContent: "center",
-    padding: 18,
-  },
-  modalCard: { gap: 12 },
-  modalHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  modalTitle: { color: COLORS.text, fontWeight: "800", flex: 1, paddingRight: 12 },
-  mapImage: { width: "100%", height: 280 },
 });

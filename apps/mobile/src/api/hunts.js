@@ -1,4 +1,5 @@
 import { apiRequest } from "./client";
+import { loadEntireCatalog } from "./page";
 
 function withQuery(path, params = {}) {
   const search = new URLSearchParams();
@@ -14,6 +15,10 @@ export function listHunts({ vocation, difficulty, location, level, page, limit }
   return apiRequest(
     withQuery("/hunts", { vocation, difficulty, location, level, page, limit }),
   );
+}
+
+export function listAllHunts() {
+  return loadEntireCatalog((query) => listHunts(query || {}));
 }
 
 export function getHuntBySlug(slug) {

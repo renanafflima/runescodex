@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-labelledby="title">
+  <title id="title">Placeholder do �cone RuneCodex</title>
+  <rect width="192" height="192" rx="36" fill="#070b14"/>
+  <rect x="12" y="12" width="168" height="168" rx="28" fill="none" stroke="#d4a72c" stroke-width="6"/>
+  <text x="96" y="111" fill="#f0c75e" font-family="Georgia, serif" font-size="52" font-weight="700" text-anchor="middle">RC</text>
+</svg>

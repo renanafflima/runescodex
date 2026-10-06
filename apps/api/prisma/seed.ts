@@ -8,6 +8,8 @@
  *   npm run prisma:seed
  */
 import "dotenv/config";
+import { assertRuntimeEnvironment } from "../src/common/database-target.js";
+import { publicErrorText } from "../src/common/redact-error.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client.js";
 import {
@@ -21,6 +23,7 @@ import {
 import { seedRewards } from "./seed/rewards.js";
 
 async function main() {
+  assertRuntimeEnvironment(process.env, { seed: true });
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error(
@@ -255,6 +258,6 @@ function requireCreature(ids: Map<string, string>, slug: string): string {
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error(publicErrorText(error));
   process.exit(1);
 });

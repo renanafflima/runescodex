@@ -13,11 +13,17 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: APP_ENV
+        value: production
       - key: NODE_VERSION
         value: "22"
       - key: JWT_EXPIRES_IN
         value: "7d"
       - key: DATABASE_URL
+        sync: false
+      - key: PRODUCTION_DATABASE_HOST
+        sync: false
+      - key: STAGING_DATABASE_HOST
         sync: false
       - key: JWT_SECRET
         sync: false

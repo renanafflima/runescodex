@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { collectPages, readPage } from "./page.js";
+import { collectPages, loadEntireCatalog, readPage } from "./page.js";
 
 test("reads a paginated payload and stops after the last page", async () => {
   const pages = [
@@ -15,4 +15,23 @@ test("reads a paginated payload and stops after the last page", async () => {
   assert.deepEqual(seen, [1, 2]);
   assert.deepEqual(collected, { items: [1, 2, 3], total: 3 });
   assert.equal(readPage([]).hasMore, false);
+});
+
+test("keeps a full catalog array and pages when the API returns a page", async () => {
+  const entire = await loadEntireCatalog(async () => [
+    { name: "Abyssal Calamary" },
+    { name: "Acid Blob" },
+  ]);
+  assert.deepEqual(entire.map((item) => item.name), [
+    "Abyssal Calamary",
+    "Acid Blob",
+  ]);
+
+  const paged = await loadEntireCatalog(async (query) => {
+    if (!query) {
+      return { items: ["a"], page: 1, limit: 1, total: 2, hasMore: true };
+    }
+    return { items: ["a", "b"], page: 1, limit: 50, total: 2, hasMore: false };
+  });
+  assert.deepEqual(paged, ["a", "b"]);
 });

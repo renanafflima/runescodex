@@ -1,0 +1,32 @@
+# Staging blueprint. Applying this file creates a separate Render service.
+# It is not applied by the production blueprint.
+# Set DATABASE_URL, STAGING_DATABASE_HOST, PRODUCTION_DATABASE_HOST,
+# and JWT_SECRET in the Render dashboard. Do not commit those values.
+
+services:
+  - type: web
+    name: runescodex-api-staging
+    runtime: node
+    rootDir: apps/api
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_ENV
+        value: staging
+      - key: NODE_VERSION
+        value: "22"
+      - key: JWT_EXPIRES_IN
+        value: "7d"
+      - key: DATABASE_URL
+        sync: false
+      - key: STAGING_DATABASE_HOST
+        sync: false
+      - key: PRODUCTION_DATABASE_HOST
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

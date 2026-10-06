@@ -90,7 +90,7 @@ describe('RewardsService', () => {
     rewardWallet: {
       findUnique: jest.fn(),
       findUniqueOrThrow: jest.fn(),
-      create: jest.fn(),
+      createMany: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
     },
@@ -102,7 +102,7 @@ describe('RewardsService', () => {
       findMany: jest.fn(),
       findUnique: jest.fn(),
       findUniqueOrThrow: jest.fn(),
-      create: jest.fn(),
+      createMany: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
     },
@@ -123,13 +123,17 @@ describe('RewardsService', () => {
       create: jest.fn(),
     },
     rewardEventReceipt: {
-      create: jest.fn(),
+      createMany: jest.fn(),
     },
   };
 
   beforeEach(async () => {
     jest.clearAllMocks();
     prisma.$transaction.mockImplementation((fn) => fn(prisma));
+    prisma.userMissionProgress.updateMany.mockResolvedValue({ count: 1 });
+    prisma.userMissionProgress.findUniqueOrThrow.mockResolvedValue(
+      progressRow({ progress: 1 }),
+    );
 
     const moduleRef = await Test.createTestingModule({
       providers: [RewardsService, { provide: PrismaService, useValue: prisma }],
@@ -140,17 +144,141 @@ describe('RewardsService', () => {
 
   it('creates a wallet for the authenticated user', async () => {
     prisma.rewardWallet.findUnique.mockResolvedValue(null);
-    prisma.rewardWallet.create.mockResolvedValue(walletRow());
+    prisma.rewardWallet.createMany.mockResolvedValue({ count: 1 });
+    prisma.rewardWallet.findUniqueOrThrow.mockResolvedValue(walletRow());
     prisma.rewardMission.findMany.mockResolvedValue([]);
     prisma.userMissionProgress.findMany.mockResolvedValue([]);
 
     const result = await service.getMe(USER_A);
 
-    expect(prisma.rewardWallet.create).toHaveBeenCalledWith({
-      data: { userId: USER_A },
-      select: expect.any(Object),
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.rewardWallet.createMany).toHaveBeenCalledWith({
+      data: [{ userId: USER_A }],
+      skipDuplicates: true,
     });
     expect(result.wallet).toEqual({ points: 0, gold: 0, diamond: 0 });
+  });
+
+  it('reads an existing wallet without opening a transaction', async () => {
+    prisma.rewardWallet.findUnique.mockResolvedValue(
+      walletRow({ points: 12, gold: 1, diamond: 2 }),
+    );
+    prisma.rewardMission.findMany.mockResolvedValue([]);
+    prisma.userMissionProgress.findMany.mockResolvedValue([]);
+
+    const result = await service.getMe(USER_A);
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      wallet: { points: 12, gold: 1, diamond: 2 },
+      missions: {
+        DAILY: { total: 0, completed: 0 },
+        WEEKLY: { total: 0, completed: 0 },
+        MONTHLY: { total: 0, completed: 0 },
+      },
+      conversions: {
+        pointsToGold: [
+          { amount: 1, pointsCost: 10_000, goldGranted: 1, enabled: true },
+          { amount: 5, pointsCost: 45_000, goldGranted: 5, enabled: true },
+        ],
+        goldToDiamond: { enabled: false, rate: null },
+      },
+    });
+  });
+
+  it('keeps the current period summary when older progress exists', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-09-21T15:00:00.000Z'));
+    try {
+      const now = new Date();
+      const daily = currentPeriodWindow('DAILY', now).periodStart;
+      const weekly = currentPeriodWindow('WEEKLY', now).periodStart;
+      const monthly = currentPeriodWindow('MONTHLY', now).periodStart;
+      const previousDay = new Date('2026-09-20T00:00:00.000Z');
+      prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
+      prisma.rewardMission.findMany.mockResolvedValue([
+        { id: 'daily-mission', period: 'DAILY' },
+        { id: 'weekly-mission', period: 'WEEKLY' },
+        { id: 'monthly-mission', period: 'MONTHLY' },
+      ]);
+      prisma.userMissionProgress.findMany.mockResolvedValue([
+        progressRow({
+          missionId: 'daily-mission',
+          completed: true,
+          periodStart: daily,
+        }),
+        progressRow({
+          missionId: 'weekly-mission',
+          completed: true,
+          periodStart: weekly,
+        }),
+        progressRow({
+          missionId: 'monthly-mission',
+          completed: false,
+          periodStart: monthly,
+        }),
+      ]);
+
+      const result = await service.getMe(USER_A);
+
+      expect(prisma.userMissionProgress.findMany).toHaveBeenCalledWith({
+        where: {
+          userId: USER_A,
+          missionId: {
+            in: ['daily-mission', 'weekly-mission', 'monthly-mission'],
+          },
+          periodStart: { in: [daily, weekly, monthly] },
+        },
+      });
+      const starts =
+        prisma.userMissionProgress.findMany.mock.calls[0][0].where.periodStart
+          .in;
+      expect(
+        starts.some((start: Date) => start.getTime() === previousDay.getTime()),
+      ).toBe(false);
+      expect(result.missions).toEqual({
+        DAILY: { total: 1, completed: 1 },
+        WEEKLY: { total: 1, completed: 1 },
+        MONTHLY: { total: 1, completed: 0 },
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('creates a single wallet when two first reads arrive together', async () => {
+    const state = { wallets: 0, transactions: 0 };
+    const local = {
+      $transaction: async (fn: (tx: typeof local) => Promise<unknown>) => {
+        state.transactions += 1;
+        return fn(local);
+      },
+      rewardWallet: {
+        findUnique: async () => (state.wallets ? walletRow() : null),
+        createMany: async () => {
+          if (state.wallets) return { count: 0 };
+          state.wallets = 1;
+          return { count: 1 };
+        },
+        findUniqueOrThrow: async () => walletRow(),
+      },
+      rewardMission: { findMany: async () => [] },
+      userMissionProgress: { findMany: async () => [] },
+    };
+    const moduleRef = await Test.createTestingModule({
+      providers: [RewardsService, { provide: PrismaService, useValue: local }],
+    }).compile();
+    const localService = moduleRef.get(RewardsService);
+
+    const [first, second] = await Promise.all([
+      localService.getMe(USER_A),
+      localService.getMe(USER_A),
+    ]);
+
+    expect(state.wallets).toBe(1);
+    expect(state.transactions).toBe(2);
+    expect(first.wallet).toEqual({ points: 0, gold: 0, diamond: 0 });
+    expect(second.wallet).toEqual(first.wallet);
   });
 
   it('lists only active missions for the requested period with user progress', async () => {
@@ -173,7 +301,7 @@ describe('RewardsService', () => {
 
   it('increments an active mission from a valid event', async () => {
     prisma.rewardMission.findMany.mockResolvedValue([missionRow()]);
-    prisma.rewardEventReceipt.create.mockResolvedValue({});
+    prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
     prisma.userMissionProgress.findUnique.mockResolvedValue(progressRow());
     prisma.userMissionProgress.update.mockResolvedValue(
@@ -194,12 +322,14 @@ describe('RewardsService', () => {
 
   it('completes a mission and credits points once', async () => {
     prisma.rewardMission.findMany.mockResolvedValue([missionRow()]);
-    prisma.rewardEventReceipt.create.mockResolvedValue({});
+    prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
     prisma.userMissionProgress.findUnique.mockResolvedValue(
       progressRow({ progress: 1 }),
     );
-    prisma.userMissionProgress.update.mockResolvedValue({});
+    prisma.userMissionProgress.findUniqueOrThrow.mockResolvedValue(
+      progressRow({ progress: 2 }),
+    );
     prisma.userMissionProgress.updateMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.update.mockResolvedValue(walletRow({ points: 30 }));
     prisma.rewardLedgerEntry.create.mockResolvedValue({});
@@ -211,8 +341,10 @@ describe('RewardsService', () => {
       new Date('2026-09-21T12:00:00.000Z'),
     );
 
-    expect(result.applied[0].completed).toBe(true);
-    expect(result.applied[0].wallet.points).toBe(30);
+    expect(result.applied[0]).toMatchObject({
+      completed: true,
+      wallet: { points: 30 },
+    });
     expect(prisma.rewardLedgerEntry.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -226,7 +358,7 @@ describe('RewardsService', () => {
 
   it('does not duplicate a repeated event reference', async () => {
     prisma.rewardMission.findMany.mockResolvedValue([missionRow()]);
-    prisma.rewardEventReceipt.create.mockRejectedValue({ code: 'P2002' });
+    prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 0 });
 
     const result = await service.recordEvent(USER_A, 'FORUM_TOPIC_CREATED', {
       referenceType: 'ForumThread',
@@ -234,7 +366,7 @@ describe('RewardsService', () => {
     });
 
     expect(result.applied).toEqual([]);
-    expect(prisma.userMissionProgress.update).not.toHaveBeenCalled();
+    expect(prisma.userMissionProgress.updateMany).not.toHaveBeenCalled();
     expect(prisma.rewardLedgerEntry.create).not.toHaveBeenCalled();
   });
 
@@ -254,7 +386,7 @@ describe('RewardsService', () => {
 
   it('scopes event progress to the authenticated user', async () => {
     prisma.rewardMission.findMany.mockResolvedValue([missionRow()]);
-    prisma.rewardEventReceipt.create.mockResolvedValue({});
+    prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
     prisma.userMissionProgress.findUnique.mockResolvedValue(progressRow());
     prisma.userMissionProgress.update.mockResolvedValue(
@@ -266,13 +398,14 @@ describe('RewardsService', () => {
       referenceId: 'thread-4',
     });
 
-    expect(prisma.rewardEventReceipt.create).toHaveBeenCalledWith(
+    expect(prisma.rewardEventReceipt.createMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ userId: USER_A }),
+        data: [expect.objectContaining({ userId: USER_A })],
+        skipDuplicates: true,
       }),
     );
     expect(
-      JSON.stringify(prisma.rewardEventReceipt.create.mock.calls),
+      JSON.stringify(prisma.rewardEventReceipt.createMany.mock.calls),
     ).not.toContain(USER_B);
   });
 
@@ -287,7 +420,7 @@ describe('RewardsService', () => {
 
   it('allows a DAILY mission again on the next UTC day', async () => {
     prisma.rewardMission.findMany.mockResolvedValue([missionRow()]);
-    prisma.rewardEventReceipt.create.mockResolvedValue({});
+    prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
     prisma.userMissionProgress.findUnique.mockResolvedValue(progressRow());
     prisma.userMissionProgress.update.mockResolvedValue(
@@ -308,9 +441,9 @@ describe('RewardsService', () => {
     );
 
     const firstStart =
-      prisma.rewardEventReceipt.create.mock.calls[0][0].data.periodStart;
+      prisma.rewardEventReceipt.createMany.mock.calls[0][0].data[0].periodStart;
     const secondStart =
-      prisma.rewardEventReceipt.create.mock.calls[1][0].data.periodStart;
+      prisma.rewardEventReceipt.createMany.mock.calls[1][0].data[0].periodStart;
     expect(firstStart.toISOString()).toBe('2026-09-21T00:00:00.000Z');
     expect(secondStart.toISOString()).toBe('2026-09-22T00:00:00.000Z');
   });
@@ -319,7 +452,7 @@ describe('RewardsService', () => {
     prisma.rewardMission.findMany.mockResolvedValue([
       missionRow({ period: 'WEEKLY' }),
     ]);
-    prisma.rewardEventReceipt.create.mockResolvedValue({});
+    prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
     prisma.userMissionProgress.findUnique.mockResolvedValue(progressRow());
     prisma.userMissionProgress.update.mockResolvedValue(
@@ -334,7 +467,7 @@ describe('RewardsService', () => {
     );
 
     expect(
-      prisma.rewardEventReceipt.create.mock.calls[0][0].data.periodStart.toISOString(),
+      prisma.rewardEventReceipt.createMany.mock.calls[0][0].data[0].periodStart.toISOString(),
     ).toBe('2026-09-21T00:00:00.000Z');
   });
 
@@ -342,7 +475,7 @@ describe('RewardsService', () => {
     prisma.rewardMission.findMany.mockResolvedValue([
       missionRow({ period: 'MONTHLY' }),
     ]);
-    prisma.rewardEventReceipt.create.mockResolvedValue({});
+    prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
     prisma.userMissionProgress.findUnique.mockResolvedValue(progressRow());
     prisma.userMissionProgress.update.mockResolvedValue(
@@ -357,7 +490,7 @@ describe('RewardsService', () => {
     );
 
     expect(
-      prisma.rewardEventReceipt.create.mock.calls[0][0].data.periodStart.toISOString(),
+      prisma.rewardEventReceipt.createMany.mock.calls[0][0].data[0].periodStart.toISOString(),
     ).toBe('2026-09-01T00:00:00.000Z');
   });
 
@@ -593,7 +726,7 @@ describe('RewardsService', () => {
 
   it('does not credit again when the mission is already completed', async () => {
     prisma.rewardMission.findMany.mockResolvedValue([missionRow()]);
-    prisma.rewardEventReceipt.create.mockResolvedValue({});
+    prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow({ points: 30 }));
     prisma.userMissionProgress.findUnique.mockResolvedValue(
       progressRow({ progress: 2, completed: true, completedAt: new Date() }),

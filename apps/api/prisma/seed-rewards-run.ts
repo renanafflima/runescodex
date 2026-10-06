@@ -5,11 +5,14 @@
  *   npx tsx prisma/seed-rewards-run.ts
  */
 import "dotenv/config";
+import { assertRuntimeEnvironment } from "../src/common/database-target.js";
+import { publicErrorText } from "../src/common/redact-error.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client.js";
 import { seedRewards } from "./seed/rewards.js";
 
 async function main() {
+  assertRuntimeEnvironment(process.env, { seed: true });
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set.");
@@ -27,6 +30,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error(publicErrorText(error));
   process.exit(1);
 });

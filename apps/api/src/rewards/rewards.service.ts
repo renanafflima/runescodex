@@ -24,15 +24,6 @@ import { RedeemRewardDto } from './dto/redeem-reward.dto';
 import { currentPeriodWindow } from './rewards.periods';
 import { userRedemptionMessage } from './rewards.redemption';
 
-function isUniqueConflict(error: unknown) {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: string }).code === 'P2002'
-  );
-}
-
 const WALLET_SELECT = {
   id: true,
   userId: true,
@@ -47,8 +38,10 @@ export class RewardsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getMe(userId: string) {
-    const wallet = await this.prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => this.ensureWallet(tx, userId),
+    const wallet = await this.readWallet(userId);
+    const now = new Date();
+    const periodStarts = (['DAILY', 'WEEKLY', 'MONTHLY'] as const).map(
+      (period) => currentPeriodWindow(period, now).periodStart,
     );
 
     const missions = await this.prisma.rewardMission.findMany({
@@ -60,10 +53,11 @@ export class RewardsService {
       where: {
         userId,
         missionId: { in: missions.map((mission) => mission.id) },
+        periodStart: { in: periodStarts },
       },
     });
 
-    const summary = this.summarizeMissions(missions, progressRows);
+    const summary = this.summarizeMissions(missions, progressRows, now);
 
     return {
       wallet: this.serializeWallet(wallet),
@@ -105,6 +99,7 @@ export class RewardsService {
     eventType: string,
     metadata: { referenceType: string; referenceId: string },
     at = new Date(),
+    db?: Prisma.TransactionClient,
   ) {
     if (!isSupportedRewardEvent(eventType)) {
       throw new BadRequestException('Invalid reward event');
@@ -116,50 +111,58 @@ export class RewardsService {
       throw new BadRequestException('Event reference is required');
     }
 
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const missions = await tx.rewardMission.findMany({
-        where: { active: true, eventType },
+    if (db) {
+      return this.recordEventWithin(db, userId, eventType, metadata, at);
+    }
+
+    return this.prisma.$transaction((tx: Prisma.TransactionClient) =>
+      this.recordEventWithin(tx, userId, eventType, metadata, at),
+    );
+  }
+
+  private async recordEventWithin(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    eventType: string,
+    metadata: { referenceType: string; referenceId: string },
+    at: Date,
+  ) {
+    const missions = await tx.rewardMission.findMany({
+      where: { active: true, eventType },
+    });
+
+    const applied: Awaited<
+      ReturnType<RewardsService['applyProgressIncrement']>
+    >[] = [];
+    for (const mission of missions) {
+      const { periodStart, periodEnd } = currentPeriodWindow(
+        mission.period,
+        at,
+      );
+
+      const claimed = await this.claimEventReceipt(tx, {
+        userId,
+        eventType,
+        referenceId: metadata.referenceId,
+        missionId: mission.id,
+        periodStart,
       });
-
-      const applied: Awaited<
-        ReturnType<RewardsService['applyProgressIncrement']>
-      >[] = [];
-      for (const mission of missions) {
-        const { periodStart, periodEnd } = currentPeriodWindow(
-          mission.period,
-          at,
-        );
-
-        try {
-          await tx.rewardEventReceipt.create({
-            data: {
-              userId,
-              eventType,
-              referenceId: metadata.referenceId,
-              missionId: mission.id,
-              periodStart,
-            },
-          });
-        } catch (error) {
-          if (isUniqueConflict(error)) {
-            continue;
-          }
-          throw error;
-        }
-
-        applied.push(
-          await this.applyProgressIncrement(
-            tx,
-            userId,
-            mission,
-            periodStart,
-            periodEnd,
-          ),
-        );
+      if (!claimed) {
+        continue;
       }
 
-      return { eventType: eventType, applied };
-    });
+      applied.push(
+        await this.applyProgressIncrement(
+          tx,
+          userId,
+          mission,
+          periodStart,
+          periodEnd,
+        ),
+      );
+    }
+
+    return { eventType: eventType, applied };
   }
 
   private async applyProgressIncrement(
@@ -198,15 +201,31 @@ export class RewardsService {
       );
     }
 
-    const nextProgress = Math.min(mission.target, progressRow.progress + 1);
-
-    await tx.userMissionProgress.update({
-      where: { id: progressRow.id },
-      data: { progress: nextProgress },
+    const incremented = await tx.userMissionProgress.updateMany({
+      where: {
+        id: progressRow.id,
+        completed: false,
+        progress: { lt: mission.target },
+      },
+      data: { progress: { increment: 1 } },
     });
+    const fresh = await tx.userMissionProgress.findUniqueOrThrow({
+      where: { id: progressRow.id },
+    });
+    if (incremented.count !== 1) {
+      return this.serializeMission(
+        mission,
+        fresh,
+        periodStart,
+        periodEnd,
+        this.serializeWallet(wallet),
+      );
+    }
 
-    let completed: boolean = progressRow.completed;
-    let completedAt: Date | null = progressRow.completedAt;
+    const nextProgress = fresh.progress;
+
+    let completed: boolean = fresh.completed;
+    let completedAt: Date | null = fresh.completedAt;
     let walletState = wallet;
 
     if (nextProgress >= mission.target) {
@@ -433,6 +452,37 @@ export class RewardsService {
     return this.serializeRedemption(row);
   }
 
+  private async claimEventReceipt(
+    tx: Prisma.TransactionClient,
+    data: {
+      userId: string;
+      eventType: string;
+      referenceId: string;
+      missionId: string;
+      periodStart: Date;
+    },
+  ) {
+    const inserted = await tx.rewardEventReceipt.createMany({
+      data: [data],
+      skipDuplicates: true,
+    });
+    return inserted.count === 1;
+  }
+
+  private async readWallet(userId: string) {
+    const existing = await this.prisma.rewardWallet.findUnique({
+      where: { userId },
+      select: WALLET_SELECT,
+    });
+    if (existing) {
+      return existing;
+    }
+
+    return this.prisma.$transaction((tx: Prisma.TransactionClient) =>
+      this.createWallet(tx, userId),
+    );
+  }
+
   private async ensureWallet(tx: Prisma.TransactionClient, userId: string) {
     const existing = await tx.rewardWallet.findUnique({
       where: { userId },
@@ -442,20 +492,18 @@ export class RewardsService {
       return existing;
     }
 
-    try {
-      return await tx.rewardWallet.create({
-        data: { userId },
-        select: WALLET_SELECT,
-      });
-    } catch (error) {
-      if (isUniqueConflict(error)) {
-        return tx.rewardWallet.findUniqueOrThrow({
-          where: { userId },
-          select: WALLET_SELECT,
-        });
-      }
-      throw error;
-    }
+    return this.createWallet(tx, userId);
+  }
+
+  private async createWallet(tx: Prisma.TransactionClient, userId: string) {
+    await tx.rewardWallet.createMany({
+      data: [{ userId }],
+      skipDuplicates: true,
+    });
+    return tx.rewardWallet.findUniqueOrThrow({
+      where: { userId },
+      select: WALLET_SELECT,
+    });
   }
 
   private async ensureProgress(
@@ -480,29 +528,26 @@ export class RewardsService {
       return existing;
     }
 
-    try {
-      return await tx.userMissionProgress.create({
-        data: {
+    await tx.userMissionProgress.createMany({
+      data: [
+        {
           userId: params.userId,
           missionId: params.missionId,
           periodStart: params.periodStart,
           periodEnd: params.periodEnd,
         },
-      });
-    } catch (error) {
-      if (isUniqueConflict(error)) {
-        return tx.userMissionProgress.findUniqueOrThrow({
-          where: {
-            userId_missionId_periodStart: {
-              userId: params.userId,
-              missionId: params.missionId,
-              periodStart: params.periodStart,
-            },
-          },
-        });
-      }
-      throw error;
-    }
+      ],
+      skipDuplicates: true,
+    });
+    return tx.userMissionProgress.findUniqueOrThrow({
+      where: {
+        userId_missionId_periodStart: {
+          userId: params.userId,
+          missionId: params.missionId,
+          periodStart: params.periodStart,
+        },
+      },
+    });
   }
 
   private async applyWalletDelta(
@@ -683,12 +728,13 @@ export class RewardsService {
       completed: boolean;
       periodStart: Date;
     }>,
+    now = new Date(),
   ) {
     const periods: MissionPeriod[] = ['DAILY', 'WEEKLY', 'MONTHLY'];
     const result: Record<string, { total: number; completed: number }> = {};
 
     for (const period of periods) {
-      const { periodStart } = currentPeriodWindow(period);
+      const { periodStart } = currentPeriodWindow(period, now);
       const periodMissions = missions.filter(
         (mission) => mission.period === period,
       );

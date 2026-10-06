@@ -1,0 +1,14 @@
+const MAX_URL_LENGTH = 2000;
+
+export function isSafeHttpsUrl(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > MAX_URL_LENGTH) return false;
+
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === "https:" && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}

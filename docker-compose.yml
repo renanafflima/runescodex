@@ -6,13 +6,13 @@ services:
     container_name: runescodex-postgres
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123456
-      POSTGRES_DB: runescodex
+      POSTGRES_USER: runescodex
+      POSTGRES_PASSWORD: runescodex_dev
+      POSTGRES_DB: runescodex_dev
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - runescodex_dev_data:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
+  runescodex_dev_data:

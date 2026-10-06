@@ -1,4 +1,6 @@
 import { isSafeHttpsUrl } from "@/src/security/https-url";
+import { CREATURE_IMAGE_BY_KEY } from "./creature-images";
+import { creatureImageKey } from "./creature-image-key";
 
 export const huntsBackground = require("@/assets/runescodex/hunts/hunts_background.webp");
 export const huntsHero = require("@/assets/runescodex/hunts/hunts_hero.webp");
@@ -49,6 +51,51 @@ export const PTS = [1, 2, 3, 4];
 export const VOCS = ["Any", "EK", "RP", "MS", "ED"];
 export const DIFFICULTIES = ["Any", "EASY", "MEDIUM", "HARD", "VERY_HARD"];
 export const SORTS = ["Best XP", "Best Profit", "Level", "Name"];
+
+const VOCATION_ALIASES = {
+  ek: "EK",
+  knight: "EK",
+  eliteknight: "EK",
+  rp: "RP",
+  paladin: "RP",
+  royalpaladin: "RP",
+  ed: "ED",
+  druid: "ED",
+  elderdruid: "ED",
+  ms: "MS",
+  sorcerer: "MS",
+  mastersorcerer: "MS",
+};
+
+export function normalizeVocation(value) {
+  const key = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+  return VOCATION_ALIASES[key] || null;
+}
+
+function levelFits(entry, level) {
+  if (!entry || !hasNumericValue(level)) return false;
+  const numericLevel = Number(level);
+  if (entry.levelMin != null && numericLevel < Number(entry.levelMin)) return false;
+  if (entry.levelMax != null && numericLevel > Number(entry.levelMax)) return false;
+  return entry.levelMin != null || entry.levelMax != null;
+}
+
+export function huntCompatibility(hunt, character) {
+  if (!character) return 0;
+  const vocation = normalizeVocation(character.vocation);
+  const vocations = Array.isArray(hunt?.vocations) ? hunt.vocations : [];
+  const vocationEntry = vocation
+    ? vocations.find((entry) => normalizeVocation(entry?.vocation) === vocation)
+    : null;
+
+  if (vocationEntry && levelFits(vocationEntry, character.level)) return 4;
+  if (vocationEntry) return 2;
+  if (vocations.some((entry) => levelFits(entry, character.level))) return 1;
+  return 0;
+}
 
 export const HUNTS = [
   {
@@ -153,8 +200,13 @@ export function resolveCreatureImage(image, name) {
   const fileName = fileNameFromPath(image);
   if (fileName && CREATURE_IMAGES[fileName]) return CREATURE_IMAGES[fileName];
   if (name && CREATURE_IMAGES[name]) return CREATURE_IMAGES[name];
-  const fromFileName = fileName.replace(/_/g, " ").replace(/\.gif$/i, "");
+  const fromFileName = fileName.replace(/_/g, " ").replace(/\.(gif|png|webp)$/i, "");
   if (fromFileName && CREATURE_IMAGES[fromFileName]) return CREATURE_IMAGES[fromFileName];
+  const keys = [fileName, name, fromFileName];
+  for (const value of keys) {
+    const hit = CREATURE_IMAGE_BY_KEY[creatureImageKey(value)];
+    if (hit) return hit;
+  }
   return null;
 }
 
@@ -221,6 +273,7 @@ function mapHuntCreature(item) {
   const source = nested || item || {};
   return {
     id: item?.id || source.id || source.slug || source.name || null,
+    slug: source.slug || item?.slug || null,
     name: source.name || item?.name || "",
     image: resolveCreatureImage(source.image || item?.image, source.name || item?.name),
     hp: nested ? nested.hp ?? null : item?.hp ?? null,

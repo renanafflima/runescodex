@@ -1,0 +1,79 @@
+:root {
+  color-scheme: dark;
+
+  /* Core palette inherited from the RuneCodex mobile identity. */
+  --color-bg: #05080e;
+  --color-bg-deep: #03050a;
+  --color-bg-secondary: #09111d;
+  --color-surface: #0d1624;
+  --color-surface-raised: #121d2e;
+  --color-surface-soft: rgb(13 22 36 / 72%);
+  --color-line: rgb(148 163 184 / 16%);
+  --color-line-strong: rgb(212 167 44 / 30%);
+  --color-gold: #d4a72c;
+  --color-gold-light: #f0c75e;
+  --color-gold-pale: #f5dda0;
+  --color-gold-deep: #9e7419;
+  --color-text: #f8fafc;
+  --color-text-soft: #d9e0e8;
+  --color-text-secondary: #9ba9bb;
+  --color-text-muted: #69788d;
+  --color-info: #77a9c8;
+  --color-success: #22c55e;
+  --color-danger: #ef6464;
+  --color-overlay: rgb(3 6 11 / 76%);
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-display: Georgia, "Times New Roman", Times, serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: clamp(1.5rem, 3vw, 2rem);
+  --text-2xl: clamp(2rem, 5vw, 3.5rem);
+  --text-hero: clamp(2.75rem, 8vw, 6.5rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --space-9: 6rem;
+
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+
+  --shadow-soft: 0 0.75rem 2.5rem rgb(0 0 0 / 18%);
+  --shadow-panel: 0 1.5rem 4rem rgb(0 0 0 / 28%);
+  --shadow-focus: 0 0 0 0.1875rem rgb(240 199 94 / 26%);
+
+  --transition-fast: 140ms ease;
+  --transition-base: 220ms ease;
+  --transition-slow: 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  --content-narrow: 45rem;
+  --content-default: 72rem;
+  --content-wide: 84rem;
+  --header-height: 4.5rem;
+
+  --img-home-hero: url("/runes/images/home/home-hero.webp");
+  --img-home-background: url("/runes/images/home/home-background.webp");
+  --img-hunts: url("/runes/images/sections/hunts-background.webp");
+  --img-hunts-background: url("/runes/images/hunts/hunts_background.webp");
+  --img-hunts-hero: url("/runes/images/hunts/hunts_hero.webp");
+  --img-hunt-background: url("/runes/images/hunts/hunt_background.webp");
+  --img-hunt-hero: url("/runes/images/hunts/hunt_hero.webp");
+  --img-bestiary: url("/runes/images/sections/bestiary-background.webp");
+  --img-forum: url("/runes/images/sections/forum-background.webp");
+  --img-rewards: url("/runes/images/sections/rewards-background.webp");
+  --img-profile-hero: url("/runes/images/profile/profile-hero.webp");
+  --img-profile-background: url("/runes/images/profile/profile-background.webp");
+}

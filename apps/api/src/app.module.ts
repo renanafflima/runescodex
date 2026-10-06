@@ -10,6 +10,7 @@ import { HuntsModule } from './hunts/hunts.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RewardsModule } from './rewards/rewards.module';
 import { SecurityModule } from './common/security.module';
+import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { SecurityModule } from './common/security.module';
     BestiaryModule,
     ForumModule,
     RewardsModule,
+    TicketsModule,
     AdminModule,
   ],
   controllers: [AppController],

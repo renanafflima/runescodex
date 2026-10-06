@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RuneCodex — Hunts Minimal</title>
+<style>
+:root{
+  --bg:#030a12;
+  --panel:#07131f;
+  --line:rgba(83,137,171,.25);
+  --text:#eef4f8;
+  --muted:#91a9ba;
+  --gold:#e7b82f;
+  --blue:#5eb8ff;
+  --green:#63d69b;
+  --red:#ff6d6d;
+  --purple:#c67cff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:
+    radial-gradient(circle at 50% -10%,rgba(33,73,105,.22),transparent 40%),
+    var(--bg);
+  color:var(--text);
+  font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;
+}
+.page{max-width:1320px;margin:auto;padding:34px 34px 70px}
+.eyebrow{
+  color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.18em;
+  text-transform:uppercase;margin-bottom:8px
+}
+h1{
+  margin:0;font-family:Georgia,serif;font-size:42px;font-weight:500;
+}
+.subtitle{color:var(--muted);margin:8px 0 28px;font-size:14px}
+
+/* filtros */
+.filters{
+  display:flex;flex-wrap:wrap;gap:10px;
+  padding:0 0 24px;
+  border-bottom:1px solid var(--line);
+}
+.filter-group{
+  display:flex;align-items:center;gap:7px;
+  padding-right:16px;margin-right:4px;
+  border-right:1px solid rgba(83,137,171,.18)
+}
+.filter-group:last-child{border:0}
+.filter-label{font-size:10px;color:#718b9e;text-transform:uppercase;letter-spacing:.08em}
+.pill{
+  border:1px solid rgba(73,125,159,.42);
+  background:rgba(8,22,34,.72);
+  color:#c9d8e2;border-radius:999px;
+  padding:8px 12px;font-size:12px;font-weight:750;cursor:pointer;
+}
+.pill.active{
+  background:rgba(231,184,47,.14);
+  border-color:rgba(231,184,47,.75);
+  color:#ffd65a
+}
+.element{
+  display:inline-flex;align-items:center;gap:6px;
+}
+.element i{
+  width:8px;height:8px;border-radius:50%;display:inline-block;
+  box-shadow:0 0 10px currentColor
+}
+.energy{color:var(--purple)}
+.holy{color:#ffe68b}
+.ice{color:#65d7ff}
+.fire{color:#ff785d}
+.death{color:#b889d8}
+.earth{color:#8fcb74}
+
+/* grid */
+.results-head{
+  display:flex;justify-content:space-between;align-items:end;
+  margin:24px 0 14px
+}
+.results-head strong{font-size:14px}
+.results-head span{font-size:12px;color:var(--muted)}
+.grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:18px
+}
+.card{
+  position:relative;min-height:410px;overflow:hidden;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:#06111b;
+  box-shadow:0 18px 40px rgba(0,0,0,.26);
+  transition:.2s ease;
+}
+.card:hover{transform:translateY(-3px);border-color:rgba(231,184,47,.35)}
+.hero{
+  height:175px;position:relative;
+  background-size:cover;background-position:center;
+}
+.hero:after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(3,10,18,.04) 35%,rgba(3,10,18,.96) 100%);
+}
+.hero-top{
+  position:absolute;z-index:2;left:16px;right:16px;top:14px;
+  display:flex;justify-content:space-between;align-items:center
+}
+.tag{
+  font-size:10px;font-weight:800;padding:6px 9px;border-radius:999px;
+  background:rgba(3,11,18,.68);border:1px solid rgba(255,255,255,.18);
+  backdrop-filter:blur(5px)
+}
+.level{color:#ffd65a}
+.hero-title{
+  position:absolute;z-index:2;left:18px;right:18px;bottom:14px
+}
+.hero-title h2{
+  margin:0;font:500 25px Georgia,serif
+}
+.location{font-size:12px;color:#a9c0d0;margin-top:4px}
+
+.body{padding:0 18px 18px;margin-top:-2px}
+.metrics{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;
+  border-bottom:1px solid rgba(83,137,171,.18);
+  padding:0 0 15px;margin-bottom:15px
+}
+.metric{padding:0 12px 0 0}
+.metric + .metric{border-left:1px solid rgba(83,137,171,.18);padding-left:14px}
+.metric small{
+  display:block;color:#718b9e;font-size:9px;text-transform:uppercase;
+  letter-spacing:.1em;margin-bottom:4px
+}
+.metric b{font-size:19px;color:#f5f8fa}
+.metric.profit b{color:#ffd052}
+
+.combat{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px
+}
+.combat-box{
+  padding:10px 11px;border-radius:11px;
+  background:rgba(8,23,35,.62);
+  border:1px solid rgba(83,137,171,.15)
+}
+.combat-box small{
+  display:block;color:#718b9e;font-size:9px;text-transform:uppercase;
+  letter-spacing:.09em;margin-bottom:7px
+}
+.elem{
+  display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700
+}
+.elem .dot{width:9px;height:9px;border-radius:50%;box-shadow:0 0 9px currentColor}
+.attack .elem{color:var(--fire)}
+.defense .elem{color:var(--holy)}
+
+.creatures{
+  display:flex;align-items:center;gap:8px;
+  color:#b9cbd7;font-size:11px;
+  border-top:1px solid rgba(83,137,171,.13);
+  padding-top:12px
+}
+.mini{
+  width:31px;height:31px;object-fit:contain;
+  filter:drop-shadow(0 4px 7px rgba(0,0,0,.35))
+}
+.more{color:#6f899b}
+
+.open{
+  position:absolute;right:17px;bottom:17px;
+  width:36px;height:36px;border-radius:50%;
+  border:1px solid rgba(231,184,47,.7);
+  background:rgba(3,12,20,.75);color:#ffd45b;
+  display:grid;place-items:center;font-size:18px
+}
+
+/* responsive */
+@media(max-width:1000px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:680px){
+  .page{padding:24px 16px 50px}
+  h1{font-size:34px}
+  .filter-group{border:0;padding:0}
+  .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="eyebrow">HUNTS</div>
+  <h1>Onde caçar agora</h1>
+  <div class="subtitle">Encontre uma Hunt pelo que você quer ganhar — ou pelo elemento que você consegue enfrentar.</div>
+
+  <div class="filters">
+    <div class="filter-group">
+      <span class="filter-label">Vocação</span>
+      <button class="pill active">ANY</button><button class="pill">EK</button><button class="pill">RP</button><button class="pill">ED</button><button class="pill">MS</button>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Elemento para atacar</span>
+      <button class="pill element energy"><i></i>Energy</button>
+      <button class="pill element ice"><i></i>Ice</button>
+      <button class="pill element fire"><i></i>Fire</button>
+      <button class="pill element holy"><i></i>Holy</button>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Defesa</span>
+      <button class="pill element holy"><i></i>Holy</button>
+      <button class="pill element fire"><i></i>Fire</button>
+      <button class="pill element death"><i></i>Death</button>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Dificuldade</span>
+      <button class="pill active">ANY</button><button class="pill">EASY</button><button class="pill">MEDIUM</button><button class="pill">HARD</button>
+    </div>
+  </div>
+
+  <div class="results-head">
+    <strong>312 hunts encontradas</strong>
+    <span>Ordenar: Melhor combinação</span>
+  </div>
+
+  <div class="grid">
+    <article class="card">
+      <div class="hero" style="background-image:url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=900&q=80')">
+        <div class="hero-top"><span class="tag">VERY HARD</span><span class="tag level">600+</span></div>
+        <div class="hero-title"><h2>Ferumbras Ascendant</h2><div class="location">Ferumbras Tower · Oramond</div></div>
+      </div>
+      <div class="body">
+        <div class="metrics">
+          <div class="metric"><small>XP / hora</small><b>2.8kk</b></div>
+          <div class="metric profit"><small>Profit / hora</small><b>350k</b></div>
+        </div>
+        <div class="combat">
+          <div class="combat-box attack"><small>Melhor ataque</small><div class="elem"><span class="dot"></span>Energy</div></div>
+          <div class="combat-box defense"><small>Atenção</small><div class="elem"><span class="dot"></span>Holy</div></div>
+        </div>
+        <div class="creatures"><span>Principais:</span><span class="more">Ferumbras · Rage Squid · Midnight Azura</span></div>
+      </div>
+      <div class="open">›</div>
+    </article>
+
+    <article class="card">
+      <div class="hero" style="background-image:url('https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=80')">
+        <div class="hero-top"><span class="tag">HARD</span><span class="tag level">400+</span></div>
+        <div class="hero-title"><h2>Demon Forge</h2><div class="location">Svanground</div></div>
+      </div>
+      <div class="body">
+        <div class="metrics">
+          <div class="metric"><small>XP / hora</small><b>1.2kk</b></div>
+          <div class="metric profit"><small>Profit / hora</small><b>180k</b></div>
+        </div>
+        <div class="combat">
+          <div class="combat-box attack"><small>Melhor ataque</small><div class="elem energy"><span class="dot"></span>Energy</div></div>
+          <div class="combat-box defense"><small>Atenção</small><div class="elem fire"><span class="dot"></span>Fire</div></div>
+        </div>
+        <div class="creatures"><span>Principais:</span><span class="more">Demon · Hellhound · Grim Reaper</span></div>
+      </div>
+      <div class="open">›</div>
+    </article>
+
+    <article class="card">
+      <div class="hero" style="background-image:url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80')">
+        <div class="hero-top"><span class="tag">MEDIUM</span><span class="tag level">300+</span></div>
+        <div class="hero-title"><h2>Roshamuul Prison</h2><div class="location">Roshamuul</div></div>
+      </div>
+      <div class="body">
+        <div class="metrics">
+          <div class="metric"><small>XP / hora</small><b>800k</b></div>
+          <div class="metric profit"><small>Profit / hora</small><b>120k</b></div>
+        </div>
+        <div class="combat">
+          <div class="combat-box attack"><small>Melhor ataque</small><div class="elem holy"><span class="dot"></span>Holy</div></div>
+          <div class="combat-box defense"><small>Atenção</small><div class="elem ice"><span class="dot"></span>Ice</div></div>
+        </div>
+        <div class="creatures"><span>Principais:</span><span class="more">Falcon Paladin · Falcon Knight · Falcon Mage</span></div>
+      </div>
+      <div class="open">›</div>
+    </article>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Placeholder maskable do �cone RuneCodex</title>
+  <rect width="512" height="512" fill="#070b14"/>
+  <circle cx="256" cy="256" r="160" fill="#111827" stroke="#d4a72c" stroke-width="16"/>
+  <text x="256" y="296" fill="#f0c75e" font-family="Georgia, serif" font-size="128" font-weight="700" text-anchor="middle">RC</text>
+</svg>

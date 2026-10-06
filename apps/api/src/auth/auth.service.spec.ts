@@ -25,6 +25,14 @@ describe('AuthService', () => {
       findUnique: jest.fn(),
       create: jest.fn(),
     },
+    authSession: {
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      create: jest.fn().mockResolvedValue({
+        id: 'session-1',
+        userId: 'user-1',
+        expiresAt: new Date('2026-10-01T00:00:00.000Z'),
+      }),
+    },
   };
   const jwtService = {
     signAsync: jest.fn().mockResolvedValue('signed-token'),
@@ -83,6 +91,16 @@ describe('AuthService', () => {
     expect(prisma.user.create).not.toHaveBeenCalled();
   });
 
+  it('turns a concurrent unique-email insert into a conflict', async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+    (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
+    prisma.user.create.mockRejectedValue({ code: 'P2002' });
+
+    await expect(
+      service.register({ email: 'user@email.com', password: 'password1' }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
   it('logs in with a valid password', async () => {
     prisma.user.findUnique.mockResolvedValue({
       id: 'user-1',
@@ -103,6 +121,9 @@ describe('AuthService', () => {
       role: 'USER',
     });
     expect(result.accessToken).toBe('signed-token');
+    expect(jwtService.signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ sub: 'user-1', sid: 'session-1' }),
+    );
     expect(JSON.stringify(result)).not.toContain('hashed-password');
   });
 

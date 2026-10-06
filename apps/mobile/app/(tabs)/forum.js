@@ -378,7 +378,9 @@ export default function ForumScreen() {
                 <View key={`category-row-${rowIndex}`} style={styles.categoryRow}>
                   {row.map((item) => (
                     <View key={item.id} style={styles.category}>
-                      <Image source={item.image} style={styles.categoryArt} resizeMode="contain" />
+                      <View style={styles.categoryArtBox}>
+                        <Image source={item.image} style={styles.categoryArt} resizeMode="contain" />
+                      </View>
                       <LinearGradient
                         colors={["rgba(3,9,15,0.02)", "rgba(3,9,15,0.88)"]}
                         style={StyleSheet.absoluteFill}
@@ -624,7 +626,12 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   categorySpacer: { flex: 1, aspectRatio: 1.05 },
-  categoryArt: { ...StyleSheet.absoluteFillObject },
+  categoryArtBox: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  categoryArt: { width: "100%", height: "100%" },
   categoryCopy: { position: "absolute", left: 10, right: 10, bottom: 10 },
   categoryTitle: {
     color: Colors.text,

@@ -212,14 +212,49 @@
       }
     }
 
+    const STATUSES = ["PENDING", "APPROVED", "DELIVERED", "CANCELLED"];
+
+    function text(value) {
+      return value == null ? "" : String(value);
+    }
+
+    function el(tag, className, value) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (value != null) node.textContent = value;
+      return node;
+    }
+
+    function statusClass(status) {
+      return STATUSES.indexOf(status) >= 0 ? status : "";
+    }
+
+    function paragraph(label, value, extraClass) {
+      const p = document.createElement("p");
+      p.append(document.createTextNode(label));
+      const strong = document.createElement("b");
+      if (extraClass) strong.className = extraClass;
+      strong.textContent = text(value);
+      p.append(strong);
+      return p;
+    }
+
+    async function endSession() {
+      sessionStorage.removeItem(tokenKey);
+      await fetch("/admin/logout", { method: "POST", credentials: "same-origin" });
+      location.href = "/admin/login";
+    }
+
     function showDash(me) {
       loginCard.classList.add("hidden");
       dash.classList.remove("hidden");
-      session.innerHTML = me.email + ' · <button id="logout" type="button">Sair</button>';
-      document.getElementById("logout").onclick = () => {
-        sessionStorage.removeItem(tokenKey);
-        location.reload();
-      };
+      session.replaceChildren();
+      session.append(document.createTextNode(text(me.email) + " · "));
+      const logout = el("button", "", "Sair");
+      logout.id = "logout";
+      logout.type = "button";
+      logout.onclick = () => endSession();
+      session.append(logout);
     }
 
     async function loadList() {
@@ -239,59 +274,94 @@
         params.set("to", end.toISOString());
       }
       const data = await api("/admin/rewards/redemptions?" + params.toString());
-      stats.innerHTML = ["PENDING","APPROVED","DELIVERED","CANCELLED"].map((key) => (
-        `<div class="stat"><span>${key}</span><b class="${key}">${data.counts[key] || 0}</b></div>`
-      )).join("");
-      rows.innerHTML = (data.items || []).map((item) => `
-        <tr data-id="${item.id}">
-          <td>${item.id.slice(0, 8)}…</td>
-          <td>${item.user ? item.user.email : item.userId}</td>
-          <td>${item.reward ? item.reward.name : item.catalogItemId}</td>
-          <td>${item.currency}</td>
-          <td>${item.price}</td>
-          <td class="status ${item.status}">${item.status}</td>
-          <td>${fmt(item.createdAt)}</td>
-        </tr>
-      `).join("");
-      rows.querySelectorAll("tr").forEach((tr) => {
-        tr.onclick = () => openDetail(tr.getAttribute("data-id"));
+      stats.replaceChildren();
+      STATUSES.forEach((key) => {
+        const box = el("div", "stat");
+        box.append(el("span", "", key));
+        box.append(el("b", statusClass(key), String(data.counts[key] || 0)));
+        stats.append(box);
+      });
+      rows.replaceChildren();
+      (data.items || []).forEach((item) => {
+        const tr = document.createElement("tr");
+        const cells = [
+          text(item.id).slice(0, 8) + "…",
+          item.user ? item.user.email : item.userId,
+          item.reward ? item.reward.name : item.catalogItemId,
+          item.currency,
+          item.price,
+          item.status,
+          fmt(item.createdAt),
+        ];
+        cells.forEach((value, index) => {
+          const td = document.createElement("td");
+          if (index === 5) td.className = "status " + statusClass(item.status);
+          td.textContent = text(value);
+          tr.append(td);
+        });
+        tr.onclick = () => openDetail(item.id);
+        rows.append(tr);
       });
     }
 
+    function actionButton(act, label, className) {
+      const button = el("button", className, label);
+      button.type = "button";
+      button.onclick = () => runAction(button.closest("[data-redemption]").getAttribute("data-redemption"), act);
+      return button;
+    }
+
     async function openDetail(id) {
-      const item = await api("/admin/rewards/redemptions/" + id);
-      const history = (item.statusHistory || []).map((event) => (
-        `<li>${fmt(event.createdAt)} · ${event.fromStatus || "—"} → ${event.toStatus} · ${event.actor && event.actor.email ? event.actor.email : ""} ${event.note ? "· " + event.note : ""}</li>`
-      )).join("");
-      let actions = "";
-      if (item.status === "PENDING") {
-        actions = `<button class="primary" data-act="approve">Aprovar</button><button class="danger" data-act="cancel">Cancelar</button>`;
-      } else if (item.status === "APPROVED") {
-        actions = `<button class="primary" data-act="deliver">Marcar como entregue</button><button class="danger" data-act="cancel">Cancelar</button>`;
-      }
+      const item = await api("/admin/rewards/redemptions/" + encodeURIComponent(id));
       detail.classList.remove("hidden");
-      detail.innerHTML = `
-        <h3>Resgate ${item.id}</h3>
-        <p>Usuário: <b>${item.user ? item.user.email : item.userId}</b></p>
-        <p>Reward: <b>${item.reward ? item.reward.name : item.catalogItemId}</b></p>
-        <p>Preço congelado: <b>${item.price} ${item.currency}</b> · Qtd: ${item.quantity}</p>
-        <p>Pedido: ${fmt(item.createdAt)} · Status: <b class="${item.status}">${item.status}</b></p>
-        <p>${item.message || ""}</p>
-        <p>Nota admin: ${item.adminNote || "—"}</p>
-        <p>Entrega: ${item.deliveryNote || "—"}</p>
-        <p>Cancelamento: ${item.cancellationReason || "—"}</p>
-        <p>Aprovado por: ${item.approvedBy ? item.approvedBy.email : "—"} em ${fmt(item.approvedAt)}</p>
-        <p>Entregue por: ${item.deliveredBy ? item.deliveredBy.email : "—"} em ${fmt(item.deliveredAt)}</p>
-        <p>Cancelado por: ${item.cancelledBy ? item.cancelledBy.email : "—"} em ${fmt(item.cancelledAt)}</p>
-        <label>Observação</label>
-        <textarea id="note" rows="2"></textarea>
-        <div class="actions">${actions}</div>
-        <h4>Histórico de status</h4>
-        <ul class="history">${history || "<li>Sem eventos</li>"}</ul>
-      `;
-      detail.querySelectorAll("button[data-act]").forEach((btn) => {
-        btn.onclick = () => runAction(item.id, btn.getAttribute("data-act"));
+      detail.replaceChildren();
+      detail.setAttribute("data-redemption", text(item.id));
+      detail.append(el("h3", "", "Resgate " + text(item.id)));
+      detail.append(paragraph("Usuário: ", item.user ? item.user.email : item.userId));
+      detail.append(paragraph("Reward: ", item.reward ? item.reward.name : item.catalogItemId));
+      detail.append(paragraph("Preço congelado: ", text(item.price) + " " + text(item.currency)));
+      const statusLine = document.createElement("p");
+      statusLine.append(document.createTextNode("Pedido: " + fmt(item.createdAt) + " · Status: "));
+      statusLine.append(el("b", statusClass(item.status), text(item.status)));
+      detail.append(statusLine);
+      detail.append(el("p", "", "Qtd: " + text(item.quantity)));
+      detail.append(el("p", "", text(item.message)));
+      detail.append(el("p", "", "Nota admin: " + text(item.adminNote || "—")));
+      detail.append(el("p", "", "Entrega: " + text(item.deliveryNote || "—")));
+      detail.append(el("p", "", "Cancelamento: " + text(item.cancellationReason || "—")));
+      detail.append(el("p", "", "Aprovado por: " + text(item.approvedBy ? item.approvedBy.email : "—") + " em " + fmt(item.approvedAt)));
+      detail.append(el("p", "", "Entregue por: " + text(item.deliveredBy ? item.deliveredBy.email : "—") + " em " + fmt(item.deliveredAt)));
+      detail.append(el("p", "", "Cancelado por: " + text(item.cancelledBy ? item.cancelledBy.email : "—") + " em " + fmt(item.cancelledAt)));
+      detail.append(el("label", "", "Observação"));
+      const note = document.createElement("textarea");
+      note.id = "note";
+      note.rows = 2;
+      detail.append(note);
+      const actions = el("div", "actions");
+      if (item.status === "PENDING") {
+        actions.append(actionButton("approve", "Aprovar", "primary"));
+        actions.append(actionButton("cancel", "Cancelar", "danger"));
+      } else if (item.status === "APPROVED") {
+        actions.append(actionButton("deliver", "Marcar como entregue", "primary"));
+        actions.append(actionButton("cancel", "Cancelar", "danger"));
+      }
+      detail.append(actions);
+      detail.append(el("h4", "", "Histórico de status"));
+      const history = el("ul", "history");
+      const events = item.statusHistory || [];
+      if (!events.length) {
+        history.append(el("li", "", "Sem eventos"));
+      }
+      events.forEach((event) => {
+        const actor = event.actor && event.actor.email ? event.actor.email : "";
+        const noteText = event.note ? " · " + event.note : "";
+        history.append(el(
+          "li",
+          "",
+          fmt(event.createdAt) + " · " + (event.fromStatus || "—") + " → " + text(event.toStatus) + " · " + actor + noteText,
+        ));
       });
+      detail.append(history);
     }
 
     async function runAction(id, act) {
@@ -302,7 +372,7 @@
         cancel: "Cancelar este resgate e devolver o saldo?",
       };
       if (!confirm(labels[act])) return;
-      const path = `/admin/rewards/redemptions/${id}/${act}`;
+      const path = "/admin/rewards/redemptions/" + encodeURIComponent(id) + "/" + act;
       const body = act === "approve"
         ? { adminNote: note }
         : act === "deliver"
@@ -332,6 +402,14 @@
           throw new Error("Esta conta não possui acesso administrativo.");
         }
         sessionStorage.setItem(tokenKey, data.accessToken);
+        const sessionRes = await fetch("/admin/session", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { Authorization: "Bearer " + data.accessToken },
+        });
+        if (!sessionRes.ok) {
+          throw new Error("Não foi possível abrir a sessão administrativa.");
+        }
         showDash(data.user);
         await loadList();
       } catch (err) {

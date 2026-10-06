@@ -3,6 +3,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
   Min,
   MinLength,
@@ -25,6 +26,7 @@ export class UpdateCharacterDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(9999)
   level?: number;
 
   @IsOptional()

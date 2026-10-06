@@ -350,7 +350,9 @@ export default function ProfileScreen() {
                         accessibilityLabel={unlocked ? item.id : t("profile.lockedAchievement")}
                         style={[styles.achievement, unlocked && styles.achievementUnlocked]}
                       >
-                        <Image source={item.image} style={styles.achievementArt} resizeMode="contain" />
+                        <View style={styles.achievementArtBox}>
+                          <Image source={item.image} style={styles.achievementArt} resizeMode="contain" />
+                        </View>
                         {!unlocked ? <View style={styles.lockShade} /> : null}
                         {!unlocked ? (
                           <View style={styles.lockBadge}>
@@ -602,7 +604,12 @@ const styles = StyleSheet.create({
   },
   achievementSpacer: { flex: 1, aspectRatio: 1 },
   achievementUnlocked: { borderColor: "rgba(214,168,79,0.45)" },
-  achievementArt: { ...StyleSheet.absoluteFillObject },
+  achievementArtBox: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  achievementArt: { width: "100%", height: "100%" },
   lockShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.28)" },
   lockBadge: {
     position: "absolute",

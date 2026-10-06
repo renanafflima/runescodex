@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsString, MaxLength, Min, MinLength } from 'class-validator';
+import {
+  IsInt,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CreateCharacterDto {
   @IsString()
@@ -15,6 +22,7 @@ export class CreateCharacterDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(9999)
   level: number;
 
   @IsString()

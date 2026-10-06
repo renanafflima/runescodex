@@ -87,6 +87,22 @@ model User {
   deliveredRedemptions   RewardRedemption[]              @relation("RedemptionDeliveredBy")
   cancelledRedemptions   RewardRedemption[]              @relation("RedemptionCancelledBy")
   redemptionStatusEvents RewardRedemptionStatusEvent[]
+  authSessions           AuthSession[]
+  tickets                Ticket[]
+  resolvedTickets        Ticket[]                    @relation("TicketResolvedBy")
+}
+
+/// Active login. Logout deletes this row, so that device token stops working.
+/// Other devices keep their own rows. Expired rows are removed on the next login.
+model AuthSession {
+  id        String   @id @default(uuid())
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Character {
@@ -127,8 +143,12 @@ model Creature {
   huntAppearances   HuntCreature[]
   bestiaryEntry     BestiaryEntry?
   userProgress      UserBestiaryProgress[]
+  tickets           Ticket[]
 
   @@index([isActive])
+  @@index([name])
+  @@index([isActive, name])
+  @@index([isActive, difficulty, name])
 }
 
 /// Elemental modifiers of a creature (e.g. HOLY = 120). Values are not categorized in the database.
@@ -177,6 +197,7 @@ model Hunt {
   id          String   @id @default(uuid())
   name        String
   slug        String   @unique
+  /// ILIKE contains cannot use a btree index. The GIN index uses pg_trgm.
   location    String
   subLocation String?
   difficulty  Difficulty
@@ -194,10 +215,15 @@ model Hunt {
   creatures HuntCreature[]
   loot      HuntLoot[]
   videos    HuntVideo[]
+  tickets   Ticket[]
   comments  HuntComment[]
   updateRequests HuntUpdateRequest[]
 
   @@index([isActive])
+  @@index([name])
+  @@index([isActive, name])
+  @@index([isActive, difficulty, name])
+  @@index([location(ops: raw("gin_trgm_ops"))], map: "Hunt_location_trgm_idx", type: Gin)
 }
 
 /// Per-vocation stats for a hunt. XP/h, profit/h and level live here, not on Hunt.
@@ -219,6 +245,7 @@ model HuntVocation {
   @@unique([huntId, vocation])
   @@index([huntId])
   @@index([vocation])
+  @@index([vocation, levelMin])
 }
 
 model HuntCreature {
@@ -404,6 +431,8 @@ model ForumThread {
   @@index([authorId])
   @@index([status])
   @@index([createdAt])
+  @@index([status, createdAt, id])
+  @@index([createdAt, id])
 }
 
 model ForumReply {
@@ -419,6 +448,7 @@ model ForumReply {
   @@index([threadId])
   @@index([authorId])
   @@index([createdAt])
+  @@index([threadId, createdAt, id])
 }
 
 enum RewardMissionPeriod {
@@ -619,4 +649,114 @@ model RewardLedgerEntry {
   @@index([userId, createdAt])
   @@index([walletId])
   @@index([type])
+}
+
+enum TicketStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+enum TicketProblemType {
+  XP_PER_HOUR
+  PROFIT
+  HUNT_OUTDATED
+  BESTIARY
+  DIFFICULTY
+  INCORRECT_INFO
+  OTHER
+}
+
+enum TicketImpact {
+  INCORRECT_INFO
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TicketOrigin {
+  HUNT
+  BESTIARY
+  GENERAL
+}
+
+enum TicketPartyFormat {
+  SOLO
+  PT_2
+  PT_3
+  PT_4
+  PT_5_PLUS
+}
+
+/// Party composition reported on a ticket. Separate from Hunt Vocation, which has no Monk.
+enum TicketVocation {
+  EK
+  MS
+  ED
+  RP
+  MONK
+}
+
+enum TicketEvidenceSource {
+  CAMERA
+  DEVICE
+}
+
+/// Support ticket. rewardPoints is reserved for a future reputation grant and is not filled here.
+model Ticket {
+  id               String             @id @default(uuid())
+  authorId         String
+  status           TicketStatus       @default(OPEN)
+  problemType      TicketProblemType
+  impact           TicketImpact
+  origin           TicketOrigin
+  description      String
+  huntId           String?
+  creatureId       String?
+  playerLevel      Int?
+  partyFormat      TicketPartyFormat?
+  catalogValue     String?
+  userValue        String?
+  resolutionNote   String?
+  resolvedByUserId String?
+  resolvedAt       DateTime?
+  rewardPoints     Int?
+  rewardGrantedAt  DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  author           User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  resolvedBy       User?              @relation("TicketResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  hunt             Hunt?              @relation(fields: [huntId], references: [id], onDelete: SetNull)
+  creature         Creature?          @relation(fields: [creatureId], references: [id], onDelete: SetNull)
+  vocations        TicketVocationSelection[]
+  evidences        TicketEvidence[]
+
+  @@index([authorId, createdAt])
+  @@index([status, createdAt])
+  @@index([huntId])
+  @@index([creatureId])
+}
+
+model TicketVocationSelection {
+  ticketId  String
+  vocation  TicketVocation
+  ticket    Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@id([ticketId, vocation])
+}
+
+/// File bytes live in object storage. This row keeps only the reference and metadata.
+model TicketEvidence {
+  id         String               @id @default(uuid())
+  ticketId   String
+  storageKey String
+  url        String?
+  mimeType   String
+  source     TicketEvidenceSource
+  byteSize   Int?
+  createdAt  DateTime             @default(now())
+  ticket     Ticket               @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
 }
