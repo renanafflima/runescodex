@@ -1910,6 +1910,130 @@
   margin-top: 0.5rem;
 }
 
+.hunt-update {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.hunt-update__intro h2,
+.hunt-update__history h3 {
+  margin: 0;
+  font-family: var(--font-display);
+}
+
+.hunt-update__intro p,
+.hunt-update__login,
+.hunt-update__empty,
+.hunt-update__notice {
+  margin: 0.35rem 0 0;
+}
+
+.hunt-update__form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.hunt-update__input {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.hunt-update__list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hunt-update__card {
+  padding: 0.9rem 1rem;
+  border: 0.0625rem solid rgb(24 55 80 / 90%);
+  border-radius: 1rem;
+  background: rgb(4 15 27 / 62%);
+}
+
+.hunt-update__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.hunt-update__meta strong {
+  color: var(--color-text);
+}
+
+.hunt-update__response {
+  color: var(--color-text-secondary);
+}
+
+.admin-requests {
+  display: grid;
+  gap: 1rem;
+  padding-block: 1.5rem;
+}
+
+.admin-requests__head h1,
+.admin-requests__empty,
+.admin-requests__notice {
+  margin: 0;
+}
+
+.admin-requests__filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.admin-requests__filters label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.admin-requests__table-wrap {
+  overflow-x: auto;
+}
+
+.admin-requests__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-requests__table th,
+.admin-requests__table td {
+  padding: 0.75rem;
+  border-bottom: 0.0625rem solid rgb(24 55 80 / 90%);
+  text-align: left;
+}
+
+.admin-requests__pager,
+.admin-requests__actions,
+.admin-requests__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-requests__detail {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.admin-requests__detail textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+@media (max-width: 62.5rem) {
+  .admin-requests__filters {
+    grid-template-columns: 1fr;
+  }
+}
+
 .map-image {
   width: 100%;
   border-radius: var(--radius-md);

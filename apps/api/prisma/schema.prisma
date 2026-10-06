@@ -77,6 +77,7 @@ model User {
   forumReplies           ForumReply[]
   huntComments           HuntComment[]
   huntCommentLikes       HuntCommentLike[]
+  huntUpdateRequests     HuntUpdateRequest[]
   rewardWallet           RewardWallet?
   missionProgress        UserMissionProgress[]
   rewardRedemptions      RewardRedemption[]
@@ -194,6 +195,7 @@ model Hunt {
   loot      HuntLoot[]
   videos    HuntVideo[]
   comments  HuntComment[]
+  updateRequests HuntUpdateRequest[]
 
   @@index([isActive])
 }
@@ -308,6 +310,46 @@ model HuntCommentLike {
 
   @@unique([commentId, userId])
   @@index([userId])
+}
+
+enum HuntUpdateRequestStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+enum HuntUpdateRequestType {
+  XP
+  PROFIT
+  LEVEL
+  VOCATION
+  CREATURES
+  LOCATION
+  LOOT
+  OTHER
+}
+
+/// A player report that one fact on a hunt is outdated. Visible only to its author.
+model HuntUpdateRequest {
+  id            String                 @id @default(uuid())
+  huntId        String
+  userId        String
+  type          HuntUpdateRequestType
+  description   String
+  status        HuntUpdateRequestStatus @default(OPEN)
+  adminResponse String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  resolvedAt    DateTime?
+  hunt          Hunt                   @relation(fields: [huntId], references: [id], onDelete: Cascade)
+  user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([huntId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([huntId, userId, createdAt])
 }
 
 /// Bestiary-specific official data. Name, image, HP, XP and difficulty come from Creature.

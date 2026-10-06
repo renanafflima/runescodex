@@ -16,6 +16,7 @@ import {
   preferredHuntVocation,
 } from "../domain/hunts";
 import { HuntComments } from "../components/hunts/HuntComments";
+import { HuntUpdateRequests } from "../components/hunts/HuntUpdateRequests";
 import { describeApiError } from "../services/api/errors";
 import { getHuntBySlug } from "../services/api/hunts";
 
@@ -338,6 +339,7 @@ export function HuntDetailPage() {
           </details>
         ) : null}
 
+        <HuntUpdateRequests slug={hunt.slug} />
         <HuntComments slug={hunt.slug} />
       </div>
 
