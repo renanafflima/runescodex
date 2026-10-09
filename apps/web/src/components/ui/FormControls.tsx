@@ -3,6 +3,7 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from "react";
 import { Icon } from "./Icon";
 
@@ -141,6 +142,37 @@ export function Select({
           </option>
         ))}
       </select>
+    </FieldFrame>
+  );
+}
+
+type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  error?: string;
+  hint?: string;
+  label: string;
+};
+
+export function Textarea({
+  className = "",
+  error,
+  hint,
+  id: providedId,
+  label,
+  ...props
+}: TextareaProps) {
+  const generatedId = useId();
+  const id = providedId || generatedId;
+  const descriptionId = error || hint ? `${id}-description` : undefined;
+
+  return (
+    <FieldFrame error={error} hint={hint} id={id} label={label}>
+      <textarea
+        aria-describedby={descriptionId}
+        aria-invalid={error ? true : undefined}
+        className={`field__control field__textarea ${className}`.trim()}
+        id={id}
+        {...props}
+      />
     </FieldFrame>
   );
 }

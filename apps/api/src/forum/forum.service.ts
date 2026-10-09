@@ -35,6 +35,19 @@ export class ForumService {
     if (query.status) {
       where.status = query.status;
     }
+    if (query.category) {
+      where.category = query.category;
+    }
+    if (query.authorId) {
+      where.authorId = query.authorId;
+    }
+    const search = query.search?.trim();
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { body: { contains: search, mode: 'insensitive' } },
+      ];
+    }
     const { page, limit, skip } = resolvePage(query);
 
     const [total, threads] = await Promise.all([
@@ -102,6 +115,7 @@ export class ForumService {
           authorId: userId,
           title: dto.title.trim(),
           body: dto.body.trim(),
+          category: dto.category,
         },
         include: {
           author: { select: AUTHOR_SELECT },
@@ -193,6 +207,7 @@ export class ForumService {
     id: string;
     title: string;
     body: string;
+    category?: 'BESTIARY' | 'HUNTS' | 'PROFIT' | 'XP' | 'TIPS' | null;
     status: 'OPEN' | 'CLOSED';
     createdAt: Date;
     updatedAt: Date;
@@ -210,6 +225,7 @@ export class ForumService {
       id: thread.id,
       title: thread.title,
       body: thread.body,
+      category: thread.category ?? null,
       status: thread.status === 'OPEN' ? 'open' : 'closed',
       createdAt: thread.createdAt,
       updatedAt: thread.updatedAt,

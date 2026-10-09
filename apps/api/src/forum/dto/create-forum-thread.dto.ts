@@ -1,4 +1,5 @@
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEnum, IsString, MaxLength, MinLength } from 'class-validator';
+import { ForumCategory } from '../../../generated/prisma/client.js';
 
 export class CreateForumThreadDto {
   @IsString()
@@ -10,4 +11,7 @@ export class CreateForumThreadDto {
   @MinLength(1)
   @MaxLength(5000)
   body: string;
+
+  @IsEnum(ForumCategory)
+  category: ForumCategory;
 }

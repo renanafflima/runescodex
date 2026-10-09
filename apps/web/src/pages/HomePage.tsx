@@ -27,7 +27,7 @@ const areas = [
     title: "Fórum",
     description: "Comunidade",
     image: assetUrl("images/home/forum.png"),
-    to: null,
+    to: "/forum",
   },
   {
     id: "rewards",

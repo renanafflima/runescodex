@@ -417,11 +417,20 @@ enum ForumThreadStatus {
   CLOSED
 }
 
+enum ForumCategory {
+  BESTIARY
+  HUNTS
+  PROFIT
+  XP
+  TIPS
+}
+
 model ForumThread {
   id        String            @id @default(uuid())
   authorId  String
   title     String
   body      String
+  category  ForumCategory?
   status    ForumThreadStatus @default(OPEN)
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
@@ -430,9 +439,11 @@ model ForumThread {
 
   @@index([authorId])
   @@index([status])
+  @@index([category])
   @@index([createdAt])
   @@index([status, createdAt, id])
   @@index([createdAt, id])
+  @@index([category, createdAt, id])
 }
 
 model ForumReply {

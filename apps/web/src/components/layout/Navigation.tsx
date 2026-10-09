@@ -10,7 +10,7 @@ const navigationItems: Array<{
   { icon: "home", label: "Home", to: "/" },
   { icon: "swords", label: "Hunts", to: "/hunts" },
   { icon: "book", label: "Bestiário", to: "/bestiary" },
-  { icon: "message", label: "Fórum", to: "/#forum" },
+  { icon: "message", label: "Fórum", to: "/forum" },
   { icon: "gift", label: "Rewards", to: "/#rewards" },
   { icon: "user", label: "Perfil", to: "/profile" },
 ];
@@ -44,6 +44,9 @@ export function Navigation({ onNavigate, open = false }: NavigationProps) {
     }
     if (pathname === "/bestiary") {
       return location.pathname === "/bestiary" || location.pathname.startsWith("/bestiary/");
+    }
+    if (pathname === "/forum") {
+      return location.pathname === "/forum" || location.pathname.startsWith("/forum/");
     }
     return location.pathname === pathname;
   }

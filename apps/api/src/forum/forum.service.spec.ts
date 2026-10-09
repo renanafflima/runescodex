@@ -19,6 +19,7 @@ function threadRow(overrides = {}) {
     id: 'thread-1',
     title: 'Cyclops spawn',
     body: 'Where is the best cave?',
+    category: 'HUNTS',
     status: 'OPEN',
     createdAt: new Date('2026-09-18T00:00:00.000Z'),
     updatedAt: new Date('2026-09-18T00:00:00.000Z'),
@@ -91,6 +92,7 @@ describe('ForumService', () => {
       }),
     );
     expect(result.items[0].status).toBe('open');
+    expect(result.items[0].category).toBe('HUNTS');
     expect(result.items[0].createdByUserId).toBe('user-1');
     expect(result.items[0].author).toEqual({ id: 'user-1' });
     expect(result.items[0].comments[0].author).toEqual({ id: 'user-1' });
@@ -115,6 +117,30 @@ describe('ForumService', () => {
     );
   });
 
+  it('filters threads by category, author and search', async () => {
+    prisma.forumThread.findMany.mockResolvedValue([]);
+    prisma.forumThread.count.mockResolvedValue(0);
+
+    await service.findAll({
+      category: 'HUNTS',
+      authorId: 'user-1',
+      search: 'cyclops',
+    });
+
+    expect(prisma.forumThread.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          category: 'HUNTS',
+          authorId: 'user-1',
+          OR: [
+            { title: { contains: 'cyclops', mode: 'insensitive' } },
+            { body: { contains: 'cyclops', mode: 'insensitive' } },
+          ],
+        },
+      }),
+    );
+  });
+
   it('throws when thread is missing', async () => {
     prisma.forumThread.findUnique.mockResolvedValue(null);
 
@@ -129,6 +155,7 @@ describe('ForumService', () => {
     const result = await service.create('user-1', {
       title: ' Cyclops spawn ',
       body: ' Where is the best cave? ',
+      category: 'HUNTS',
     });
 
     expect(prisma.forumThread.create).toHaveBeenCalledWith(
@@ -137,6 +164,7 @@ describe('ForumService', () => {
           authorId: 'user-1',
           title: 'Cyclops spawn',
           body: 'Where is the best cave?',
+          category: 'HUNTS',
         },
       }),
     );

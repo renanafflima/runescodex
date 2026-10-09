@@ -4,6 +4,9 @@ import { AppLayout } from "../layouts/AppLayout";
 import { AdminHuntUpdateRequestsPage } from "../pages/AdminHuntUpdateRequestsPage";
 import { BestiaryDetailPage } from "../pages/BestiaryDetailPage";
 import { BestiaryPage } from "../pages/BestiaryPage";
+import { ForumComposePage } from "../pages/ForumComposePage";
+import { ForumPage } from "../pages/ForumPage";
+import { ForumThreadPage } from "../pages/ForumThreadPage";
 import { HomePage } from "../pages/HomePage";
 import { HuntDetailPage } from "../pages/HuntDetailPage";
 import { HuntsPage } from "../pages/HuntsPage";
@@ -21,6 +24,16 @@ export function AppRoutes() {
         <Route path="hunts/:slug" element={<HuntDetailPage />} />
         <Route path="bestiary" element={<BestiaryPage />} />
         <Route path="bestiary/:slug" element={<BestiaryDetailPage />} />
+        <Route path="forum" element={<ForumPage />} />
+        <Route
+          path="forum/new"
+          element={
+            <RequireAuth>
+              <ForumComposePage />
+            </RequireAuth>
+          }
+        />
+        <Route path="forum/:id" element={<ForumThreadPage />} />
         <Route
           path="profile"
           element={
