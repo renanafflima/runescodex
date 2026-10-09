@@ -252,6 +252,13 @@ export class HuntsService {
     if (location) {
       where.location = { contains: location, mode: 'insensitive' };
     }
+    if (query.creature) {
+      where.creatures = {
+        some: {
+          creature: { slug: query.creature, isActive: true },
+        },
+      };
+    }
     const search = query.search?.trim();
     if (search) {
       where.AND = [

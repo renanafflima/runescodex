@@ -259,6 +259,25 @@ describe('HuntsService', () => {
     expect(result.hasMore).toBe(false);
   });
 
+  it('filters hunts that contain a creature slug', async () => {
+    prisma.hunt.findMany.mockResolvedValue([]);
+
+    await service.findAll({ creature: 'dark-torturer' });
+
+    expect(prisma.hunt.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          isActive: true,
+          creatures: {
+            some: {
+              creature: { slug: 'dark-torturer', isActive: true },
+            },
+          },
+        },
+      }),
+    );
+  });
+
   it('filters by difficulty and text search', async () => {
     prisma.hunt.findMany.mockResolvedValue([]);
 
@@ -390,8 +409,17 @@ describe('hunts query validation', () => {
       difficulty: 'easy',
     });
 
+    const validCreature = plainToInstance(ListHuntsQueryDto, {
+      creature: 'dark-torturer',
+    });
+    const invalidCreature = plainToInstance(ListHuntsQueryDto, {
+      creature: 'Dark Torturer',
+    });
+
     expect(await validate(valid)).toHaveLength(0);
+    expect(await validate(validCreature)).toHaveLength(0);
     expect(await validate(invalidVocation)).not.toHaveLength(0);
     expect(await validate(invalidDifficulty)).not.toHaveLength(0);
+    expect(await validate(invalidCreature)).not.toHaveLength(0);
   });
 });

@@ -4,6 +4,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -29,6 +30,12 @@ export class ListHuntsQueryDto extends PageQueryDto {
   @IsString()
   @MaxLength(80)
   search?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  creature?: string;
 
   @IsOptional()
   @Type(() => Number)
