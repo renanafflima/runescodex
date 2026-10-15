@@ -60,6 +60,7 @@ const HUNT_DETAIL_INCLUDE = {
       isPrimary: true,
       quantity: true,
       recommendedCharm: true,
+      killPerHour: true,
       notes: true,
       creatureId: true,
     },
@@ -216,6 +217,7 @@ export class HuntsService {
             quantity: item.quantity,
             recommendedCharm: item.recommendedCharm,
             damageType: item.damageType,
+            killPerHour: item.killPerHour,
             notes: item.notes,
             creature: {
               id: creature.id,

@@ -2,12 +2,15 @@ import { Redirect, Tabs } from "expo-router";
 import React from "react";
 import CustomTabBar from "../../components/navigation/CustomTabBar";
 import { useAuth } from "@/src/auth/AuthContext";
+import { mobileGate } from "@/src/domain/premium-access";
 
 export default function TabsLayout() {
-  const { isReady, isAuthenticated } = useAuth();
+  const { isReady, isAuthenticated, premiumAccess } = useAuth();
+  const gate = mobileGate({ isReady, isAuthenticated, premiumAccess });
 
-  if (!isReady) return null;
-  if (!isAuthenticated) return <Redirect href={"/(auth)/login" as any} />;
+  if (gate === "loading") return null;
+  if (gate === "public") return <Redirect href={"/(auth)/login" as any} />;
+  if (gate === "checkout") return <Redirect href={"/checkout" as any} />;
 
   return (
     <Tabs

@@ -14,12 +14,18 @@ export function creatureImageKey(value: unknown) {
     .replace(/[^a-z0-9]+/g, "");
 }
 
+function creatureAssetUrl(file: string) {
+  return assetUrl(`images/creatures/${encodeURIComponent(file)}`);
+}
+
 export function resolveCreatureImage(...candidates: unknown[]) {
   for (const candidate of candidates) {
-    if (isSafeHttpsUrl(candidate)) return candidate.trim();
     const key = creatureImageKey(candidate);
     const file = key ? CREATURE_FILE_BY_KEY[key] : undefined;
-    if (file) return assetUrl(`images/creatures/${file}`);
+    if (file) return creatureAssetUrl(file);
+  }
+  for (const candidate of candidates) {
+    if (isSafeHttpsUrl(candidate)) return candidate.trim();
   }
   return null;
 }

@@ -1,6 +1,7 @@
+import { Platform } from "react-native";
 import { isSafeHttpsUrl } from "@/src/security/https-url";
 import { CREATURE_IMAGE_BY_KEY } from "./creature-images";
-import { creatureImageKey } from "./creature-image-key";
+import { creatureImageKey, encodeCreatureAssetUri } from "./creature-image-key";
 
 export const huntsBackground = require("@/assets/runescodex/hunts/hunts_background.webp");
 export const huntsHero = require("@/assets/runescodex/hunts/hunts_hero.webp");
@@ -195,17 +196,26 @@ function fileNameFromPath(value) {
   return parts[parts.length - 1];
 }
 
+function toImageSource(asset) {
+  if (!asset || Platform.OS !== "web") return asset;
+  const uri = typeof asset === "string" ? asset : asset.uri;
+  if (typeof uri !== "string" || !uri) return asset;
+  const encoded = encodeCreatureAssetUri(uri);
+  if (encoded === uri && typeof asset === "object") return asset;
+  return { uri: encoded };
+}
+
 export function resolveCreatureImage(image, name) {
-  if (image && typeof image === "object") return image;
+  if (image && typeof image === "object") return toImageSource(image);
   const fileName = fileNameFromPath(image);
-  if (fileName && CREATURE_IMAGES[fileName]) return CREATURE_IMAGES[fileName];
-  if (name && CREATURE_IMAGES[name]) return CREATURE_IMAGES[name];
+  if (fileName && CREATURE_IMAGES[fileName]) return toImageSource(CREATURE_IMAGES[fileName]);
+  if (name && CREATURE_IMAGES[name]) return toImageSource(CREATURE_IMAGES[name]);
   const fromFileName = fileName.replace(/_/g, " ").replace(/\.(gif|png|webp)$/i, "");
-  if (fromFileName && CREATURE_IMAGES[fromFileName]) return CREATURE_IMAGES[fromFileName];
+  if (fromFileName && CREATURE_IMAGES[fromFileName]) return toImageSource(CREATURE_IMAGES[fromFileName]);
   const keys = [fileName, name, fromFileName];
   for (const value of keys) {
     const hit = CREATURE_IMAGE_BY_KEY[creatureImageKey(value)];
-    if (hit) return hit;
+    if (hit) return toImageSource(hit);
   }
   return null;
 }
@@ -281,6 +291,7 @@ function mapHuntCreature(item) {
     elements: elementTypes(nested?.elements || item?.elements),
     recommendedCharm: item?.recommendedCharm || null,
     damageType: item?.damageType || null,
+    killPerHour: Number.isInteger(item?.killPerHour) ? item.killPerHour : null,
     isPrimary: Boolean(item?.isPrimary),
     quantity: item?.quantity ?? null,
     notes: item?.notes || null,

@@ -13,7 +13,7 @@ import {
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
+import { PremiumGuard } from '../billing/premium.guard';
 import { CatalogSlugPipe } from '../common/catalog-slug.pipe';
 import { PageQueryDto } from '../common/dto/page-query.dto';
 import { RATE_LIMITS } from '../common/rate-limit.config';
@@ -23,17 +23,17 @@ import { UpdateHuntCommentDto } from './dto/update-hunt-comment.dto';
 import { HuntCommentsService } from './hunt-comments.service';
 
 @Controller('hunts')
+@UseGuards(JwtAuthGuard, PremiumGuard)
 export class HuntCommentsController {
   constructor(private readonly comments: HuntCommentsService) {}
 
   @Get(':slug/comments')
-  @UseGuards(OptionalJwtAuthGuard)
   list(
     @Param('slug', CatalogSlugPipe) slug: string,
     @Query() query: PageQueryDto,
-    @CurrentUser() user?: AuthUser | null,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.comments.list(slug, query, user?.userId);
+    return this.comments.list(slug, query, user.userId);
   }
 
   @Post(':slug/comments')

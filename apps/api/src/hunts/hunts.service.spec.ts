@@ -133,6 +133,7 @@ describe('HuntsService', () => {
           isPrimary: true,
           quantity: null,
           recommendedCharm: 'FREEZE',
+          killPerHour: null,
           notes: null,
           creatureId: 'c4',
         },
@@ -173,6 +174,7 @@ describe('HuntsService', () => {
     const result = await service.findBySlug('demon-hunt');
 
     expect(result.creatures[0].recommendedCharm).toBe('FREEZE');
+    expect(result.creatures[0].killPerHour).toBeNull();
     expect(result.creatures[0].creature.elements).toEqual([
       { element: 'HOLY', modifier: 150 },
     ]);

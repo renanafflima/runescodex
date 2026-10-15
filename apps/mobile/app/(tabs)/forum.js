@@ -26,6 +26,11 @@ import {
 } from "@/src/api/forum";
 import { collectPages } from "@/src/api/page";
 import { createLatestRequest } from "@/src/runtime/focusWork";
+import {
+  FORUM_CATEGORIES,
+  forumCategoryTitleKey,
+  forumThreadPayload,
+} from "@/src/domain/forum-category";
 
 const GOLD = "#d9ad3f";
 const GOLD2 = "#f0cf70";
@@ -35,38 +40,27 @@ const LINE = "rgba(217,173,63,0.30)";
 const backgroundForum = require("../../assets/forum/background_forum.png");
 const heroForum = require("../../assets/forum/hero_forum.png");
 
-const CATEGORIES = [
-  {
-    id: "bestiary",
-    titleKey: "forum.catBestiary",
-    hintKey: "forum.catBestiaryHint",
-    image: require("../../assets/forum/bestiario.png"),
-  },
-  {
-    id: "hunts",
-    titleKey: "forum.catHunts",
-    hintKey: "forum.catHuntsHint",
-    image: require("../../assets/forum/hunt.png"),
-  },
-  {
-    id: "profit",
-    titleKey: "forum.catProfit",
-    hintKey: "forum.catProfitHint",
-    image: require("../../assets/forum/profit.png"),
-  },
-  {
-    id: "xp",
-    titleKey: "forum.catXp",
-    hintKey: "forum.catXpHint",
-    image: require("../../assets/forum/xphora.png"),
-  },
-  {
-    id: "tips",
-    titleKey: "forum.catTips",
-    hintKey: "forum.catTipsHint",
-    image: require("../../assets/forum/dicas.png"),
-  },
-];
+const CATEGORY_IMAGES = {
+  bestiary: require("../../assets/forum/bestiario.png"),
+  hunts: require("../../assets/forum/hunt.png"),
+  profit: require("../../assets/forum/profit.png"),
+  xp: require("../../assets/forum/xphora.png"),
+  tips: require("../../assets/forum/dicas.png"),
+};
+
+const CATEGORY_HINTS = {
+  bestiary: "forum.catBestiaryHint",
+  hunts: "forum.catHuntsHint",
+  profit: "forum.catProfitHint",
+  xp: "forum.catXpHint",
+  tips: "forum.catTipsHint",
+};
+
+const CATEGORIES = FORUM_CATEGORIES.map((item) => ({
+  ...item,
+  hintKey: CATEGORY_HINTS[item.id],
+  image: CATEGORY_IMAGES[item.id],
+}));
 
 function mapError(error, t) {
   if (error?.code === "NETWORK") return t("auth.networkError");
@@ -121,6 +115,7 @@ export default function ForumScreen() {
   const { token, isAuthenticated, user } = useAuth();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [commentText, setCommentText] = useState({});
   const [query, setQuery] = useState("");
   const [composerOpen, setComposerOpen] = useState(false);
@@ -190,13 +185,18 @@ export default function ForumScreen() {
       setActionError(t("forum.loginRequired"));
       return;
     }
-    if (!title.trim() || !body.trim()) return;
+    const payload = forumThreadPayload({ title, body, categoryId });
+    if (!payload) {
+      setActionError(t("forum.chooseCategory"));
+      return;
+    }
     setBusy(true);
     setActionError("");
     try {
-      await createForumThread(token, { title: title.trim(), body: body.trim() });
+      await createForumThread(token, payload);
       setTitle("");
       setBody("");
+      setCategoryId("");
       setComposerOpen(false);
       await loadThreads();
     } catch (err) {
@@ -312,6 +312,22 @@ export default function ForumScreen() {
 
           {composerOpen ? (
             <View style={styles.form}>
+              <View style={styles.picker}>
+                {CATEGORIES.map((item) => {
+                  const selected = categoryId === item.id;
+                  return (
+                    <Pressable
+                      key={item.id}
+                      onPress={() => setCategoryId(item.id)}
+                      style={[styles.pickerChip, selected && styles.pickerChipActive]}
+                    >
+                      <Text style={[styles.pickerText, selected && styles.pickerTextActive]}>
+                        {t(item.titleKey)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
               <TextInput
                 style={styles.input}
                 value={title}
@@ -329,7 +345,7 @@ export default function ForumScreen() {
               />
               <Pressable
                 onPress={publishThread}
-                disabled={busy || !title.trim() || !body.trim()}
+                disabled={busy || !forumThreadPayload({ title, body, categoryId })}
                 style={styles.cta}
               >
                 <Text style={styles.ctaText}>{busy ? t("common.loading") : t("forum.publish")}</Text>
@@ -354,7 +370,9 @@ export default function ForumScreen() {
               </View>
               {featuredThreads.map((item) => (
                 <View key={item.id} style={styles.feature}>
-                  {categoryOf(item) ? <Text style={styles.featureTag}>{categoryOf(item)}</Text> : null}
+                  {forumCategoryTitleKey(categoryOf(item)) ? (
+                    <Text style={styles.featureTag}>{t(forumCategoryTitleKey(categoryOf(item)))}</Text>
+                  ) : null}
                   <Text style={styles.featureTitle}>{item.title}</Text>
                   {item.body ? (
                     <Text style={styles.featureBody} numberOfLines={3}>
@@ -431,7 +449,8 @@ export default function ForumScreen() {
               const replies = replyCountOf(item);
               const author = authorLabel(item);
               const when = formatRelativeTime(item.createdAt);
-              const category = categoryOf(item);
+              const categoryKey = forumCategoryTitleKey(categoryOf(item));
+              const category = categoryKey ? t(categoryKey) : "";
               return (
                 <Pressable
                   key={item.id}
@@ -568,6 +587,18 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   form: { gap: 10, marginTop: -6 },
+  picker: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  pickerChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(217,173,63,0.35)",
+    backgroundColor: "rgba(8,18,29,0.88)",
+  },
+  pickerChipActive: { backgroundColor: GOLD },
+  pickerText: { color: "#f2f4f7", fontSize: 12, fontWeight: "700" },
+  pickerTextActive: { color: "#101722" },
   input: {
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.09)",

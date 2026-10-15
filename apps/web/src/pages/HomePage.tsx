@@ -7,7 +7,15 @@ import { assetUrl } from "../lib/assets";
 import { apiConfiguration } from "../services/api/client";
 import { useAuth } from "../auth/AuthContext";
 
-const areas = [
+type HomeArea = {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  to: string | null;
+};
+
+const areas: HomeArea[] = [
   {
     id: "hunts",
     title: "Hunts",
@@ -34,12 +42,13 @@ const areas = [
     title: "Rewards",
     description: "Missões, pontos e conquistas",
     image: assetUrl("images/home/rewards.png"),
-    to: null,
+    to: "/rewards",
   },
-] as const;
+];
 
 export function HomePage() {
-  const { isAuthenticated, activeCharacter } = useAuth();
+  const { isAuthenticated, activeCharacter, user } = useAuth();
+  const startTo = !isAuthenticated ? "/login" : user?.premium?.access ? "/hunts" : "/checkout";
   return (
     <div className="home-page">
       <section className="home-hero" aria-labelledby="home-title">
@@ -61,7 +70,7 @@ export function HomePage() {
               Hunts, bestiário e progresso em um só lugar.
             </p>
             <div className="home-hero__actions">
-              <ButtonLink size="lg" to="/hunts">
+              <ButtonLink size="lg" to={startTo}>
                 Começar agora
               </ButtonLink>
               <ButtonLink size="lg" to={isAuthenticated ? "/profile" : "/login"} variant="ghost">

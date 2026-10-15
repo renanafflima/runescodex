@@ -1,0 +1,3788 @@
+{
+  "fonte": "https://www.tibiawiki.com.br/wiki/Criaturas",
+  "tabela": "Predefinição:Tabela Bestiário",
+  "totalCriaturasAnalisadas": 738,
+  "totalEncontradasNoTibiaWiki": 738,
+  "totalNaoEncontradas": 0,
+  "totalCorrespondenciasDuvidosas": 0,
+  "totalComBestiaryEntryExistente": 4,
+  "totalNovasBestiaryEntry": 727,
+  "totalComKillsRequired": 731,
+  "totalSemKillsRequired": 7,
+  "totalComCategory": 738,
+  "totalSemCategory": 0,
+  "totalComCharmPoints": 731,
+  "totalSemCharmPoints": 7,
+  "totalComEstimatedKillsPerHour": 0,
+  "totalSemEstimatedKillsPerHour": 738,
+  "totalComNotes": 320,
+  "totalSemNotes": 418,
+  "criaturasNaoEncontradas": [],
+  "criaturasComCorrespondenciaDuvidosa": [],
+  "criaturasSemKillsRequired": [
+    {
+      "name": "Active Lava Hole",
+      "slug": "active-lava-hole"
+    },
+    {
+      "name": "Benevolent Iks Spirit",
+      "slug": "benevolent-iks-spirit"
+    },
+    {
+      "name": "Deathslicer",
+      "slug": "deathslicer"
+    },
+    {
+      "name": "Flamethrower",
+      "slug": "flamethrower"
+    },
+    {
+      "name": "Librarian",
+      "slug": "librarian"
+    },
+    {
+      "name": "Magic Pillar",
+      "slug": "magic-pillar"
+    },
+    {
+      "name": "Symbol Of Pain",
+      "slug": "symbol-of-pain"
+    }
+  ],
+  "criaturasSemCategory": [],
+  "criaturasSemCharmPoints": [
+    {
+      "name": "Active Lava Hole",
+      "slug": "active-lava-hole"
+    },
+    {
+      "name": "Benevolent Iks Spirit",
+      "slug": "benevolent-iks-spirit"
+    },
+    {
+      "name": "Deathslicer",
+      "slug": "deathslicer"
+    },
+    {
+      "name": "Flamethrower",
+      "slug": "flamethrower"
+    },
+    {
+      "name": "Librarian",
+      "slug": "librarian"
+    },
+    {
+      "name": "Magic Pillar",
+      "slug": "magic-pillar"
+    },
+    {
+      "name": "Symbol Of Pain",
+      "slug": "symbol-of-pain"
+    }
+  ],
+  "criaturasSemEstimatedKillsPerHour": [
+    {
+      "name": "Abyssal Calamary",
+      "slug": "abyssal-calamary",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Acid Blob",
+      "slug": "acid-blob",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Acolyte of the Cult",
+      "slug": "acolyte-of-the-cult",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Active Lava Hole",
+      "slug": "active-lava-hole",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Adept of the Cult",
+      "slug": "adept-of-the-cult",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Adventurer",
+      "slug": "adventurer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Afflicted Strider",
+      "slug": "afflicted-strider",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Agrestic Chicken",
+      "slug": "agrestic-chicken",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Amazon",
+      "slug": "amazon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ancient Scarab",
+      "slug": "ancient-scarab",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Angry Sugar Fairy",
+      "slug": "angry-sugar-fairy",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Animated Feather",
+      "slug": "animated-feather",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Arachnophobica",
+      "slug": "arachnophobica",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Armadile",
+      "slug": "armadile",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Askarak Demon",
+      "slug": "askarak-demon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Askarak Lord",
+      "slug": "askarak-lord",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Askarak Prince",
+      "slug": "askarak-prince",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Assassin",
+      "slug": "assassin",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Azure Frog",
+      "slug": "azure-frog",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Badger",
+      "slug": "badger",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bandit",
+      "slug": "bandit",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Banshee",
+      "slug": "banshee",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Barbarian Bloodwalker",
+      "slug": "barbarian-bloodwalker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Barbarian Brutetamer",
+      "slug": "barbarian-brutetamer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Barbarian Headsplitter",
+      "slug": "barbarian-headsplitter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Barbarian Skullhunter",
+      "slug": "barbarian-skullhunter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Barkless Devotee",
+      "slug": "barkless-devotee",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Barkless Fanatic",
+      "slug": "barkless-fanatic",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bashmu",
+      "slug": "bashmu",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bat",
+      "slug": "bat",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bear",
+      "slug": "bear",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Behemoth",
+      "slug": "behemoth",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Benevolent Iks Spirit",
+      "slug": "benevolent-iks-spirit",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Berserker Chicken",
+      "slug": "berserker-chicken",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Betrayed Wraith",
+      "slug": "betrayed-wraith",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Biting Book",
+      "slug": "biting-book",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Black Sheep",
+      "slug": "black-sheep",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Black Sphinx Acolyte",
+      "slug": "black-sphinx-acolyte",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Blemished Spawn",
+      "slug": "blemished-spawn",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Blightwalker",
+      "slug": "blightwalker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bloated Man-Maggot",
+      "slug": "bloated-man-maggot",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Blood Beast",
+      "slug": "blood-beast",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Blood Crab",
+      "slug": "blood-crab",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Blood Hand",
+      "slug": "blood-hand",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Blood Priest",
+      "slug": "blood-priest",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bluebeak",
+      "slug": "bluebeak",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Blue Djinn",
+      "slug": "blue-djinn",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Boar",
+      "slug": "boar",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Boar Man",
+      "slug": "boar-man",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bog Frog",
+      "slug": "bog-frog",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bog Raider",
+      "slug": "bog-raider",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bonebeast",
+      "slug": "bonebeast",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bonelord",
+      "slug": "bonelord",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bony Sea Devil",
+      "slug": "bony-sea-devil",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Boogy",
+      "slug": "boogy",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Brachiodemon",
+      "slug": "brachiodemon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Braindeath",
+      "slug": "braindeath",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Brain Squid",
+      "slug": "brain-squid",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bramble Wyrmling",
+      "slug": "bramble-wyrmling",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Branchy Crawler",
+      "slug": "branchy-crawler",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Breach Brood",
+      "slug": "breach-brood",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Brimstone Bug",
+      "slug": "brimstone-bug",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Brinebrute Inferniarch",
+      "slug": "brinebrute-inferniarch",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Broken Shaper",
+      "slug": "broken-shaper",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Broodrider Inferniarch",
+      "slug": "broodrider-inferniarch",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bug",
+      "slug": "bug",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bulltaur Alchemist",
+      "slug": "bulltaur-alchemist",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bulltaur Brute",
+      "slug": "bulltaur-brute",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Bulltaur Forgepriest",
+      "slug": "bulltaur-forgepriest",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Burning Book",
+      "slug": "burning-book",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Burning Gladiator",
+      "slug": "burning-gladiator",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Burster Spectre",
+      "slug": "burster-spectre",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Butterfly (Azul)",
+      "slug": "butterfly-azul",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Butterfly (Vermelho)",
+      "slug": "butterfly-vermelho",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Butterfly (Violeta)",
+      "slug": "butterfly-violeta",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Calamary",
+      "slug": "calamary",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Candy Floss Elemental",
+      "slug": "candy-floss-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Candy Horror",
+      "slug": "candy-horror",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Capricious Phantom",
+      "slug": "capricious-phantom",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Carniphila",
+      "slug": "carniphila",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Carnivostrich",
+      "slug": "carnivostrich",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Carrion Worm",
+      "slug": "carrion-worm",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cat",
+      "slug": "cat",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cave Chimera",
+      "slug": "cave-chimera",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cave Devourer",
+      "slug": "cave-devourer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cave Parrot",
+      "slug": "cave-parrot",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cave Rat",
+      "slug": "cave-rat",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Centipede",
+      "slug": "centipede",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Chakoya Toolshaper",
+      "slug": "chakoya-toolshaper",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Chakoya Tribewarden",
+      "slug": "chakoya-tribewarden",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Chakoya Windcaller",
+      "slug": "chakoya-windcaller",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Chasm Spawn",
+      "slug": "chasm-spawn",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Chicken",
+      "slug": "chicken",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Chocolate Blob",
+      "slug": "chocolate-blob",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Choking Fear",
+      "slug": "choking-fear",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cinder Wyrmling",
+      "slug": "cinder-wyrmling",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Clay Guardian",
+      "slug": "clay-guardian",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cliff Strider",
+      "slug": "cliff-strider",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cloak Of Terror",
+      "slug": "cloak-of-terror",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Clomp",
+      "slug": "clomp",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cobra",
+      "slug": "cobra",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cobra Assassin",
+      "slug": "cobra-assassin",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cobra Scout",
+      "slug": "cobra-scout",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cobra Vizier",
+      "slug": "cobra-vizier",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Converter",
+      "slug": "converter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Coral Frog",
+      "slug": "coral-frog",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Corrupted Ghost",
+      "slug": "corrupted-ghost",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Corrupted Skeleton",
+      "slug": "corrupted-skeleton",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Corym Charlatan",
+      "slug": "corym-charlatan",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Corym Skirmisher",
+      "slug": "corym-skirmisher",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Corym Vanguard",
+      "slug": "corym-vanguard",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Courage Leech",
+      "slug": "courage-leech",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crab",
+      "slug": "crab",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crape Man",
+      "slug": "crape-man",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crawler",
+      "slug": "crawler",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crazed Beggar",
+      "slug": "crazed-beggar",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crazed Summer Rearguard",
+      "slug": "crazed-summer-rearguard",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crazed Summer Vanguard",
+      "slug": "crazed-summer-vanguard",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crazed Winter Rearguard",
+      "slug": "crazed-winter-rearguard",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crazed Winter Vanguard",
+      "slug": "crazed-winter-vanguard",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cream Blob",
+      "slug": "cream-blob",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Creepy Crawler",
+      "slug": "creepy-crawler",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crimson Frog",
+      "slug": "crimson-frog",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crocodile",
+      "slug": "crocodile",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crusader",
+      "slug": "crusader",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crypt Construct",
+      "slug": "crypt-construct",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crypt Defiler",
+      "slug": "crypt-defiler",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crypt Fiend",
+      "slug": "crypt-fiend",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crypt Mage",
+      "slug": "crypt-mage",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crypt Shambler",
+      "slug": "crypt-shambler",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crypt Warden",
+      "slug": "crypt-warden",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crypt Warrior",
+      "slug": "crypt-warrior",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crystalcrusher",
+      "slug": "crystalcrusher",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crystal Spider",
+      "slug": "crystal-spider",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Crystal Wolf",
+      "slug": "crystal-wolf",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cult Believer",
+      "slug": "cult-believer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cult Enforcer",
+      "slug": "cult-enforcer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cult Scholar",
+      "slug": "cult-scholar",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cunning Werepanther",
+      "slug": "cunning-werepanther",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cursed Ape",
+      "slug": "cursed-ape",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cursed Book",
+      "slug": "cursed-book",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cursed Prospector",
+      "slug": "cursed-prospector",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cyclops",
+      "slug": "cyclops",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cyclops Drone",
+      "slug": "cyclops-drone",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cyclops Smith",
+      "slug": "cyclops-smith",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Cyclursus",
+      "slug": "cyclursus",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Damaged Crystal Golem",
+      "slug": "damaged-crystal-golem",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Damaged Worker Golem",
+      "slug": "damaged-worker-golem",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dark Apprentice",
+      "slug": "dark-apprentice",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dark Carnisylvan",
+      "slug": "dark-carnisylvan",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dark Faun",
+      "slug": "dark-faun",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Darklight Construct",
+      "slug": "darklight-construct",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Darklight Emitter",
+      "slug": "darklight-emitter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Darklight Matter",
+      "slug": "darklight-matter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Darklight Source",
+      "slug": "darklight-source",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Darklight Striker",
+      "slug": "darklight-striker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dark Magician",
+      "slug": "dark-magician",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dark Monk",
+      "slug": "dark-monk",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dark Torturer",
+      "slug": "dark-torturer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dawnfire Asura",
+      "slug": "dawnfire-asura",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Death Blob",
+      "slug": "death-blob",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deathling Scout",
+      "slug": "deathling-scout",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deathling Spellsinger",
+      "slug": "deathling-spellsinger",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Death Priest",
+      "slug": "death-priest",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deathslicer",
+      "slug": "deathslicer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deepling Brawler",
+      "slug": "deepling-brawler",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deepling Elite",
+      "slug": "deepling-elite",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deepling Guard",
+      "slug": "deepling-guard",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deepling Master Librarian",
+      "slug": "deepling-master-librarian",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deepling Scout",
+      "slug": "deepling-scout",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deepling Spellsinger",
+      "slug": "deepling-spellsinger",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deepling Tyrant",
+      "slug": "deepling-tyrant",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deepling Warrior",
+      "slug": "deepling-warrior",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deepling Worker",
+      "slug": "deepling-worker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deepsea Blood Crab",
+      "slug": "deepsea-blood-crab",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deepworm",
+      "slug": "deepworm",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Deer",
+      "slug": "deer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Defiler",
+      "slug": "defiler",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Demon",
+      "slug": "demon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Demon Outcast",
+      "slug": "demon-outcast",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Demon Parrot",
+      "slug": "demon-parrot",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Demon Skeleton",
+      "slug": "demon-skeleton",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Destroyer",
+      "slug": "destroyer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Devourer (Criatura)",
+      "slug": "devourer-criatura",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Diabolic Imp",
+      "slug": "diabolic-imp",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Diamond Servant",
+      "slug": "diamond-servant",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Diamond Servant Replica",
+      "slug": "diamond-servant-replica",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Diremaw",
+      "slug": "diremaw",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Distorted Phantom",
+      "slug": "distorted-phantom",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dog",
+      "slug": "dog",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Doom Deer",
+      "slug": "doom-deer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dragolisk",
+      "slug": "dragolisk",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dragon",
+      "slug": "dragon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dragon Hatchling",
+      "slug": "dragon-hatchling",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dragonling",
+      "slug": "dragonling",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dragon Lord",
+      "slug": "dragon-lord",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dragon Lord Hatchling",
+      "slug": "dragon-lord-hatchling",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Draken Abomination",
+      "slug": "draken-abomination",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Draken Elite",
+      "slug": "draken-elite",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Draken Spellweaver",
+      "slug": "draken-spellweaver",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Draken Warmaster",
+      "slug": "draken-warmaster",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dread Intruder",
+      "slug": "dread-intruder",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Drillworm",
+      "slug": "drillworm",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Druid's Apparition",
+      "slug": "druids-apparition",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dwarf",
+      "slug": "dwarf",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dwarf Geomancer",
+      "slug": "dwarf-geomancer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dwarf Guard",
+      "slug": "dwarf-guard",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dwarf Soldier",
+      "slug": "dwarf-soldier",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dworc Fleshhunter",
+      "slug": "dworc-fleshhunter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dworc Venomsniper",
+      "slug": "dworc-venomsniper",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Dworc Voodoomaster",
+      "slug": "dworc-voodoomaster",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Earth Elemental",
+      "slug": "earth-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Efreet",
+      "slug": "efreet",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Elder Bonelord",
+      "slug": "elder-bonelord",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Elder Forest Fury",
+      "slug": "elder-forest-fury",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Elder Mummy",
+      "slug": "elder-mummy",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Elder Wyrm",
+      "slug": "elder-wyrm",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Elephant",
+      "slug": "elephant",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Elf",
+      "slug": "elf",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Elf Arcanist",
+      "slug": "elf-arcanist",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Elf Overseer",
+      "slug": "elf-overseer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Elf Scout",
+      "slug": "elf-scout",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Emerald Damselfly",
+      "slug": "emerald-damselfly",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Emerald Tortoise",
+      "slug": "emerald-tortoise",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Energetic Book",
+      "slug": "energetic-book",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Energuardian Of Tales",
+      "slug": "energuardian-of-tales",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Energy Elemental",
+      "slug": "energy-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Enfeebled Silencer",
+      "slug": "enfeebled-silencer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Enlightened of the Cult",
+      "slug": "enlightened-of-the-cult",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Enraged Crystal Golem",
+      "slug": "enraged-crystal-golem",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Enslaved Dwarf",
+      "slug": "enslaved-dwarf",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Eternal Guardian",
+      "slug": "eternal-guardian",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Evil Prospector",
+      "slug": "evil-prospector",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Evil Sheep",
+      "slug": "evil-sheep",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Evil Sheep Lord",
+      "slug": "evil-sheep-lord",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Execowtioner",
+      "slug": "execowtioner",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Exotic Bat",
+      "slug": "exotic-bat",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Exotic Cave Spider",
+      "slug": "exotic-cave-spider",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Eyeless Devourer",
+      "slug": "eyeless-devourer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Falcon Knight",
+      "slug": "falcon-knight",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Falcon Paladin",
+      "slug": "falcon-paladin",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Faun",
+      "slug": "faun",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Feral Werecrocodile",
+      "slug": "feral-werecrocodile",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Feversleep",
+      "slug": "feversleep",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Filth Toad",
+      "slug": "filth-toad",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Fire Devil",
+      "slug": "fire-devil",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Fire Elemental",
+      "slug": "fire-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Firestarter",
+      "slug": "firestarter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Fish (Criatura)",
+      "slug": "fish-criatura",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Flamethrower",
+      "slug": "flamethrower",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Flamingo",
+      "slug": "flamingo",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Flimsy Lost Soul",
+      "slug": "flimsy-lost-soul",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Floating Savant",
+      "slug": "floating-savant",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Flying Book",
+      "slug": "flying-book",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Foam Stalker",
+      "slug": "foam-stalker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Forest Fury",
+      "slug": "forest-fury",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Fox",
+      "slug": "fox",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Frazzlemaw",
+      "slug": "frazzlemaw",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Freakish Lost Soul",
+      "slug": "freakish-lost-soul",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Frost Dragon",
+      "slug": "frost-dragon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Frost Dragon Hatchling",
+      "slug": "frost-dragon-hatchling",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Frost Flower Asura",
+      "slug": "frost-flower-asura",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Frost Giant",
+      "slug": "frost-giant",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Frost Giantess",
+      "slug": "frost-giantess",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Frost Troll",
+      "slug": "frost-troll",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Fruit Drop",
+      "slug": "fruit-drop",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Furious Fire Elemental",
+      "slug": "furious-fire-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Furious Troll",
+      "slug": "furious-troll",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Fury",
+      "slug": "fury",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gang Member",
+      "slug": "gang-member",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gargoyle",
+      "slug": "gargoyle",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gazer",
+      "slug": "gazer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gazer Spectre",
+      "slug": "gazer-spectre",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ghastly Dragon",
+      "slug": "ghastly-dragon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ghost",
+      "slug": "ghost",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ghost Wolf",
+      "slug": "ghost-wolf",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ghoul",
+      "slug": "ghoul",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ghoulish Hyaena",
+      "slug": "ghoulish-hyaena",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Giant Spider",
+      "slug": "giant-spider",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gingerbread Man",
+      "slug": "gingerbread-man",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Girtablilu Warrior",
+      "slug": "girtablilu-warrior",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gladiator",
+      "slug": "gladiator",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gloom Wolf",
+      "slug": "gloom-wolf",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Glooth Anemone",
+      "slug": "glooth-anemone",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Glooth Bandit",
+      "slug": "glooth-bandit",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Glooth Blob",
+      "slug": "glooth-blob",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Glooth Brigand",
+      "slug": "glooth-brigand",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Glooth Golem",
+      "slug": "glooth-golem",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gnarlhound",
+      "slug": "gnarlhound",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Goblin",
+      "slug": "goblin",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Goblin Assassin",
+      "slug": "goblin-assassin",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Goblin Leader",
+      "slug": "goblin-leader",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Goblin Scavenger",
+      "slug": "goblin-scavenger",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Goggle Cake",
+      "slug": "goggle-cake",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Golden Servant",
+      "slug": "golden-servant",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Golden Servant Replica",
+      "slug": "golden-servant-replica",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Goldhanded Cultist",
+      "slug": "goldhanded-cultist",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Goldhanded Cultist Bride",
+      "slug": "goldhanded-cultist-bride",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gore Horn",
+      "slug": "gore-horn",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gorerilla",
+      "slug": "gorerilla",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gorger Inferniarch",
+      "slug": "gorger-inferniarch",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gozzler",
+      "slug": "gozzler",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gravedigger",
+      "slug": "gravedigger",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Grave Guard",
+      "slug": "grave-guard",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Grave Robber",
+      "slug": "grave-robber",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Green Djinn",
+      "slug": "green-djinn",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Green Frog",
+      "slug": "green-frog",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Grimeleech",
+      "slug": "grimeleech",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Grim Reaper",
+      "slug": "grim-reaper",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Gryphon",
+      "slug": "gryphon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Guardian Of Tales",
+      "slug": "guardian-of-tales",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Guzzlemaw",
+      "slug": "guzzlemaw",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hand of Cursed Fate",
+      "slug": "hand-of-cursed-fate",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Harpy",
+      "slug": "harpy",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Haunted Dragon",
+      "slug": "haunted-dragon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Haunted Hunter",
+      "slug": "haunted-hunter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Haunted Treeling",
+      "slug": "haunted-treeling",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hawk Hopper",
+      "slug": "hawk-hopper",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Headpecker",
+      "slug": "headpecker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Headwalker",
+      "slug": "headwalker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hellfire Fighter",
+      "slug": "hellfire-fighter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hellflayer",
+      "slug": "hellflayer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hellhound",
+      "slug": "hellhound",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hellhunter Inferniarch",
+      "slug": "hellhunter-inferniarch",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hellspawn",
+      "slug": "hellspawn",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hero",
+      "slug": "hero",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hibernal Moth",
+      "slug": "hibernal-moth",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hideous Fungus",
+      "slug": "hideous-fungus",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "High Voltage Elemental",
+      "slug": "high-voltage-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hive Overseer",
+      "slug": "hive-overseer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Honey Elemental",
+      "slug": "honey-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Honour Guard",
+      "slug": "honour-guard",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Horse (Cinza)",
+      "slug": "horse-cinza",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hot Dog",
+      "slug": "hot-dog",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hulking Carnisylvan",
+      "slug": "hulking-carnisylvan",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hulking Prehemoth",
+      "slug": "hulking-prehemoth",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Humongous Fungus",
+      "slug": "humongous-fungus",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hunter",
+      "slug": "hunter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Husky",
+      "slug": "husky",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hyaena",
+      "slug": "hyaena",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Hydra",
+      "slug": "hydra",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Icecold Book",
+      "slug": "icecold-book",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ice Dragon",
+      "slug": "ice-dragon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ice Golem",
+      "slug": "ice-golem",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ice Witch",
+      "slug": "ice-witch",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Iks Ahpututu",
+      "slug": "iks-ahpututu",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Iks Aucar",
+      "slug": "iks-aucar",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Iks Chuka",
+      "slug": "iks-chuka",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Iks Churrascan",
+      "slug": "iks-churrascan",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Iks Pututu",
+      "slug": "iks-pututu",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Iks Yapunac",
+      "slug": "iks-yapunac",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Infected Weeper",
+      "slug": "infected-weeper",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Infernal Demon",
+      "slug": "infernal-demon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Infernal Frog",
+      "slug": "infernal-frog",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Infernalist",
+      "slug": "infernalist",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Infernal Phantom",
+      "slug": "infernal-phantom",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ink Blob",
+      "slug": "ink-blob",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Insane Siren",
+      "slug": "insane-siren",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Insectoid Worker",
+      "slug": "insectoid-worker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Insect Swarm",
+      "slug": "insect-swarm",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Instable Breach Brood",
+      "slug": "instable-breach-brood",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Instable Sparkion",
+      "slug": "instable-sparkion",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ironblight",
+      "slug": "ironblight",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Iron Servant",
+      "slug": "iron-servant",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Iron Servant Replica",
+      "slug": "iron-servant-replica",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Island Troll",
+      "slug": "island-troll",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Jellyfish",
+      "slug": "jellyfish",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Juggernaut",
+      "slug": "juggernaut",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Jungle Moa",
+      "slug": "jungle-moa",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Juvenile Bashmu",
+      "slug": "juvenile-bashmu",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Killer Caiman",
+      "slug": "killer-caiman",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Killer Rabbit",
+      "slug": "killer-rabbit",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Knight's Apparition",
+      "slug": "knights-apparition",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Knowledge Elemental",
+      "slug": "knowledge-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Kollos",
+      "slug": "kollos",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Kongra",
+      "slug": "kongra",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lacewing Moth",
+      "slug": "lacewing-moth",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ladybug",
+      "slug": "ladybug",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lamassu",
+      "slug": "lamassu",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lancer Beetle",
+      "slug": "lancer-beetle",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Larva",
+      "slug": "larva",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lavafungus",
+      "slug": "lavafungus",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lava Golem",
+      "slug": "lava-golem",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lava Lurker",
+      "slug": "lava-lurker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lavaworm",
+      "slug": "lavaworm",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Leaf Golem",
+      "slug": "leaf-golem",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Librarian",
+      "slug": "librarian",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lich",
+      "slug": "lich",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Liodile",
+      "slug": "liodile",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lion",
+      "slug": "lion",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lion Hydra",
+      "slug": "lion-hydra",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Little Corym Charlatan",
+      "slug": "little-corym-charlatan",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lizard Chosen",
+      "slug": "lizard-chosen",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lizard Dragon Priest",
+      "slug": "lizard-dragon-priest",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lizard High Guard",
+      "slug": "lizard-high-guard",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lizard Legionnaire",
+      "slug": "lizard-legionnaire",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lizard Magistratus",
+      "slug": "lizard-magistratus",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lizard Noble",
+      "slug": "lizard-noble",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lizard Sentinel",
+      "slug": "lizard-sentinel",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lizard Snakecharmer",
+      "slug": "lizard-snakecharmer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lizard Templar",
+      "slug": "lizard-templar",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lizard Zaogun",
+      "slug": "lizard-zaogun",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lost Basher",
+      "slug": "lost-basher",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lost Berserker",
+      "slug": "lost-berserker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lost Exile",
+      "slug": "lost-exile",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lost Husher",
+      "slug": "lost-husher",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lost Soul",
+      "slug": "lost-soul",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lost Thrower",
+      "slug": "lost-thrower",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Lumbering Carnivor",
+      "slug": "lumbering-carnivor",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mad Scientist",
+      "slug": "mad-scientist",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Magic Pillar",
+      "slug": "magic-pillar",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Magma Crawler",
+      "slug": "magma-crawler",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Makara",
+      "slug": "makara",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mammoth",
+      "slug": "mammoth",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Manta Ray",
+      "slug": "manta-ray",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mantosaurus",
+      "slug": "mantosaurus",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Many Faces",
+      "slug": "many-faces",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Marid",
+      "slug": "marid",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Marsh Stalker",
+      "slug": "marsh-stalker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Massive Earth Elemental",
+      "slug": "massive-earth-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Massive Energy Elemental",
+      "slug": "massive-energy-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Massive Fire Elemental",
+      "slug": "massive-fire-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Massive Water Elemental",
+      "slug": "massive-water-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Meandering Mushroom",
+      "slug": "meandering-mushroom",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mean Lost Soul",
+      "slug": "mean-lost-soul",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Medusa",
+      "slug": "medusa",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mega Dragon",
+      "slug": "mega-dragon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Menacing Carnivor",
+      "slug": "menacing-carnivor",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mercurial Menace",
+      "slug": "mercurial-menace",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mercury Blob",
+      "slug": "mercury-blob",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Merlkin",
+      "slug": "merlkin",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Metal Gargoyle",
+      "slug": "metal-gargoyle",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Midnight Asura",
+      "slug": "midnight-asura",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Minotaur",
+      "slug": "minotaur",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Minotaur Amazon",
+      "slug": "minotaur-amazon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Minotaur Archer",
+      "slug": "minotaur-archer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Minotaur Cult Follower",
+      "slug": "minotaur-cult-follower",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Minotaur Cult Prophet",
+      "slug": "minotaur-cult-prophet",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Minotaur Cult Zealot",
+      "slug": "minotaur-cult-zealot",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Minotaur Guard",
+      "slug": "minotaur-guard",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Minotaur Hunter",
+      "slug": "minotaur-hunter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Minotaur Invader",
+      "slug": "minotaur-invader",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Minotaur Mage",
+      "slug": "minotaur-mage",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Misguided Bully",
+      "slug": "misguided-bully",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Misguided Thief",
+      "slug": "misguided-thief",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mitmah Scout",
+      "slug": "mitmah-scout",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mitmah Seer",
+      "slug": "mitmah-seer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mole",
+      "slug": "mole",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Monk (Criatura)",
+      "slug": "monk-criatura",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Monk's Apparition",
+      "slug": "monks-apparition",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mooh'Tah Warrior",
+      "slug": "moohtah-warrior",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Moohtant",
+      "slug": "moohtant",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mould Phantom",
+      "slug": "mould-phantom",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mummy",
+      "slug": "mummy",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mushroom Sniffer",
+      "slug": "mushroom-sniffer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mutated Bat",
+      "slug": "mutated-bat",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mutated Human",
+      "slug": "mutated-human",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mutated Rat",
+      "slug": "mutated-rat",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mutated Tiger",
+      "slug": "mutated-tiger",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Mycobiontic Beetle",
+      "slug": "mycobiontic-beetle",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Naga Archer",
+      "slug": "naga-archer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Naga Warrior",
+      "slug": "naga-warrior",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Necromancer",
+      "slug": "necromancer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Nibblemaw",
+      "slug": "nibblemaw",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Night Harpy",
+      "slug": "night-harpy",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Nighthunter",
+      "slug": "nighthunter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Nightmare",
+      "slug": "nightmare",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Nightmare Scion",
+      "slug": "nightmare-scion",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Nightstalker",
+      "slug": "nightstalker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Noble Lion",
+      "slug": "noble-lion",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Nomad",
+      "slug": "nomad",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Nomad (Blue)",
+      "slug": "nomad-blue",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Nomad (Female)",
+      "slug": "nomad-female",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Northern Pike (Criatura)",
+      "slug": "northern-pike-criatura",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Novice of the Cult",
+      "slug": "novice-of-the-cult",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Noxious Ripptor",
+      "slug": "noxious-ripptor",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Nymph",
+      "slug": "nymph",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ogre Brute",
+      "slug": "ogre-brute",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ogre Rowdy",
+      "slug": "ogre-rowdy",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ogre Ruffian",
+      "slug": "ogre-ruffian",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ogre Sage",
+      "slug": "ogre-sage",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ogre Savage",
+      "slug": "ogre-savage",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ogre Shaman",
+      "slug": "ogre-shaman",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Omnivora",
+      "slug": "omnivora",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Oozing Carcass",
+      "slug": "oozing-carcass",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Oozing Corpus",
+      "slug": "oozing-corpus",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orc",
+      "slug": "orc",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orc Berserker",
+      "slug": "orc-berserker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orc Cult Fanatic",
+      "slug": "orc-cult-fanatic",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orc Cult Inquisitor",
+      "slug": "orc-cult-inquisitor",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orc Cult Minion",
+      "slug": "orc-cult-minion",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orc Cult Priest",
+      "slug": "orc-cult-priest",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orchid Frog",
+      "slug": "orchid-frog",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orc Leader",
+      "slug": "orc-leader",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orclops Doomhauler",
+      "slug": "orclops-doomhauler",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orclops Ravager",
+      "slug": "orclops-ravager",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orc Marauder",
+      "slug": "orc-marauder",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orc Rider",
+      "slug": "orc-rider",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orc Shaman",
+      "slug": "orc-shaman",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orc Spearman",
+      "slug": "orc-spearman",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orc Warlord",
+      "slug": "orc-warlord",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orc Warrior",
+      "slug": "orc-warrior",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Orewalker",
+      "slug": "orewalker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Paladin's Apparition",
+      "slug": "paladins-apparition",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Panda",
+      "slug": "panda",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Parder",
+      "slug": "parder",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Parrot",
+      "slug": "parrot",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Penguin",
+      "slug": "penguin",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Phantasm",
+      "slug": "phantasm",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pig",
+      "slug": "pig",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pigeon",
+      "slug": "pigeon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pirat Bombardier",
+      "slug": "pirat-bombardier",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pirat Cutthroat",
+      "slug": "pirat-cutthroat",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pirate Buccaneer",
+      "slug": "pirate-buccaneer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pirate Corsair",
+      "slug": "pirate-corsair",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pirate Cutthroat",
+      "slug": "pirate-cutthroat",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pirate Ghost",
+      "slug": "pirate-ghost",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pirate Marauder",
+      "slug": "pirate-marauder",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pirate Skeleton",
+      "slug": "pirate-skeleton",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pirat Mate",
+      "slug": "pirat-mate",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pirat Scoundrel",
+      "slug": "pirat-scoundrel",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pixie",
+      "slug": "pixie",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Plaguesmith",
+      "slug": "plaguesmith",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Poacher",
+      "slug": "poacher",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Poisonous Carnisylvan",
+      "slug": "poisonous-carnisylvan",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Poison Spider",
+      "slug": "poison-spider",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Polar Bear",
+      "slug": "polar-bear",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Pooka",
+      "slug": "pooka",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Priestess",
+      "slug": "priestess",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Priestess Of The Wild Sun",
+      "slug": "priestess-of-the-wild-sun",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Putrid Mummy",
+      "slug": "putrid-mummy",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Quara Constrictor",
+      "slug": "quara-constrictor",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Quara Constrictor Scout",
+      "slug": "quara-constrictor-scout",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Quara Hydromancer",
+      "slug": "quara-hydromancer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Quara Hydromancer Scout",
+      "slug": "quara-hydromancer-scout",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Quara Looter",
+      "slug": "quara-looter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Quara Mantassin",
+      "slug": "quara-mantassin",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Quara Mantassin Scout",
+      "slug": "quara-mantassin-scout",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Quara Pincher",
+      "slug": "quara-pincher",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Quara Pincher Scout",
+      "slug": "quara-pincher-scout",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Quara Plunderer",
+      "slug": "quara-plunderer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Quara Predator",
+      "slug": "quara-predator",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Quara Predator Scout",
+      "slug": "quara-predator-scout",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Quara Raider",
+      "slug": "quara-raider",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Rabbit",
+      "slug": "rabbit",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Rage Squid",
+      "slug": "rage-squid",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Rat",
+      "slug": "rat",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Raubritter Chastener",
+      "slug": "raubritter-chastener",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Raubritter Marksman",
+      "slug": "raubritter-marksman",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Raubritter Skirmisher",
+      "slug": "raubritter-skirmisher",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ravenous Lava Lurker",
+      "slug": "ravenous-lava-lurker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Redeemed Soul",
+      "slug": "redeemed-soul",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Renegade Knight",
+      "slug": "renegade-knight",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Renegade Quara Constrictor",
+      "slug": "renegade-quara-constrictor",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Renegade Quara Hydromancer",
+      "slug": "renegade-quara-hydromancer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Renegade Quara Mantassin",
+      "slug": "renegade-quara-mantassin",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Renegade Quara Pincher",
+      "slug": "renegade-quara-pincher",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Renegade Quara Predator",
+      "slug": "renegade-quara-predator",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Retching Horror",
+      "slug": "retching-horror",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Rhindeer",
+      "slug": "rhindeer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Ripper Spectre",
+      "slug": "ripper-spectre",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Roaming Dread",
+      "slug": "roaming-dread",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Roaring Lion",
+      "slug": "roaring-lion",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Rootthing Amber Shaper",
+      "slug": "rootthing-amber-shaper",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Rootthing Bug Tracker",
+      "slug": "rootthing-bug-tracker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Rootthing Nutshell",
+      "slug": "rootthing-nutshell",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Rorc",
+      "slug": "rorc",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Rot Elemental",
+      "slug": "rot-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Rotten Golem",
+      "slug": "rotten-golem",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Rotten Man-Maggot",
+      "slug": "rotten-man-maggot",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Rustheap Golem",
+      "slug": "rustheap-golem",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sabretooth (Criatura)",
+      "slug": "sabretooth-criatura",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sacred Spider",
+      "slug": "sacred-spider",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Salamander",
+      "slug": "salamander",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sandcrawler",
+      "slug": "sandcrawler",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sandstone Scorpion",
+      "slug": "sandstone-scorpion",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Scarab",
+      "slug": "scarab",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Scorpion",
+      "slug": "scorpion",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Seacrest Serpent",
+      "slug": "seacrest-serpent",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Seagull",
+      "slug": "seagull",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sea Serpent",
+      "slug": "sea-serpent",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Serpent Spawn",
+      "slug": "serpent-spawn",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Shaburak Demon",
+      "slug": "shaburak-demon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Shaburak Lord",
+      "slug": "shaburak-lord",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Shaburak Prince",
+      "slug": "shaburak-prince",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Shadow Pupil",
+      "slug": "shadow-pupil",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Shaper Matriarch",
+      "slug": "shaper-matriarch",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Shark",
+      "slug": "shark",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sheep",
+      "slug": "sheep",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Shell Drake",
+      "slug": "shell-drake",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Shock Head",
+      "slug": "shock-head",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Shrieking Cry-Stal",
+      "slug": "shrieking-cry-stal",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sibang",
+      "slug": "sibang",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sight of Surrender",
+      "slug": "sight-of-surrender",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Silencer",
+      "slug": "silencer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Silver Rabbit",
+      "slug": "silver-rabbit",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sineater Inferniarch",
+      "slug": "sineater-inferniarch",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Skeleton",
+      "slug": "skeleton",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Skeleton Elite Warrior",
+      "slug": "skeleton-elite-warrior",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Skeleton Warrior",
+      "slug": "skeleton-warrior",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Slime (Criatura)",
+      "slug": "slime-criatura",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Slug",
+      "slug": "slug",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Smuggler",
+      "slug": "smuggler",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Snake",
+      "slug": "snake",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Son of Verminor",
+      "slug": "son-of-verminor",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sopping Carcass",
+      "slug": "sopping-carcass",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sopping Corpus",
+      "slug": "sopping-corpus",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sorcerer's Apparition",
+      "slug": "sorcerers-apparition",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Soul-Broken Harbinger",
+      "slug": "soul-broken-harbinger",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Souleater",
+      "slug": "souleater",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sparkion",
+      "slug": "sparkion",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Spectre",
+      "slug": "spectre",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Spellreaper Inferniarch",
+      "slug": "spellreaper-inferniarch",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sphinx",
+      "slug": "sphinx",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Spider",
+      "slug": "spider",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Spidris",
+      "slug": "spidris",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Spidris Elite",
+      "slug": "spidris-elite",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Spiky Carnivor",
+      "slug": "spiky-carnivor",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Spit Nettle",
+      "slug": "spit-nettle",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Spitter",
+      "slug": "spitter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Squidgy Slime",
+      "slug": "squidgy-slime",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Squid Warden",
+      "slug": "squid-warden",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Squirrel",
+      "slug": "squirrel",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Stabilizing Dread Intruder",
+      "slug": "stabilizing-dread-intruder",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Stabilizing Reality Reaver",
+      "slug": "stabilizing-reality-reaver",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Stalker",
+      "slug": "stalker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Stalking Stalk",
+      "slug": "stalking-stalk",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Stampor",
+      "slug": "stampor",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Starving Wolf",
+      "slug": "starving-wolf",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Stone Devourer",
+      "slug": "stone-devourer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Stone Golem",
+      "slug": "stone-golem",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Stonerefiner",
+      "slug": "stonerefiner",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Stone Rhino",
+      "slug": "stone-rhino",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Streaked Devourer",
+      "slug": "streaked-devourer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sugar Cube",
+      "slug": "sugar-cube",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sugar Cube Worker",
+      "slug": "sugar-cube-worker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sulphider",
+      "slug": "sulphider",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Sulphur Spouter",
+      "slug": "sulphur-spouter",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Swampling",
+      "slug": "swampling",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Swamp Troll",
+      "slug": "swamp-troll",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Swan Maiden",
+      "slug": "swan-maiden",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Swarmer",
+      "slug": "swarmer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Symbol Of Pain",
+      "slug": "symbol-of-pain",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Tainted Soul",
+      "slug": "tainted-soul",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Tarantula",
+      "slug": "tarantula",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Tarnished Spirit",
+      "slug": "tarnished-spirit",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Terramite",
+      "slug": "terramite",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Terror Bird",
+      "slug": "terror-bird",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Terrorsleep",
+      "slug": "terrorsleep",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Thanatursus",
+      "slug": "thanatursus",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Thornback Tortoise",
+      "slug": "thornback-tortoise",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Thornfire Wolf",
+      "slug": "thornfire-wolf",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Tiger",
+      "slug": "tiger",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Toad",
+      "slug": "toad",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Tomb Servant",
+      "slug": "tomb-servant",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Tortoise",
+      "slug": "tortoise",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Tremendous Tyrant",
+      "slug": "tremendous-tyrant",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Troll",
+      "slug": "troll",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Troll Champion",
+      "slug": "troll-champion",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Troll Legionnaire",
+      "slug": "troll-legionnaire",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "True Dawnfire Asura",
+      "slug": "true-dawnfire-asura",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "True Frost Flower Asura",
+      "slug": "true-frost-flower-asura",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "True Midnight Asura",
+      "slug": "true-midnight-asura",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Truffle",
+      "slug": "truffle",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Truffle Cook",
+      "slug": "truffle-cook",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Tunnel Tyrant",
+      "slug": "tunnel-tyrant",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Turbulent Elemental",
+      "slug": "turbulent-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Twisted Pooka",
+      "slug": "twisted-pooka",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Twisted Shaper",
+      "slug": "twisted-shaper",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Two-Headed Turtle",
+      "slug": "two-headed-turtle",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Undead Dragon",
+      "slug": "undead-dragon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Undead Elite Gladiator",
+      "slug": "undead-elite-gladiator",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Undead Gladiator",
+      "slug": "undead-gladiator",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Undead Mine Worker",
+      "slug": "undead-mine-worker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Undead Prospector",
+      "slug": "undead-prospector",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Undertaker",
+      "slug": "undertaker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Usurper Archer",
+      "slug": "usurper-archer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Usurper Knight",
+      "slug": "usurper-knight",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Usurper Warlock",
+      "slug": "usurper-warlock",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Valkyrie",
+      "slug": "valkyrie",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Vampire",
+      "slug": "vampire",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Vampire Bride",
+      "slug": "vampire-bride",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Vampire Pig",
+      "slug": "vampire-pig",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Vampire Viscount",
+      "slug": "vampire-viscount",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Varnished Diremaw",
+      "slug": "varnished-diremaw",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Venerable Girtablilu",
+      "slug": "venerable-girtablilu",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Vexclaw",
+      "slug": "vexclaw",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Vibrant Phantom",
+      "slug": "vibrant-phantom",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Vicious Squire",
+      "slug": "vicious-squire",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Vile Grandmaster",
+      "slug": "vile-grandmaster",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Vulcongra",
+      "slug": "vulcongra",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Wafer Paper Butterfly",
+      "slug": "wafer-paper-butterfly",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Wailing Widow",
+      "slug": "wailing-widow",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Walker",
+      "slug": "walker",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Walking Dread",
+      "slug": "walking-dread",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Walking Pillar",
+      "slug": "walking-pillar",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Wandering Pillar",
+      "slug": "wandering-pillar",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Wardragon",
+      "slug": "wardragon",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "War Golem",
+      "slug": "war-golem",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Warlock",
+      "slug": "warlock",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "War Wolf",
+      "slug": "war-wolf",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Wasp",
+      "slug": "wasp",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Waspoid",
+      "slug": "waspoid",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Water Buffalo",
+      "slug": "water-buffalo",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Water Elemental",
+      "slug": "water-elemental",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Weakened Frazzlemaw",
+      "slug": "weakened-frazzlemaw",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Weeper",
+      "slug": "weeper",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Werebadger",
+      "slug": "werebadger",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Werebear",
+      "slug": "werebear",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Wereboar",
+      "slug": "wereboar",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Werecrocodile",
+      "slug": "werecrocodile",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Werefox",
+      "slug": "werefox",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Werehyaena",
+      "slug": "werehyaena",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Werehyaena Shaman",
+      "slug": "werehyaena-shaman",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Werelion",
+      "slug": "werelion",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Werelioness",
+      "slug": "werelioness",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Werepanther",
+      "slug": "werepanther",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Weretiger",
+      "slug": "weretiger",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Werewolf",
+      "slug": "werewolf",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "White Deer",
+      "slug": "white-deer",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "White Lion",
+      "slug": "white-lion",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "White Shade",
+      "slug": "white-shade",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "White Tiger",
+      "slug": "white-tiger",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "White Weretiger",
+      "slug": "white-weretiger",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Wiggler",
+      "slug": "wiggler",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Wild Warrior",
+      "slug": "wild-warrior",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Wilting Leaf Golem",
+      "slug": "wilting-leaf-golem",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Winter Wolf",
+      "slug": "winter-wolf",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Wisp",
+      "slug": "wisp",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Witch",
+      "slug": "witch",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Wolf",
+      "slug": "wolf",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Worker Golem",
+      "slug": "worker-golem",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Worm Priestess",
+      "slug": "worm-priestess",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Wyrm",
+      "slug": "wyrm",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Wyvern",
+      "slug": "wyvern",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Yielothax",
+      "slug": "yielothax",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Young Sea Serpent",
+      "slug": "young-sea-serpent",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    },
+    {
+      "name": "Zombie",
+      "slug": "zombie",
+      "reason": "O TibiaWiki não publica estimated kills per hour"
+    }
+  ],
+  "dificuldadesTibiaWiki": {
+    "fácil": 148,
+    "médio": 278,
+    "ausente": 7,
+    "difícil": 193,
+    "trivial": 39,
+    "desafiador": 55,
+    "inofensivo": 18
+  },
+  "dificuldadeNaoAtualizada": "Creature.difficulty não foi alterada. O TibiaWiki usa seis níveis e o enum do projeto tem EASY, MEDIUM, HARD e VERY_HARD.",
+  "conferencias": {
+    "paginasSemClassificacao": 0
+  }
+}

@@ -5,4 +5,6 @@ export const RATE_LIMITS = {
   huntCommentWrite: { limit: 20, windowMs: 60_000 },
   huntUpdateRequestWrite: { limit: 20, windowMs: 60_000 },
   ticketWrite: { limit: 20, windowMs: 60_000 },
+  checkout: { limit: 10, windowMs: 60_000 },
+  billingWebhook: { limit: 120, windowMs: 60_000 },
 } as const;

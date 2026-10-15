@@ -11,7 +11,7 @@ import { describeApiError } from "../services/api/errors";
 type AuthMode = "login" | "register";
 
 export function LoginPage() {
-  const { isAuthenticated, login, register, status } = useAuth();
+  const { isAuthenticated, login, register, status, user } = useAuth();
   const location = useLocation();
   const from =
     typeof location.state === "object" &&
@@ -33,7 +33,9 @@ export function LoginPage() {
   } | null>(null);
 
   if (status !== "loading" && isAuthenticated) {
-    return <Navigate replace to={from || "/profile"} />;
+    const safeFrom =
+      from.startsWith("/") && !from.startsWith("//") && from !== "/login" ? from : "/profile";
+    return <Navigate replace to={user?.premium?.access ? safeFrom : "/checkout"} />;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

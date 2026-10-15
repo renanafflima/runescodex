@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { AdminGuard } from '../admin/admin.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { BillingService, inactivePremium } from '../billing/billing.service';
 import { AuthService } from './auth.service';
 
 jest.mock('../prisma/prisma.service', () => ({
@@ -96,6 +97,10 @@ describe('auth sessions', () => {
         AuthService,
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: jwtService },
+        {
+          provide: BillingService,
+          useValue: { getPremium: jest.fn().mockResolvedValue(inactivePremium()) },
+        },
       ],
     }).compile();
     service = moduleRef.get(AuthService);

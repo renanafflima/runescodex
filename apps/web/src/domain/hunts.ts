@@ -82,6 +82,7 @@ function mapHuntCreature(item: unknown): HuntCreature {
     elements: elementTypes(nested?.elements || entry.elements),
     recommendedCharm: typeof entry.recommendedCharm === "string" ? entry.recommendedCharm : null,
     damageType: typeof entry.damageType === "string" ? entry.damageType : null,
+    killPerHour: hasNumericValue(entry.killPerHour) ? Number(entry.killPerHour) : null,
     isPrimary: Boolean(entry.isPrimary),
     quantity: hasNumericValue(entry.quantity) ? Number(entry.quantity) : null,
     notes: typeof entry.notes === "string" ? entry.notes : null,

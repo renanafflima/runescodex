@@ -2,6 +2,7 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
+import { BillingService, inactivePremium } from '../billing/billing.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 
@@ -37,14 +38,19 @@ describe('AuthService', () => {
   const jwtService = {
     signAsync: jest.fn().mockResolvedValue('signed-token'),
   };
+  const billing = {
+    getPremium: jest.fn().mockResolvedValue(inactivePremium()),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    billing.getPremium.mockResolvedValue(inactivePremium());
     const moduleRef = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: jwtService },
+        { provide: BillingService, useValue: billing },
       ],
     }).compile();
 
@@ -76,6 +82,7 @@ describe('AuthService', () => {
       id: 'user-1',
       email: 'user@email.com',
       role: 'USER',
+      premium: inactivePremium(),
     });
     expect(result.accessToken).toBe('signed-token');
     expect(JSON.stringify(result)).not.toContain('hashed-password');
@@ -119,6 +126,7 @@ describe('AuthService', () => {
       id: 'user-1',
       email: 'user@email.com',
       role: 'USER',
+      premium: inactivePremium(),
     });
     expect(result.accessToken).toBe('signed-token');
     expect(jwtService.signAsync).toHaveBeenCalledWith(
@@ -157,6 +165,7 @@ describe('AuthService', () => {
       id: 'user-1',
       email: 'user@email.com',
       role: 'USER',
+      premium: inactivePremium(),
     });
   });
 });

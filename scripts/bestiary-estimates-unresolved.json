@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-10-10T05:42:08.529Z",
+  "records": 2,
+  "creatures": [
+    {
+      "originalName": "Devourer",
+      "oldCreatureId": "fb991d2e-81f7-42c7-ad8b-736354b79838",
+      "creatureId": null,
+      "slug": "devourer",
+      "bestiaryEntryExists": false,
+      "currentEstimatedKillsPerHour": null,
+      "proposedEstimatedKillsPerHour": 40,
+      "action": "pending",
+      "reason": "creature_not_found"
+    },
+    {
+      "originalName": "Rotworm",
+      "oldCreatureId": "448d4762-9005-4514-beaa-383fbf3a6244",
+      "creatureId": null,
+      "slug": "rotworm",
+      "bestiaryEntryExists": false,
+      "currentEstimatedKillsPerHour": null,
+      "proposedEstimatedKillsPerHour": 62,
+      "action": "pending",
+      "reason": "creature_not_found"
+    }
+  ]
+}

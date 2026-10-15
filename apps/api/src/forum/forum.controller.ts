@@ -12,6 +12,7 @@ import {
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PremiumGuard } from '../billing/premium.guard';
 import { RATE_LIMITS } from '../common/rate-limit.config';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 import { CreateForumReplyDto } from './dto/create-forum-reply.dto';
@@ -20,6 +21,7 @@ import { ListForumQueryDto } from './dto/list-forum-query.dto';
 import { ForumService } from './forum.service';
 
 @Controller('forum')
+@UseGuards(JwtAuthGuard, PremiumGuard)
 export class ForumController {
   constructor(private readonly forumService: ForumService) {}
 

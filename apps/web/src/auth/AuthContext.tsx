@@ -40,6 +40,7 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshMe: () => Promise<void>;
   createCharacter: (payload: CharacterPayload) => Promise<Character>;
   updateCharacter: (id: string, payload: Partial<CharacterPayload>) => Promise<Character>;
   deleteCharacter: (id: string) => Promise<void>;
@@ -172,6 +173,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   );
 
+  const refreshMe = useCallback(async () => {
+    const me = await fetchMe();
+    setUser(me);
+    if (me.premium?.access) {
+      try {
+        await loadCharacters();
+      } catch {
+        setCharacters([]);
+        setActive(null);
+      }
+    }
+  }, [loadCharacters]);
+
   const logout = useCallback(async () => {
     try {
       if (getAccessToken()) await logoutUser();
@@ -225,6 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
+      refreshMe,
       createCharacter: create,
       updateCharacter: update,
       deleteCharacter: remove,
@@ -239,6 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loadCharacters,
       login,
       logout,
+      refreshMe,
       register,
       remove,
       rosterLoaded,

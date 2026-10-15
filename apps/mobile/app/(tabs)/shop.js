@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -9,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -26,6 +27,16 @@ import {
   listRewardRedemptions,
   redeemReward,
 } from "@/src/api/rewards";
+import {
+  affordancePercent,
+  chunkRows,
+  finiteCount,
+  formatPoints,
+  formatRenewal,
+  mapDiamondOffers,
+  mapGoldPackages,
+  missionProgressPercent,
+} from "@/src/domain/rewards";
 
 const GOLD = "#d9ad3f";
 const GOLD2 = "#f3d77a";
@@ -86,43 +97,11 @@ const PERIOD_TABS = [
   { id: "MONTHLY", label: "Mensais" },
 ];
 
-const GOLD_CONVERSIONS = [
-  {
-    id: "gold1",
-    imageKey: "gold1",
-    amount: 1,
-    kicker: "Conversão padrão",
-    title: "1 GOLD COIN",
-    price: "10.000 pontos",
-    hint: "Troque seus pontos por 1 Gold permanente.",
-    bonus: null,
-  },
-  {
-    id: "gold5",
-    imageKey: "gold5",
-    amount: 5,
-    kicker: "Pacote com bônus",
-    title: "5 GOLD COINS",
-    price: "45.000 pontos",
-    hint: "Economize 5.000 pontos ao escolher o pacote.",
-    bonus: "BÔNUS +5.000 PONTOS",
-  },
-];
-
-const DIAMOND_CONVERSIONS = [
-  {
-    id: "diamond1",
-    imageKey: "diamond1",
-    kicker: "Moeda permanente",
-    title: "1 DIAMOND",
-  },
-  {
-    id: "diamond3",
-    imageKey: "diamond3",
-    kicker: "Pacote",
-    title: "3 DIAMONDS",
-  },
-];
+const PERIOD_SINGULAR = {
+  DAILY: "Diária",
+  WEEKLY: "Semanal",
+  MONTHLY: "Mensal",
+};
 
 const REDEMPTION_STATUS_LABEL = {
   PENDING: "Resgate solicitado. Seu pedido está aguardando aprovação.",
@@ -145,10 +124,6 @@ function missionActionLabel(mission) {
   return "COMEÇAR";
 }
 
-function formatPoints(value) {
-  return Number(value || 0).toLocaleString("pt-BR");
-}
-
 function mapRewardsError(error, t) {
   if (error?.code === "NETWORK") return t("auth.networkError");
   if (error?.status === 401) return t("auth.sessionExpired");
@@ -159,7 +134,8 @@ function mapRewardsError(error, t) {
 
 function catalogTypeLabel(item) {
   if (item.premium || item.currency === "DIAMOND") return "Diamond · Premium";
-  if (item.imageKey === "rc500" || item.imageKey === "rc1000") return "Rubini OT";
+  if (item.imageKey === "rc1000") return "Rubini OT · Premium";
+  if (item.imageKey === "rc500") return "Rubini OT";
   return "Tibia Global";
 }
 
@@ -176,20 +152,20 @@ function catalogPriceLabel(item) {
 function mapMission(row) {
   return {
     ...row,
-    name: row.title || row.name,
-    current: Number(row.current || 0),
-    target: Number(row.target || 0),
-    rewardPoints: Number(row.rewardPoints || 0),
-    completed: Boolean(row.completed),
+    name: row?.title || row?.name || "",
+    description: row?.description || "",
+    current: finiteCount(row?.current),
+    target: finiteCount(row?.target),
+    rewardPoints: finiteCount(row?.rewardPoints),
+    completed: Boolean(row?.completed),
   };
 }
 
-function chunkPairs(list) {
-  const rows = [];
-  for (let i = 0; i < list.length; i += 2) {
-    rows.push(list.slice(i, i + 2));
-  }
-  return rows;
+function walletFrom(payload) {
+  if (!payload || typeof payload !== "object") return null;
+  if (payload.wallet && typeof payload.wallet === "object") return payload.wallet;
+  if ("points" in payload || "gold" in payload || "diamond" in payload) return payload;
+  return null;
 }
 
 function BalancePill({ label, value, tone }) {
@@ -207,7 +183,7 @@ function BalancePill({ label, value, tone }) {
 
 function MissionCard({ mission, onPress }) {
   const source = resolveAsset(missionImageKey(mission));
-  const pct = mission.target > 0 ? Math.min(100, (mission.current / mission.target) * 100) : 0;
+  const pct = missionProgressPercent(mission.current, mission.target);
 
   return (
     <Pressable onPress={() => onPress(mission)} style={({ pressed }) => [styles.missionCard, pressed && styles.pressed]}>
@@ -248,7 +224,8 @@ function MissionCard({ mission, onPress }) {
 
 function ConversionCard({ item, diamond, onPress, busy }) {
   const source = resolveAsset(item.imageKey);
-  const disabled = diamond || busy;
+  const unavailable = diamond && !item.enabled;
+  const disabled = unavailable || busy || item.enabled === false;
 
   return (
     <View style={[styles.conversionCard, diamond && styles.conversionCardDiamond]}>
@@ -258,17 +235,18 @@ function ConversionCard({ item, diamond, onPress, busy }) {
       <View style={styles.conversionCopy}>
         <Text style={styles.conversionKicker}>{item.kicker}</Text>
         <Text style={styles.conversionTitle}>{item.title}</Text>
-        {diamond ? (
+        {unavailable ? (
           <Text style={styles.conversionSoon}>EM BREVE</Text>
         ) : (
-          <Text style={styles.conversionPrice}>{item.price}</Text>
+          <Text style={[styles.conversionPrice, diamond && styles.conversionPriceDiamond]}>{item.price}</Text>
         )}
-        {item.bonus ? <Text style={styles.conversionBonus}>{item.bonus}</Text> : null}
-        {!diamond && item.hint ? <Text style={styles.conversionHint}>{item.hint}</Text> : null}
-        {diamond ? (
-          <Text style={styles.conversionHint}>
-            Taxa configurável. Indisponível até a definição no backend.
-          </Text>
+        {item.savings > 0 ? (
+          <Text style={styles.conversionBonus}>Economize {formatPoints(item.savings)} pontos ao escolher o pacote.</Text>
+        ) : item.hint ? (
+          <Text style={styles.conversionHint}>{item.hint}</Text>
+        ) : null}
+        {unavailable ? (
+          <Text style={styles.conversionHint}>A taxa Gold → Diamond ainda não foi publicada pela API.</Text>
         ) : null}
         <Pressable
           onPress={onPress}
@@ -284,7 +262,7 @@ function ConversionCard({ item, diamond, onPress, busy }) {
             maxFontSizeMultiplier={1.15}
             style={[styles.conversionBtnText, diamond && styles.conversionBtnTextDiamond]}
           >
-            {diamond ? "INDISPONÍVEL" : busy ? "..." : "Converter"}
+            {unavailable ? "INDISPONÍVEL" : busy ? "..." : "Converter"}
           </Text>
         </Pressable>
       </View>
@@ -292,44 +270,12 @@ function ConversionCard({ item, diamond, onPress, busy }) {
   );
 }
 
-function isSupremeReward(item) {
-  return item?.imageKey === "ferumbrasHat" || /ferumbras/i.test(String(item?.name || ""));
-}
-
-function SupremeReward({ item, onPress, busy }) {
-  const source = resolveAsset(item.imageKey);
-
-  return (
-    <View style={styles.supremeCard}>
-      <View style={styles.supremeArt}>
-        {source ? <Image source={source} style={styles.supremeImage} resizeMode="cover" /> : null}
-        <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.55)"]}
-          style={styles.supremeShade}
-        />
-      </View>
-      <View style={styles.supremeBody}>
-        <Text style={styles.supremeKicker}>Recompensa lendária</Text>
-        <Text style={styles.supremeTitle}>{item.name}</Text>
-        {item.description ? <Text style={styles.supremeDesc}>{item.description}</Text> : null}
-        <Text style={styles.supremePrice}>{catalogPriceLabel(item)}</Text>
-        <Pressable
-          onPress={onPress}
-          disabled={busy}
-          style={({ pressed }) => [styles.supremeBtn, busy && { opacity: 0.55 }, pressed && !busy && styles.pressed]}
-        >
-          <Text style={styles.supremeBtnText} maxFontSizeMultiplier={1.15}>
-            {busy ? "..." : "Resgatar"}
-          </Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
-function RewardCard({ item, onPress, busy }) {
+function RewardCard({ item, balance, onPress, busy }) {
   const source = resolveAsset(item.imageKey);
   const premium = item.premium || item.currency === "DIAMOND";
+  const progress = affordancePercent(balance, item.price, item.priceConfigured);
+  const redemptionCount = item.redemptionCount;
+  const hasRedemptionCount = Number.isFinite(redemptionCount) && redemptionCount >= 0;
 
   return (
     <View style={[styles.storeItem, premium && styles.storeItemDiamond]}>
@@ -341,14 +287,33 @@ function RewardCard({ item, onPress, busy }) {
         <Text style={styles.storeName}>{item.name}</Text>
         <Text style={styles.storeDesc}>{item.description}</Text>
         <Text style={[styles.storeCost, premium && styles.storeCostDiamond]}>{catalogPriceLabel(item)}</Text>
+        <View style={styles.storeMeta}>
+          <Text style={styles.storeMetaText}>Progresso</Text>
+          <Text style={styles.storeMetaText}>{progress == null ? "—" : `${progress}%`}</Text>
+        </View>
+        <View style={[styles.storeProgress, premium && styles.storeProgressDiamond]}>
+          <View
+            style={[
+              styles.storeProgressFill,
+              premium && styles.storeProgressFillDiamond,
+              { width: `${progress ?? 0}%` },
+            ]}
+          />
+        </View>
+        {hasRedemptionCount ? (
+          <View style={styles.storeMeta}>
+            <Text style={styles.storeMetaText}>Resgates</Text>
+            <Text style={styles.storeMetaText}>{formatPoints(redemptionCount)} jogadores</Text>
+          </View>
+        ) : null}
         <Pressable
           onPress={onPress}
-          disabled={busy}
+          disabled={busy || !item.priceConfigured}
           style={({ pressed }) => [
             styles.storeBtn,
             premium && styles.storeBtnDiamond,
-            busy && { opacity: 0.55 },
-            pressed && !busy && styles.pressed,
+            (busy || !item.priceConfigured) && { opacity: 0.55 },
+            pressed && !busy && item.priceConfigured && styles.pressed,
           ]}
         >
           <Text
@@ -365,19 +330,30 @@ function RewardCard({ item, onPress, busy }) {
 
 export default function ShopScreen() {
   const { t } = useI18n();
-  const { token } = useAuth();
+  const { token, activeCharacter } = useAuth();
+  const { width } = useWindowDimensions();
   const [period, setPeriod] = useState("DAILY");
+  const [dataPeriod, setDataPeriod] = useState(null);
   const [selectedMission, setSelectedMission] = useState(null);
   const [wallet, setWallet] = useState({ points: 0, gold: 0, diamond: 0 });
   const [missionSummary, setMissionSummary] = useState({});
   const [missions, setMissions] = useState([]);
   const [catalog, setCatalog] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
-  const [goldPackages, setGoldPackages] = useState(GOLD_CONVERSIONS);
+  const [goldPackages, setGoldPackages] = useState(() => mapGoldPackages(null));
+  const [diamondOffers, setDiamondOffers] = useState(() => mapDiamondOffers(null));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const rewardRequests = useRef(createLatestRequest()).current;
+  const periodRef = useRef(period);
+  const actionGate = useRef(false);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const applyWallet = useCallback((next) => {
     if (!next) return;
@@ -389,7 +365,7 @@ export default function ShopScreen() {
   }, []);
 
   const loadAll = useCallback(
-    async (nextPeriod = period) => {
+    async (nextPeriod = periodRef.current) => {
       const current = rewardRequests.start();
       if (!token) {
         if (!current()) return;
@@ -409,34 +385,22 @@ export default function ShopScreen() {
         if (!current()) return;
         applyWallet(me?.wallet);
         setMissionSummary(me?.missions || {});
-        if (Array.isArray(me?.conversions?.pointsToGold) && me.conversions.pointsToGold.length) {
-          setGoldPackages(
-            GOLD_CONVERSIONS.map((pack) => {
-              const fromApi = me.conversions.pointsToGold.find(
-                (row) => Number(row.amount) === pack.amount,
-              );
-              if (!fromApi) return pack;
-              return {
-                ...pack,
-                price: `${formatPoints(fromApi.pointsCost)} pontos`,
-              };
-            }),
-          );
-        }
-        setMissions(Array.isArray(missionList) ? missionList.map(mapMission) : []);
+        setGoldPackages(mapGoldPackages(me?.conversions?.pointsToGold));
+        setDiamondOffers(mapDiamondOffers(me?.conversions?.goldToDiamond));
         setCatalog(Array.isArray(catalogList) ? catalogList : []);
         setRedemptions(Array.isArray(history) ? history : []);
+        if (periodRef.current === nextPeriod) {
+          setMissions(Array.isArray(missionList) ? missionList.map(mapMission) : []);
+          setDataPeriod(nextPeriod);
+        }
       } catch (err) {
         if (!current()) return;
-        setMissions([]);
-        setCatalog([]);
-        setRedemptions([]);
         setError(mapRewardsError(err, t));
       } finally {
         if (current()) setLoading(false);
       }
     },
-    [applyWallet, period, rewardRequests, t, token],
+    [applyWallet, rewardRequests, t, token],
   );
 
   useFocusEffect(
@@ -449,92 +413,151 @@ export default function ShopScreen() {
   );
 
   const refreshAfterAction = useCallback(
-    async (nextWallet) => {
+    async (knownWallet) => {
       const current = rewardRequests.start();
-      applyWallet(nextWallet);
+      if (knownWallet) applyWallet(knownWallet);
+      const requested = periodRef.current;
       if (!token) return;
-      const [me, missionList, history] = await Promise.all([
-        getRewardsMe(token),
-        listRewardMissions(token, period),
-        listRewardRedemptions(token),
-      ]);
-      if (!current()) return;
-      applyWallet(me?.wallet);
-      setMissionSummary(me?.missions || {});
-      setMissions(Array.isArray(missionList) ? missionList.map(mapMission) : []);
-      setRedemptions(Array.isArray(history) ? history : []);
+      try {
+        const [me, missionList, history] = await Promise.all([
+          getRewardsMe(token),
+          listRewardMissions(token, requested),
+          listRewardRedemptions(token),
+        ]);
+        if (!current()) return;
+        applyWallet(me?.wallet);
+        setMissionSummary(me?.missions || {});
+        setGoldPackages(mapGoldPackages(me?.conversions?.pointsToGold));
+        setDiamondOffers(mapDiamondOffers(me?.conversions?.goldToDiamond));
+        setRedemptions(Array.isArray(history) ? history : []);
+        if (periodRef.current !== requested) {
+          await loadAll(periodRef.current);
+          return;
+        }
+        setMissions(Array.isArray(missionList) ? missionList.map(mapMission) : []);
+        setDataPeriod(requested);
+      } catch (err) {
+        if (!current() || knownWallet) return;
+        setError(mapRewardsError(err, t));
+      } finally {
+        if (current()) setLoading(false);
+      }
     },
-    [applyWallet, period, rewardRequests, token],
+    [applyWallet, loadAll, rewardRequests, t, token],
   );
 
-  const visibleMissions = missions;
-  const missionRows = useMemo(() => chunkPairs(visibleMissions), [visibleMissions]);
-  const supremeReward = useMemo(() => catalog.find(isSupremeReward) || null, [catalog]);
-  const catalogRows = useMemo(
-    () => chunkPairs(catalog.filter((item) => !isSupremeReward(item))),
-    [catalog],
+  const missionColumns = width >= 900 ? 3 : 2;
+  const storeColumns = width >= 1100 ? 4 : 2;
+  const visibleMissions = useMemo(
+    () => (dataPeriod === period ? missions : []),
+    [dataPeriod, missions, period],
   );
+  const missionRows = useMemo(
+    () => chunkRows(visibleMissions, missionColumns),
+    [missionColumns, visibleMissions],
+  );
+  const catalogRows = useMemo(() => chunkRows(catalog, storeColumns), [catalog, storeColumns]);
   const goldRows = goldPackages;
-  const diamondRows = DIAMOND_CONVERSIONS;
+  const diamondRows = diamondOffers;
   const periodMeta = PERIOD_TABS.find((tab) => tab.id === period);
+  const renewalLabel = formatRenewal(visibleMissions[0]?.periodEnd, now) || "—";
+  const playerName = activeCharacter?.name || "Seu progresso no RuneCodex";
+  const diamondConfigured = diamondOffers.some((offer) => offer.enabled);
   const completedCount =
     missionSummary?.[period]?.completed ?? visibleMissions.filter((m) => m.completed).length;
   const totalCount = missionSummary?.[period]?.total ?? visibleMissions.length;
 
+  const openMission =
+    selectedMission && dataPeriod === period
+      ? visibleMissions.find((mission) => mission.id === selectedMission.id) || null
+      : null;
+
   function changePeriod(next) {
+    periodRef.current = next;
     setPeriod(next);
     setSelectedMission(null);
   }
 
   function confirmConvert(pack) {
-    if (busy) return;
+    if (actionGate.current || busy || pack.enabled === false) return;
+    const diamond = pack.imageKey === "diamond1" || pack.imageKey === "diamond3";
+    actionGate.current = true;
     Alert.alert(
       "Converter",
-      `Converter ${pack.price} em ${pack.amount} Gold? O custo é calculado no servidor.`,
+      diamond
+        ? `Converter ${pack.price} em ${pack.amount} Diamond? O custo é calculado no servidor.`
+        : `Converter ${pack.price} em ${pack.amount} Gold? O custo é calculado no servidor.`,
       [
-        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("common.cancel"),
+          style: "cancel",
+          onPress: () => {
+            actionGate.current = false;
+          },
+        },
         {
           text: "Converter",
           onPress: async () => {
-            if (!token) return;
+            if (!token) {
+              actionGate.current = false;
+              return;
+            }
             setBusy(true);
             try {
-              const nextWallet = await convertRewards(token, "POINTS_TO_GOLD", pack.amount);
-              await refreshAfterAction(nextWallet);
+              const nextWallet = await convertRewards(
+                token,
+                diamond ? "GOLD_TO_DIAMOND" : "POINTS_TO_GOLD",
+                pack.amount,
+              );
+              await refreshAfterAction(walletFrom(nextWallet));
             } catch (err) {
               Alert.alert("Rewards", mapRewardsError(err, t));
             } finally {
+              actionGate.current = false;
               setBusy(false);
             }
           },
         },
       ],
+      { cancelable: false },
     );
   }
 
   function confirmRedeem(item) {
-    if (busy) return;
+    if (actionGate.current || busy || !item?.priceConfigured || !item?.id) return;
+    actionGate.current = true;
     Alert.alert(
       "Resgatar",
       `Resgatar "${item.name}" por ${catalogPriceLabel(item)}? O débito é feito no servidor.`,
       [
-        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("common.cancel"),
+          style: "cancel",
+          onPress: () => {
+            actionGate.current = false;
+          },
+        },
         {
           text: "Resgatar",
           onPress: async () => {
-            if (!token) return;
+            if (!token) {
+              actionGate.current = false;
+              return;
+            }
             setBusy(true);
             try {
               const result = await redeemReward(token, item.id);
-              await refreshAfterAction(result?.wallet);
+              await refreshAfterAction(walletFrom(result));
             } catch (err) {
               Alert.alert("Rewards", mapRewardsError(err, t));
             } finally {
+              actionGate.current = false;
               setBusy(false);
             }
           },
         },
       ],
+      { cancelable: false },
     );
   }
 
@@ -550,8 +573,17 @@ export default function ShopScreen() {
             <View style={styles.brand}>
               <Image source={REWARDS_ASSETS.hero} style={styles.brandMark} resizeMode="cover" />
               <View style={styles.brandCopy}>
-                <Text style={styles.brandTitle}>RuneCodex</Text>
-                <Text style={styles.brandSub}>Rewards · Missões · Conquistas</Text>
+                <Text style={styles.brandTitle} numberOfLines={1}>RuneCodex</Text>
+                <Text style={styles.brandSub} numberOfLines={1}>Rewards · Missões · Conquistas</Text>
+              </View>
+            </View>
+            <View style={styles.points}>
+              <View style={styles.coin}>
+                <Text style={styles.coinText}>R</Text>
+              </View>
+              <View>
+                <Text style={styles.pointsLabel}>Seus pontos</Text>
+                <Text style={styles.pointsValue} numberOfLines={1}>{formatPoints(wallet.points)}</Text>
               </View>
             </View>
           </View>
@@ -578,11 +610,21 @@ export default function ShopScreen() {
 
           {loading ? <ActivityIndicator color={GOLD2} style={{ marginTop: 16 }} /> : null}
 
-          <View style={styles.summary}>
-            <View style={styles.balanceRow}>
-              <BalancePill label="Pontos" value={wallet.points} />
-              <BalancePill label="Gold" value={wallet.gold} />
-              <BalancePill label="Diamond" value={wallet.diamond} tone="diamond" />
+          <View style={[styles.summary, width < 620 && styles.summaryCompact]}>
+            <View style={styles.player}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarMark}>⚔</Text>
+              </View>
+              <View style={styles.playerCopy}>
+                <Text style={styles.playerKicker}>Aventureiro</Text>
+                <Text style={styles.playerName} numberOfLines={2}>
+                  {playerName}
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.reset, width < 620 && styles.resetCompact]}>
+              <Text style={styles.resetLabel}>Próxima renovação</Text>
+              <Text style={styles.resetValue}>{renewalLabel}</Text>
             </View>
           </View>
 
@@ -627,7 +669,9 @@ export default function ShopScreen() {
                     <MissionCard mission={mission} onPress={setSelectedMission} />
                   </View>
                 ))}
-                {row.length === 1 ? <View style={styles.gridCol} /> : null}
+                {Array.from({ length: missionColumns - row.length }).map((_, filler) => (
+                  <View key={`mission-filler-${index}-${filler}`} style={styles.gridCol} />
+                ))}
               </View>
             ))}
             {!loading && visibleMissions.length === 0 ? (
@@ -688,7 +732,13 @@ export default function ShopScreen() {
                 </View>
                 <View style={styles.conversionList}>
                   {diamondRows.map((item) => (
-                    <ConversionCard key={item.id} item={item} diamond />
+                    <ConversionCard
+                      key={item.id}
+                      item={item}
+                      diamond
+                      busy={busy}
+                      onPress={() => confirmConvert(item)}
+                    />
                   ))}
                 </View>
               </View>
@@ -696,11 +746,29 @@ export default function ShopScreen() {
               <View style={styles.economyRule}>
                 <Text style={styles.economyRuleText}>
                   <Text style={styles.ruleStrong}>O caminho é direto: </Text>
-                  <Text style={styles.ruleGold}>10.000 pontos → 1 Gold</Text>
+                  {goldRows.map((pack, index) => (
+                    <Text key={pack.id}>
+                      {index > 0 ? " · " : ""}
+                      <Text style={styles.ruleGold}>
+                        {pack.price} → {pack.amount} {pack.amount === 1 ? "Gold" : "Golds"}
+                      </Text>
+                    </Text>
+                  ))}
                   {" · "}
-                  <Text style={styles.ruleGold}>45.000 pontos → 5 Golds</Text>
-                  {" · "}
-                  <Text style={styles.ruleBlue}>Gold → Diamond em breve</Text>
+                  {diamondConfigured ? (
+                    diamondRows
+                      .filter((offer) => offer.enabled)
+                      .map((offer, index) => (
+                        <Text key={offer.id}>
+                          {index > 0 ? " · " : ""}
+                          <Text style={styles.ruleBlue}>
+                            {offer.price} → {offer.amount} Diamond
+                          </Text>
+                        </Text>
+                      ))
+                  ) : (
+                    <Text style={styles.ruleBlue}>Gold → Diamond ainda não configurado</Text>
+                  )}
                   .
                 </Text>
               </View>
@@ -717,27 +785,35 @@ export default function ShopScreen() {
                   Use seus Golds para resgatar recompensas e Diamonds para itens premium.
                 </Text>
               </View>
-              <Text style={styles.sectionMeta}>{catalog.length} itens</Text>
+              <Text style={styles.sectionMeta}>
+                {catalog.length} {catalog.length === 1 ? "item" : "itens"}
+              </Text>
             </View>
-
-            {supremeReward ? (
-              <SupremeReward
-                item={supremeReward}
-                busy={busy}
-                onPress={() => confirmRedeem(supremeReward)}
-              />
-            ) : null}
 
             {catalogRows.map((row, index) => (
               <View key={`store-row-${index}`} style={styles.gridRow}>
                 {row.map((item) => (
                   <View key={item.id} style={styles.gridCol}>
-                    <RewardCard item={item} busy={busy} onPress={() => confirmRedeem(item)} />
+                    <RewardCard
+                      item={item}
+                      balance={item.currency === "DIAMOND" ? wallet.diamond : wallet.gold}
+                      busy={busy}
+                      onPress={() => confirmRedeem(item)}
+                    />
                   </View>
                 ))}
-                {row.length === 1 ? <View style={styles.gridCol} /> : null}
+                {Array.from({ length: storeColumns - row.length }).map((_, filler) => (
+                  <View key={`store-filler-${index}-${filler}`} style={styles.gridCol} />
+                ))}
               </View>
             ))}
+            {!loading && catalog.length === 0 ? (
+              <Text style={styles.note}>Nenhum item disponível no catálogo.</Text>
+            ) : (
+              <Text style={styles.note}>
+                O progresso compara o seu saldo com o preço do item. A contagem de resgates da comunidade aparece quando a API informar esse número.
+              </Text>
+            )}
           </View>
 
           <View style={styles.section}>
@@ -777,23 +853,24 @@ export default function ShopScreen() {
             )}
           </View>
 
-          <Text style={styles.footer}>RuneCodex · Sistema de Rewards</Text>
+          <Text style={styles.footer}>RuneCodex · Sistema de Rewards · TriTech</Text>
         </ScrollView>
       </ImageBackground>
 
-      <Modal visible={Boolean(selectedMission)} transparent animationType="fade" onRequestClose={() => setSelectedMission(null)}>
+      <Modal visible={Boolean(openMission)} transparent animationType="fade" onRequestClose={() => setSelectedMission(null)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setSelectedMission(null)}>
           <Pressable style={styles.modalBox} onPress={() => {}}>
-            {selectedMission ? (
+            {openMission ? (
               <>
                 <View style={styles.modalHead}>
-                  <Text style={styles.modalTitle}>{selectedMission.name}</Text>
+                  <Text style={styles.modalTitle}>{openMission.name}</Text>
                   <Pressable onPress={() => setSelectedMission(null)} hitSlop={12}>
                     <Text style={styles.modalClose}>×</Text>
                   </Pressable>
                 </View>
                 <Text style={styles.modalText}>
-                  {CATEGORY_LABEL[selectedMission.category]} · {selectedMission.description}
+                  {PERIOD_SINGULAR[openMission.period] || CATEGORY_LABEL[openMission.category]} ·{" "}
+                  {openMission.description}
                 </Text>
                 <View style={styles.progressRow}>
                   <View style={styles.progressTrack}>
@@ -801,24 +878,20 @@ export default function ShopScreen() {
                       style={[
                         styles.progressFill,
                         {
-                          width: `${
-                            selectedMission.target > 0
-                              ? Math.min(100, (selectedMission.current / selectedMission.target) * 100)
-                              : 0
-                          }%`,
+                          width: `${missionProgressPercent(openMission.current, openMission.target)}%`,
                         },
                       ]}
                     />
                   </View>
                   <Text style={styles.progressCount}>
-                    {selectedMission.current} / {selectedMission.target}
+                    {openMission.current} / {openMission.target}
                   </Text>
                 </View>
                 <Text style={styles.modalReward}>
-                  Recompensa: +{formatPoints(selectedMission.rewardPoints)} pontos
+                  Recompensa: +{formatPoints(openMission.rewardPoints)} pontos
                 </Text>
-                <Text style={[styles.modalText, selectedMission.completed && { color: BLUE2 }]}>
-                  {selectedMission.completed
+                <Text style={[styles.modalText, openMission.completed && { color: BLUE2 }]}>
+                  {openMission.completed
                     ? "CONCLUÍDA"
                     : "O progresso atualiza automaticamente quando você realiza a ação no app."}
                 </Text>
@@ -853,6 +926,37 @@ const styles = StyleSheet.create({
   brandCopy: { flex: 1, minWidth: 0 },
   brandTitle: { color: Colors.text, fontSize: 20, fontWeight: "800", letterSpacing: 0.4 },
   brandSub: { color: Colors.muted, fontSize: 12, marginTop: 3 },
+  points: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexShrink: 1,
+    gap: 8,
+    marginLeft: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: "rgba(217,173,63,0.28)",
+    backgroundColor: "rgba(4,12,25,0.76)",
+  },
+  coin: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#e9c45b",
+    borderWidth: 2,
+    borderColor: "#f5db82",
+  },
+  coinText: { color: "#2b210c", fontSize: 16, fontWeight: "800" },
+  pointsLabel: {
+    color: Colors.muted,
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  pointsValue: { color: GOLD2, fontSize: 16, fontWeight: "700", marginTop: 1 },
 
   hero: {
     width: "100%",
@@ -879,12 +983,37 @@ const styles = StyleSheet.create({
 
   summary: {
     marginTop: 16,
-    padding: 14,
+    padding: 16,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: "rgba(217,173,63,0.28)",
     backgroundColor: "rgba(5,15,29,0.91)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    flexWrap: "wrap",
   },
+  player: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1, minWidth: 180 },
+  avatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#17345b",
+    borderWidth: 1,
+    borderColor: GOLD,
+  },
+  avatarMark: { color: GOLD2, fontSize: 22 },
+  playerCopy: { flex: 1, minWidth: 0 },
+  playerKicker: { color: Colors.muted, fontSize: 11 },
+  playerName: { color: GOLD2, fontSize: 16, fontWeight: "700", marginTop: 2 },
+  summaryCompact: { flexDirection: "column", alignItems: "flex-start" },
+  reset: { alignItems: "flex-end" },
+  resetCompact: { alignItems: "flex-start" },
+  resetLabel: { color: Colors.muted, fontSize: 10, textTransform: "uppercase" },
+  resetValue: { color: Colors.text, fontSize: 15, fontWeight: "700", marginTop: 2 },
   balanceRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   balancePill: {
     paddingVertical: 6,
@@ -950,7 +1079,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(217,173,63,0.34)",
     backgroundColor: "rgba(4,12,24,0.86)",
   },
-  missionImage: { width: "100%", aspectRatio: 257 / 348 },
+  missionImage: { width: "100%", aspectRatio: 300 / 332 },
   missionOverlay: {
     position: "absolute",
     left: 0,
@@ -1035,6 +1164,7 @@ const styles = StyleSheet.create({
   },
   conversionTitle: { color: Colors.text, fontSize: 14, fontWeight: "800", marginTop: 3 },
   conversionPrice: { color: GOLD2, fontSize: 12, fontWeight: "800", marginTop: 6 },
+  conversionPriceDiamond: { color: BLUE2 },
   conversionSoon: { color: BLUE2, fontSize: 12, fontWeight: "800", marginTop: 6 },
   conversionBonus: { color: BLUE2, fontSize: 9, fontWeight: "800", marginTop: 4 },
   conversionHint: { color: "#8e9db0", fontSize: 9, lineHeight: 13, marginTop: 4 },
@@ -1070,44 +1200,6 @@ const styles = StyleSheet.create({
   ruleGold: { color: GOLD2, fontWeight: "800" },
   ruleBlue: { color: BLUE2, fontWeight: "800" },
 
-  supremeCard: {
-    width: "100%",
-    marginBottom: 14,
-    borderRadius: 18,
-    overflow: "hidden",
-    borderWidth: 1.5,
-    borderColor: "#f0cf70",
-    backgroundColor: "#070b12",
-    shadowColor: "#d9ad3f",
-    shadowOpacity: 0.55,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 8,
-  },
-  supremeArt: { width: "100%", aspectRatio: 1, backgroundColor: "#05070c" },
-  supremeImage: { width: "100%", height: "100%" },
-  supremeShade: { position: "absolute", left: 0, right: 0, bottom: 0, height: "28%" },
-  supremeBody: { paddingHorizontal: 14, paddingVertical: 12, gap: 4 },
-  supremeKicker: {
-    color: GOLD2,
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-  },
-  supremeTitle: { color: Colors.text, fontSize: 20, fontWeight: "800" },
-  supremeDesc: { color: "#b8c5d5", fontSize: 12, lineHeight: 17 },
-  supremePrice: { color: GOLD2, fontSize: 14, fontWeight: "800", marginTop: 4 },
-  supremeBtn: {
-    alignSelf: "flex-start",
-    marginTop: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 9,
-    backgroundColor: GOLD,
-  },
-  supremeBtnText: { color: "#171106", fontWeight: "800", fontSize: 12 },
-
   storeItem: {
     borderRadius: 12,
     overflow: "hidden",
@@ -1133,6 +1225,27 @@ const styles = StyleSheet.create({
   storeDesc: { color: Colors.muted, fontSize: 9, marginTop: 5, minHeight: 26, lineHeight: 13 },
   storeCost: { color: GOLD2, fontWeight: "800", fontSize: 12, marginTop: 4 },
   storeCostDiamond: { color: BLUE2 },
+  storeMeta: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.07)",
+  },
+  storeMetaText: { color: "#8291a4", fontSize: 10 },
+  storeProgress: {
+    height: 5,
+    marginTop: 6,
+    borderRadius: 99,
+    overflow: "hidden",
+    backgroundColor: "#09182a",
+    borderWidth: 1,
+    borderColor: "#27405c",
+  },
+  storeProgressDiamond: { borderColor: "#1f5275" },
+  storeProgressFill: { height: "100%", borderRadius: 99, backgroundColor: BLUE },
+  storeProgressFillDiamond: { backgroundColor: BLUE2 },
   storeBtn: {
     alignSelf: "flex-start",
     marginTop: 8,

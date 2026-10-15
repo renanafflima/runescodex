@@ -11,13 +11,14 @@ import {
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PremiumGuard } from '../billing/premium.guard';
 import { ConvertRewardsDto } from './dto/convert-rewards.dto';
 import { ListMissionsQueryDto } from './dto/list-missions-query.dto';
 import { RedeemRewardDto } from './dto/redeem-reward.dto';
 import { RewardsService } from './rewards.service';
 
 @Controller('rewards')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PremiumGuard)
 export class RewardsController {
   constructor(private readonly rewardsService: RewardsService) {}
 

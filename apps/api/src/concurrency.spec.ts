@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth/auth.service';
+import { BillingService, inactivePremium } from './billing/billing.service';
 import { BestiaryService } from './bestiary/bestiary.service';
 import { ForumService } from './forum/forum.service';
 import { PrismaService } from './prisma/prisma.service';
@@ -457,6 +458,10 @@ describe('concurrent writes', () => {
         {
           provide: JwtService,
           useValue: { signAsync: async () => 'token' },
+        },
+        {
+          provide: BillingService,
+          useValue: { getPremium: async () => inactivePremium() },
         },
       ],
     }).compile();

@@ -1,9 +1,12 @@
-import type { BestiaryEntry, BestiaryProgress } from "../services/api/types";
+import type { BestiaryCompanion, BestiaryEntry, BestiaryProgress, HuntListItem } from "../services/api/types";
 import { formatCount, formatDifficultyLabel, hasNumericValue } from "./format";
-import { publicImageUrl, publicLinkUrl } from "./media";
+import { resolveCreatureImage } from "./creature-image";
+import { publicLinkUrl } from "./media";
 
 export const BESTIARY_DIFFICULTIES = ["All", "Easy", "Medium", "Hard", "Very Hard"] as const;
 export type BestiaryDifficultyFilter = (typeof BESTIARY_DIFFICULTIES)[number];
+export const BESTIARY_HUNT_SORTS = ["level", "time", "name"] as const;
+export type BestiaryHuntSort = (typeof BESTIARY_HUNT_SORTS)[number];
 
 const DIFFICULTY_LABEL: Record<string, string> = {
   EASY: "Easy",
@@ -50,12 +53,13 @@ export function mapBestiaryEntry(entry: unknown): BestiaryEntry {
       : killsPerHour && killsPerHour > 0 && killsRequired != null
         ? Math.ceil(killsRequired / killsPerHour)
         : null;
+  const companions = mapCompanions(data.together);
 
   return {
     id: String(data.id || data.slug || data.name || ""),
     name: String(data.name || ""),
     slug: String(data.slug || ""),
-    image: publicImageUrl(data.image),
+    image: resolveCreatureImage(data.image, data.name),
     hp: hasNumericValue(data.hp) ? Number(data.hp) : null,
     experience: hasNumericValue(data.experience) ? Number(data.experience) : null,
     difficulty: DIFFICULTY_LABEL[String(data.difficulty || "")] || formatDifficultyLabel(data.difficulty),
@@ -64,16 +68,32 @@ export function mapBestiaryEntry(entry: unknown): BestiaryEntry {
     killsRequired,
     killsPerHour,
     estimatedHours,
+    charmPoints: hasNumericValue(data.charmPoints) ? Number(data.charmPoints) : null,
     youtubeUrl: publicLinkUrl(data.youtubeUrl),
-    killTogether: (Array.isArray(data.together) ? data.together : [])
-      .map((item) => asRecord(item).name)
-      .filter((name): name is string => typeof name === "string" && Boolean(name)),
+    companions,
+    killTogether: companions.map((item) => item.name),
     weaknesses: (Array.isArray(data.elements) ? data.elements : [])
       .map((item) => (typeof item === "string" ? item : asRecord(item).element))
       .filter((item): item is string => Boolean(item)),
     description: typeof data.description === "string" ? data.description : null,
     progress: mapProgress(data.progress),
   };
+}
+
+function mapCompanions(value: unknown): BestiaryCompanion[] {
+  return (Array.isArray(value) ? value : [])
+    .map((item) => {
+      const related = asRecord(item);
+      const name = typeof related.name === "string" ? related.name : "";
+      if (!name) return null;
+      return {
+        id: String(related.id || related.slug || name),
+        name,
+        slug: typeof related.slug === "string" ? related.slug : "",
+        image: resolveCreatureImage(related.image, related.name),
+      };
+    })
+    .filter((item): item is BestiaryCompanion => Boolean(item));
 }
 
 export function bestiaryApiDifficulty(filter: BestiaryDifficultyFilter) {
@@ -100,4 +120,51 @@ export function formatBestiaryKills(entry: BestiaryEntry) {
   if (!required) return null;
   if (!entry.progress) return required;
   return `${formatCount(entry.progress.kills)} / ${required}`;
+}
+
+export function formatEstimatedHours(hours: number | null | undefined) {
+  if (!hasNumericValue(hours) || Number(hours) <= 0) return null;
+  return `≈ ${Math.round(Number(hours))}h`;
+}
+
+export function companionSlugSet(entry: BestiaryEntry) {
+  return new Set(
+    entry.companions
+      .map((item) => item.slug)
+      .filter((slug): slug is string => Boolean(slug)),
+  );
+}
+
+export function uniqueHuntCreatures(hunts: HuntListItem[]) {
+  const seen = new Map<string, HuntListItem["spawn"][number]>();
+  for (const hunt of hunts) {
+    for (const creature of hunt.spawn) {
+      const key = creature.slug || creature.name;
+      if (!key || seen.has(key)) continue;
+      seen.set(key, creature);
+    }
+  }
+  return [...seen.values()];
+}
+
+function huntLevel(hunt: HuntListItem) {
+  return hasNumericValue(hunt.levelMin) ? Number(hunt.levelMin) : Number.POSITIVE_INFINITY;
+}
+
+export function sortBestiaryHunts(hunts: HuntListItem[], sort: BestiaryHuntSort) {
+  return [...hunts].sort((left, right) => {
+    if (sort === "name") {
+      return left.name.localeCompare(right.name, "pt-BR");
+    }
+    const byLevel = huntLevel(left) - huntLevel(right);
+    if (byLevel) return byLevel;
+    return left.name.localeCompare(right.name, "pt-BR");
+  });
+}
+
+export function recommendedEvolutionHunts(hunts: HuntListItem[], creatureSlug: string) {
+  const primary = hunts.filter((hunt) =>
+    hunt.spawn.some((creature) => creature.slug === creatureSlug && creature.isPrimary),
+  );
+  return sortBestiaryHunts(primary.length ? primary : hunts, "level");
 }

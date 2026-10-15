@@ -7,6 +7,8 @@ import { AdminGuard } from '../admin/admin.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RateLimitGuard } from '../common/rate-limit.guard';
 import { RateLimitService } from '../common/rate-limit.service';
+import { BillingService } from '../billing/billing.service';
+import { PremiumGuard } from '../billing/premium.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { TicketsController } from './tickets.controller';
 import { TicketsService } from './tickets.service';
@@ -63,6 +65,8 @@ describe('TicketsController auth', () => {
         RateLimitService,
         RateLimitGuard,
         AdminGuard,
+        PremiumGuard,
+        { provide: BillingService, useValue: { getPremium: jest.fn() } },
         { provide: PrismaService, useValue: {} },
       ],
     }).compile();

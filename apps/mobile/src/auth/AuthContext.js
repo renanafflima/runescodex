@@ -11,6 +11,11 @@ import {
   updateCharacter,
 } from "@/src/api/characters";
 import { STORAGE_KEYS } from "@/src/api/config";
+import { syncStorePremium } from "@/src/api/billing";
+import {
+  configureRevenueCatUser,
+  logoutRevenueCatUser,
+} from "@/src/api/revenuecat";
 
 /**
  * @typedef {Object} Character
@@ -27,6 +32,7 @@ import { STORAGE_KEYS } from "@/src/api/config";
  * @typedef {Object} AuthContextValue
  * @property {boolean} isReady
  * @property {boolean} isAuthenticated
+ * @property {boolean} premiumAccess
  * @property {AuthUser | null} user
  * @property {Character[]} characters
  * @property {Character | null} activeCharacter
@@ -68,6 +74,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   const clearSession = useCallback(async () => {
+    try {
+      await logoutRevenueCatUser();
+    } catch (error) {
+      console.warn("RevenueCat logout failed.", error);
+    }
     setToken("");
     setUser(null);
     setCharacters([]);
@@ -90,11 +101,24 @@ export function AuthProvider({ children }) {
     setActive(active || null);
   }, []);
 
+  const syncNativePremium = useCallback(async (authToken, account) => {
+    try {
+      if (!(await configureRevenueCatUser(account?.id))) return;
+      const premium = await syncStorePremium(authToken);
+      setUser((current) =>
+        current?.id === account.id ? { ...current, premium } : current
+      );
+    } catch (error) {
+      console.warn("RevenueCat entitlement sync failed.", error);
+    }
+  }, []);
+
   const applySession = useCallback(
     async (nextToken, nextUser) => {
       setToken(nextToken);
       setUser(nextUser);
       await persistToken(nextToken);
+      await syncNativePremium(nextToken, nextUser);
       try {
         await loadCharacters(nextToken);
       } catch {
@@ -102,7 +126,7 @@ export function AuthProvider({ children }) {
         setActive(null);
       }
     },
-    [loadCharacters, persistToken]
+    [loadCharacters, persistToken, syncNativePremium]
   );
 
   useEffect(() => {
@@ -116,6 +140,7 @@ export function AuthProvider({ children }) {
         const me = await fetchMe(saved);
         setToken(saved);
         setUser(me);
+        await syncNativePremium(saved, me);
         try {
           await loadCharacters(saved);
         } catch {
@@ -132,7 +157,7 @@ export function AuthProvider({ children }) {
         setIsReady(true);
       }
     })();
-  }, [loadCharacters]);
+  }, [loadCharacters, syncNativePremium]);
 
   const login = useCallback(
     async (email, password) => {
@@ -255,6 +280,7 @@ export function AuthProvider({ children }) {
     () => ({
       isReady,
       isAuthenticated: Boolean(token && user),
+      premiumAccess: user?.premium?.access === true,
       user,
       characters,
       activeCharacter,

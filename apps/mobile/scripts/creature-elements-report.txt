@@ -1,0 +1,13 @@
+Criaturas únicas processadas: 354
+Criaturas ignoradas (borboletas): 3
+Linhas elemento/modificador extraídas: 2455
+Criaturas sem modificador reconhecido: 3
+Falhas HTTP/parse: 0
+
+Arquivos gerados:
+- creature-elements-review.csv
+- creature-elements-pending.csv
+- creature-elements-upsert.sql
+
+O SQL contém somente modificadores extraídos explicitamente. Dados ausentes não viram 100% e não bloqueiam os demais registros.
+Não houve conexão nem gravação no banco.

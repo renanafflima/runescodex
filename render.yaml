@@ -29,3 +29,19 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+      - key: MERCADO_PAGO_ACCESS_TOKEN
+        sync: false
+      - key: MERCADO_PAGO_WEBHOOK_SECRET
+        sync: false
+      - key: MERCADO_PAGO_NOTIFICATION_URL
+        sync: false
+      - key: MERCADO_PAGO_BACK_URL_SUCCESS
+        sync: false
+      - key: MERCADO_PAGO_BACK_URL_PENDING
+        sync: false
+      - key: MERCADO_PAGO_BACK_URL_FAILURE
+        sync: false
+      - key: REVENUECAT_SECRET_API_KEY
+        sync: false
+      - key: REVENUECAT_WEBHOOK_AUTHORIZATION
+        sync: false

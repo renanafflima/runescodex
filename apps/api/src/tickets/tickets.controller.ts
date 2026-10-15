@@ -16,6 +16,7 @@ import { AdminGuard } from '../admin/admin.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PremiumGuard, SkipPremium } from '../billing/premium.guard';
 import { RATE_LIMITS } from '../common/rate-limit.config';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 import { CreateTicketDto } from './dto/create-ticket.dto';
@@ -25,7 +26,7 @@ import { TicketEvidenceFileInterceptor } from './ticket-evidence-file.intercepto
 import { TicketsService, type TicketEvidenceUpload } from './tickets.service';
 
 @Controller('tickets')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PremiumGuard)
 export class TicketsController {
   constructor(private readonly ticketsService: TicketsService) {}
 
@@ -81,6 +82,7 @@ export class TicketsController {
   }
 
   @Patch(':id/status')
+  @SkipPremium()
   @UseGuards(AdminGuard)
   updateStatus(
     @CurrentUser() user: AuthUser,

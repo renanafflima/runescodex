@@ -1,7 +1,15 @@
+export type PremiumAccess = {
+  productCode: string;
+  access: boolean;
+  licenseStatus: "ACTIVE" | "REVOKED" | null;
+  paymentStatus: "NONE" | "PENDING" | "PAID" | "FAILED" | "REFUNDED";
+};
+
 export type AuthUser = {
   id: string;
   email: string;
   role?: string;
+  premium?: PremiumAccess;
 };
 
 export type AuthResponse = {
@@ -38,6 +46,7 @@ export type HuntCreature = {
   elements: string[];
   recommendedCharm: string | null;
   damageType: string | null;
+  killPerHour: number | null;
   isPrimary: boolean;
   quantity: number | null;
   notes: string | null;
@@ -95,6 +104,13 @@ export type BestiaryProgress = {
   progressPercentage: number;
 };
 
+export type BestiaryCompanion = {
+  id: string;
+  name: string;
+  slug: string;
+  image: string | null;
+};
+
 export type BestiaryEntry = {
   id: string;
   name: string;
@@ -108,7 +124,9 @@ export type BestiaryEntry = {
   killsRequired: number | null;
   killsPerHour: number | null;
   estimatedHours: number | null;
+  charmPoints: number | null;
   youtubeUrl: string | null;
+  companions: BestiaryCompanion[];
   killTogether: string[];
   weaknesses: string[];
   description: string | null;

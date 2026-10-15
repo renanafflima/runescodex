@@ -73,7 +73,7 @@ describe("hunt mapping and active character", () => {
     expect(mapped.vocation).toBe("EK");
     expect(mapped.xpH).toBe(180000);
     expect(mapped.creature).toBe("Cyclops");
-    expect(mapped.creatureImage).toContain("https://");
+    expect(mapped.creatureImage).toMatch(/images\/creatures\/Cyclops\.gif$/);
     expect(mapped.displayLocation).toBe("Thais - Cyclops Cave");
   });
 

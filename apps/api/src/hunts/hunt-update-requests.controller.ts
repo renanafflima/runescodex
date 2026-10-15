@@ -11,6 +11,7 @@ import {
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PremiumGuard } from '../billing/premium.guard';
 import { CatalogSlugPipe } from '../common/catalog-slug.pipe';
 import { PageQueryDto } from '../common/dto/page-query.dto';
 import { RATE_LIMITS } from '../common/rate-limit.config';
@@ -19,6 +20,7 @@ import { CreateHuntUpdateRequestDto } from './dto/create-hunt-update-request.dto
 import { HuntUpdateRequestsService } from './hunt-update-requests.service';
 
 @Controller('hunts')
+@UseGuards(JwtAuthGuard, PremiumGuard)
 export class HuntUpdateRequestsController {
   constructor(private readonly requests: HuntUpdateRequestsService) {}
 

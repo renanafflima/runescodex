@@ -9,6 +9,13 @@ const emMigration = readFileSync(
   ),
   'utf8',
 );
+const killPerHourMigration = readFileSync(
+  join(
+    __dirname,
+    '../prisma/migrations/20261013040000_add_hunt_creature_kill_per_hour/migration.sql',
+  ),
+  'utf8',
+);
 const catalogMigration = readFileSync(
   join(
     __dirname,
@@ -62,5 +69,11 @@ describe('catalog schema consistency', () => {
       'CREATE UNIQUE INDEX "HuntCreature_huntId_creatureId_key"',
     );
     expect(schema).toContain('bestiaryEntry     BestiaryEntry?');
+    expect(schema).toContain('estimatedKillsPerHour Int?');
+    expect(schema).toContain('killPerHour      Int?');
+    expect(killPerHourMigration).toContain(
+      'ALTER TABLE "HuntCreature" ADD COLUMN "killPerHour" INTEGER',
+    );
+    expect(killPerHourMigration).not.toMatch(/\b(DROP|DELETE|TRUNCATE|UPDATE)\b/i);
   });
 });

@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Cyclops",
+    "slug": "cyclops",
+    "creatureId": "e8b216dd-e2d5-445b-981c-e622ddb09844"
+  },
+  {
+    "name": "Demon",
+    "slug": "demon",
+    "creatureId": "68ff9188-d2b7-4626-ba27-16da08dd7da2"
+  },
+  {
+    "name": "Dragon",
+    "slug": "dragon",
+    "creatureId": "f9bcafba-91fd-4c4e-8de5-9164495b111c"
+  },
+  {
+    "name": "Hydra",
+    "slug": "hydra",
+    "creatureId": "1c1a17d6-68e9-44a4-b5f4-e62158d10ccb"
+  }
+]

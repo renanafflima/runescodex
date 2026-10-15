@@ -6,6 +6,7 @@ export type HuntListQuery = {
   difficulty?: string;
   location?: string;
   search?: string;
+  creature?: string;
   level?: number;
   page?: number;
   limit?: number;
@@ -18,6 +19,7 @@ export function listHunts(query: HuntListQuery = {}) {
       difficulty: query.difficulty,
       location: query.location,
       search: query.search,
+      creature: query.creature,
       level: query.level,
       page: query.page,
       limit: query.limit,

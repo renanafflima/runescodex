@@ -7,6 +7,7 @@
 // Bestiary estimated time is NOT stored. It is derived as:
 //   ceil(BestiaryEntry.killsRequired / BestiaryEntry.estimatedKillsPerHour)
 // when estimatedKillsPerHour is present.
+// A creature's rate in one hunt is HuntCreature.killPerHour, not that global rate.
 
 generator client {
   provider = "prisma-client"
@@ -90,6 +91,9 @@ model User {
   authSessions           AuthSession[]
   tickets                Ticket[]
   resolvedTickets        Ticket[]                    @relation("TicketResolvedBy")
+  billingOrders          BillingOrder[]
+  billingLicenses        BillingLicense[]
+  billingStoreEntitlements BillingStoreEntitlement[]
 }
 
 /// Active login. Logout deletes this row, so that device token stops working.
@@ -257,6 +261,8 @@ model HuntCreature {
   quantity         Int?
   /// Charm recommendation for THIS hunt composition. Never stored on Creature.
   recommendedCharm Charm?
+  /// Kills per hour for this creature in this hunt. Null until a reviewed estimate is imported.
+  killPerHour      Int?
   notes            String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
@@ -770,4 +776,179 @@ model TicketEvidence {
   ticket     Ticket               @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
+}
+
+/// Paid Premium catalog. Separate from RewardCatalogItem, which is the in-app economy.
+model BillingProduct {
+  id        String         @id @default(uuid())
+  code      String         @unique
+  name      String
+  active    Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  prices    BillingPrice[]
+  orders    BillingOrder[]
+  licenses  BillingLicense[]
+  storeEntitlements BillingStoreEntitlement[]
+
+  @@index([active])
+}
+
+enum BillingMarket {
+  BR
+  INTL
+}
+
+enum BillingCurrency {
+  BRL
+  USD
+}
+
+/// Current price for a market. Orders copy amountMinor and currency at purchase time.
+model BillingPrice {
+  id          String          @id @default(uuid())
+  productId   String
+  market      BillingMarket
+  currency    BillingCurrency
+  /// Minor units. BRL 4990 = R$ 49,90. USD 1499 = US$ 14,99.
+  amountMinor Int
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  product     BillingProduct  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  orders      BillingOrder[]
+
+  @@unique([productId, market])
+  @@index([productId, active])
+}
+
+enum BillingOrderStatus {
+  PENDING
+  PAID
+  EXPIRED
+  CANCELLED
+  REFUNDED
+}
+
+/// Commercial order. Status does not describe the provider attempt or the license.
+model BillingOrder {
+  id          String             @id @default(uuid())
+  userId      String
+  productId   String
+  priceId     String
+  market      BillingMarket
+  currency    BillingCurrency
+  amountMinor Int
+  status      BillingOrderStatus @default(PENDING)
+  paidAt      DateTime?
+  refundedAt  DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  user        User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  product     BillingProduct     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  price       BillingPrice       @relation(fields: [priceId], references: [id], onDelete: Restrict)
+  payments    BillingPayment[]
+  license     BillingLicense?
+  events      BillingEventReceipt[]
+
+  @@index([userId, createdAt])
+  @@index([productId])
+  @@index([status])
+}
+
+enum BillingPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+/// One provider charge. Many payments may belong to one order. Rows are not deleted.
+model BillingPayment {
+  id                String               @id @default(uuid())
+  orderId           String
+  provider            String
+  providerPaymentId   String?
+  /// Mercado Pago preference id. Distinct from the payment id sent later by webhook.
+  providerCheckoutId  String?
+  checkoutUrl         String?
+  status              BillingPaymentStatus @default(PENDING)
+  currency          BillingCurrency
+  amountMinor       Int
+  paidAt            DateTime?
+  refundedAt        DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  order             BillingOrder         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  events            BillingEventReceipt[]
+
+  @@unique([provider, providerPaymentId])
+  @@index([orderId])
+  @@index([status])
+}
+
+enum BillingLicenseStatus {
+  ACTIVE
+  REVOKED
+}
+
+/// Access grant for one paid order. Revocation keeps the row and clears activeUserProductKey.
+model BillingLicense {
+  id                   String               @id @default(uuid())
+  userId               String
+  productId            String
+  orderId              String               @unique
+  status               BillingLicenseStatus @default(ACTIVE)
+  /// userId:productId while ACTIVE. Null after revocation, so a later order can grant again.
+  activeUserProductKey String?              @unique
+  grantedAt            DateTime             @default(now())
+  revokedAt            DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  product              BillingProduct       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order                BillingOrder         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([userId, productId, status])
+}
+
+/// Store entitlements synced from a server-verified external billing provider.
+model BillingStoreEntitlement {
+  id          String         @id @default(uuid())
+  userId      String
+  productId   String
+  provider    String
+  active      Boolean        @default(false)
+  syncedAt    DateTime       @default(now())
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  product     BillingProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, provider, productId])
+  @@index([provider, productId, active])
+}
+
+enum BillingEventType {
+  PAYMENT_PENDING
+  PAYMENT_PAID
+  PAYMENT_FAILED
+  PAYMENT_REFUNDED
+}
+
+/// Idempotency record for a provider notification. The same provider event is stored once.
+model BillingEventReceipt {
+  id              String           @id @default(uuid())
+  provider        String
+  providerEventId String
+  type            BillingEventType
+  orderId         String
+  paymentId       String?
+  createdAt       DateTime         @default(now())
+  order           BillingOrder     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  payment         BillingPayment?  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerEventId])
+  @@index([orderId])
+  @@index([paymentId])
 }

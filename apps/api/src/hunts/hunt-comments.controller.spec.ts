@@ -4,7 +4,8 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
+import { BillingService } from '../billing/billing.service';
+import { PremiumGuard } from '../billing/premium.guard';
 import { RateLimitGuard } from '../common/rate-limit.guard';
 import { RateLimitService } from '../common/rate-limit.service';
 import { HuntCommentsController } from './hunt-comments.controller';
@@ -52,10 +53,11 @@ describe('HuntCommentsController auth', () => {
     unlike: jest.fn(),
   };
 
-  it('lets guests read comments and requires a session to write', () => {
-    expect(readGuards(handler('list'))).toEqual(
-      expect.arrayContaining([OptionalJwtAuthGuard]),
+  it('requires a premium session to read or write comments', () => {
+    expect(readGuards(HuntCommentsController)).toEqual(
+      expect.arrayContaining([JwtAuthGuard, PremiumGuard]),
     );
+    expect(readGuards(handler('list'))).toEqual([]);
     for (const name of ['create', 'update', 'remove', 'like', 'unlike']) {
       expect(readGuards(handler(name))).toEqual(
         expect.arrayContaining([JwtAuthGuard, RateLimitGuard]),
@@ -63,11 +65,13 @@ describe('HuntCommentsController auth', () => {
     }
   });
 
-  it('rejects writes without authentication and still lists comments', async () => {
+  it('rejects comment routes without authentication', async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [HuntCommentsController],
       providers: [
         { provide: HuntCommentsService, useValue: service },
+        { provide: BillingService, useValue: { getPremium: jest.fn() } },
+        PremiumGuard,
         RateLimitService,
         RateLimitGuard,
       ],
@@ -83,8 +87,8 @@ describe('HuntCommentsController auth', () => {
     await app.init();
     const http = request(app.getHttpServer() as App);
 
-    await http.get('/hunts/cyclops/comments').expect(200);
-    expect(service.list).toHaveBeenCalled();
+    await http.get('/hunts/cyclops/comments').expect(401);
+    expect(service.list).not.toHaveBeenCalled();
 
     await http
       .post('/hunts/cyclops/comments')

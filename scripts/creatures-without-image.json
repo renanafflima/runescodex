@@ -1,0 +1,437 @@
+[
+  {
+    "name": "Aggressive Chicken",
+    "expectedAsset": "Aggressive_Chicken",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Ancient Lion Archer",
+    "expectedAsset": "Ancient_Lion_Archer",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Ancient Lion Knight",
+    "expectedAsset": "Ancient_Lion_Knight",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Ancient Lion Warlock",
+    "expectedAsset": "Ancient_Lion_Warlock",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Beer Distraction",
+    "expectedAsset": "Beer_Distraction",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Blazing Bonfire (Criatura)",
+    "expectedAsset": "Blazing_Bonfire_(Criatura)",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Blight Bug",
+    "expectedAsset": "Blight_Bug",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Butterfly (Amarelo)",
+    "expectedAsset": "Butterfly_(Amarelo)",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Carnisylvan Sapling",
+    "expectedAsset": "Carnisylvan_Sapling",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Carnivorous Butterfly",
+    "expectedAsset": "Carnivorous_Butterfly",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Common Beetle",
+    "expectedAsset": "Common_Beetle",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Connoisseur Rabbit",
+    "expectedAsset": "Connoisseur_Rabbit",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Connoisseur Spider",
+    "expectedAsset": "Connoisseur_Spider",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Connoisseur Wolf",
+    "expectedAsset": "Connoisseur_Wolf",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Dawn Bat",
+    "expectedAsset": "Dawn_Bat",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Dawn Scorpion",
+    "expectedAsset": "Dawn_Scorpion",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Dawnfly",
+    "expectedAsset": "Dawnfly",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Devoted Radiant Acolyte",
+    "expectedAsset": "Devoted_Radiant_Acolyte",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Devoted Radiant Inquisitor",
+    "expectedAsset": "Devoted_Radiant_Inquisitor",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Devoted Radiant Paragon",
+    "expectedAsset": "Devoted_Radiant_Paragon",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Devoted Radiant Templar",
+    "expectedAsset": "Devoted_Radiant_Templar",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Devoted Radiant Warden",
+    "expectedAsset": "Devoted_Radiant_Warden",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Devoted Radiant Zealot",
+    "expectedAsset": "Devoted_Radiant_Zealot",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Dworc Shadowstalker",
+    "expectedAsset": "Dworc_Shadowstalker",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Evil Tentacle",
+    "expectedAsset": "Evil_Tentacle",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Ferumbras Essence",
+    "expectedAsset": "Ferumbras_Essence",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Foxmouse",
+    "expectedAsset": "Foxmouse",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Giant Beaver",
+    "expectedAsset": "Giant_Beaver",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Giant Spider (Nostalgia)",
+    "expectedAsset": "Giant_Spider_(Nostalgia)",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Giant Spider (Wyda)",
+    "expectedAsset": "Giant_Spider_(Wyda)",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Gloom Maw",
+    "expectedAsset": "Gloom_Maw",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Grove Guardian",
+    "expectedAsset": "Grove_Guardian",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Hazardous Phantom",
+    "expectedAsset": "Hazardous_Phantom",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Herd Weevil",
+    "expectedAsset": "Herd_Weevil",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Humorless Fungus",
+    "expectedAsset": "Humorless_Fungus",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Iceplume Strider",
+    "expectedAsset": "Iceplume_Strider",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Infernoid Blob",
+    "expectedAsset": "Infernoid_Blob",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Infernoid Hound",
+    "expectedAsset": "Infernoid_Hound",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Infernoid Soul",
+    "expectedAsset": "Infernoid_Soul",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Infernoid Spiritual",
+    "expectedAsset": "Infernoid_Spiritual",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Juvenile Cyclops",
+    "expectedAsset": "Juvenile_Cyclops",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Lesser Fire Devil",
+    "expectedAsset": "Lesser_Fire_Devil",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Lion Archer",
+    "expectedAsset": "Lion_Archer",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Lion Knight",
+    "expectedAsset": "Lion_Knight",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Lion Warlock",
+    "expectedAsset": "Lion_Warlock",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Lizard Commander",
+    "expectedAsset": "Lizard_Commander",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Lizard Executioner",
+    "expectedAsset": "Lizard_Executioner",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Lizard Henchman",
+    "expectedAsset": "Lizard_Henchman",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Lizard Magician",
+    "expectedAsset": "Lizard_Magician",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Lizard Swordmaster",
+    "expectedAsset": "Lizard_Swordmaster",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Meadow Strider",
+    "expectedAsset": "Meadow_Strider",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Mirror Image",
+    "expectedAsset": "Mirror_Image",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Monk of the Order",
+    "expectedAsset": "Monk_of_the_Order",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Moonspawn Blightspitter",
+    "expectedAsset": "Moonspawn_Blightspitter",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Moonspawn Juggernaut",
+    "expectedAsset": "Moonspawn_Juggernaut",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Moonspawn Oozecrown",
+    "expectedAsset": "Moonspawn_Oozecrown",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Moonstone Excavator",
+    "expectedAsset": "Moonstone_Excavator",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Moonstone Overseer",
+    "expectedAsset": "Moonstone_Overseer",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Muglex Clan Assassin",
+    "expectedAsset": "Muglex_Clan_Assassin",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Muglex Clan Footman",
+    "expectedAsset": "Muglex_Clan_Footman",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Museum Stone Golem",
+    "expectedAsset": "Museum_Stone_Golem",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Norcferatu Heartless",
+    "expectedAsset": "Norcferatu_Heartless",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Norcferatu Nightweaver",
+    "expectedAsset": "Norcferatu_Nightweaver",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Orc Cultist",
+    "expectedAsset": "Orc_Cultist",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Orclops Bloodbreaker",
+    "expectedAsset": "Orclops_Bloodbreaker",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Pirate Cook",
+    "expectedAsset": "Pirate_Cook",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Pirate Gunner",
+    "expectedAsset": "Pirate_Gunner",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Pirate Navigator",
+    "expectedAsset": "Pirate_Navigator",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Pirate Quartermaster",
+    "expectedAsset": "Pirate_Quartermaster",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Radiant Acolyte",
+    "expectedAsset": "Radiant_Acolyte",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Radiant Inquisitor",
+    "expectedAsset": "Radiant_Inquisitor",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Radiant Paragon",
+    "expectedAsset": "Radiant_Paragon",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Radiant Templar",
+    "expectedAsset": "Radiant_Templar",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Radiant Warden",
+    "expectedAsset": "Radiant_Warden",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Radiant Zealot",
+    "expectedAsset": "Radiant_Zealot",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Rotworm",
+    "expectedAsset": "Rotworm",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Sea Captain",
+    "expectedAsset": "Sea_Captain",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Silverfrost Sentinel",
+    "expectedAsset": "Silverfrost_Sentinel",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Slippery Northern Pike",
+    "expectedAsset": "Slippery_Northern_Pike",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Spider (Nostalgia)",
+    "expectedAsset": "Spider_(Nostalgia)",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "The Flame Of Hope",
+    "expectedAsset": "The_Flame_Of_Hope",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Troll-Trained Salamander",
+    "expectedAsset": "Troll-Trained_Salamander",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "True Feverbloom Asura",
+    "expectedAsset": "True_Feverbloom_Asura",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Unlit Bonfire",
+    "expectedAsset": "Unlit_Bonfire",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Varg",
+    "expectedAsset": "Varg",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Winged Jaracal",
+    "expectedAsset": "Winged_Jaracal",
+    "reason": "Imagem não encontrada nos assets"
+  },
+  {
+    "name": "Woodling",
+    "expectedAsset": "Woodling",
+    "reason": "Imagem não encontrada nos assets"
+  }
+]

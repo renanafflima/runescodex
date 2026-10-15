@@ -66,11 +66,12 @@ export function BestiaryPage() {
       <section className="catalog-hero catalog-hero--bestiary" aria-labelledby="bestiary-title">
         <PageContainer className="catalog-hero__inner" size="wide">
           <span className="eyebrow">Bestiário</span>
-          <h1 id="bestiary-title">Criaturas e progresso</h1>
+          <h1 id="bestiary-title">Bestiário</h1>
           <p>
+            Explore criaturas e planeje sua evolução de charms.
             {isAuthenticated
-              ? "O progresso de kills vem da sua conta quando a API o envia."
-              : "Entre na conta para ver o progresso do bestiário."}
+              ? " O progresso de kills vem da sua conta quando a API o envia."
+              : " Entre na conta para ver o progresso do bestiário."}
           </p>
         </PageContainer>
       </section>
@@ -120,6 +121,8 @@ export function BestiaryPage() {
                 <CatalogImage alt="" className="catalog-card__art" name={entry.name} src={entry.image} />
                 <div className="catalog-card__body">
                   <div className="catalog-card__meta">
+                    <Badge>Bestiário</Badge>
+                    <Badge>Ver caminho →</Badge>
                     {entry.difficulty ? <Badge>{entry.difficulty}</Badge> : null}
                     {entry.progress?.completed ? <Badge tone="success">Completo</Badge> : null}
                   </div>

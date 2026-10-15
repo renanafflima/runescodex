@@ -11,7 +11,7 @@ const navigationItems: Array<{
   { icon: "swords", label: "Hunts", to: "/hunts" },
   { icon: "book", label: "Bestiário", to: "/bestiary" },
   { icon: "message", label: "Fórum", to: "/forum" },
-  { icon: "gift", label: "Rewards", to: "/#rewards" },
+  { icon: "gift", label: "Rewards", to: "/rewards" },
   { icon: "user", label: "Perfil", to: "/profile" },
 ];
 

@@ -4,6 +4,8 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { BillingService } from '../billing/billing.service';
+import { PremiumGuard } from '../billing/premium.guard';
 import { RateLimitGuard } from '../common/rate-limit.guard';
 import { RateLimitService } from '../common/rate-limit.service';
 import { HuntUpdateRequestsController } from './hunt-update-requests.controller';
@@ -65,6 +67,8 @@ describe('HuntUpdateRequestsController auth', () => {
       controllers: [HuntUpdateRequestsController],
       providers: [
         { provide: HuntUpdateRequestsService, useValue: service },
+        { provide: BillingService, useValue: { getPremium: jest.fn() } },
+        PremiumGuard,
         RateLimitService,
         RateLimitGuard,
       ],
