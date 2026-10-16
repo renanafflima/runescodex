@@ -4,12 +4,9 @@ type GoogleCredentialCallback = {
   credential?: string;
 };
 
-type PromptMoment = {
-  isNotDisplayed: () => boolean;
-  isSkippedMoment: () => boolean;
-  isDismissedMoment: () => boolean;
-  getDismissedReason: () => string;
-};
+type GoogleButtonSize = "small" | "medium" | "large";
+
+type GoogleButtonText = "continue_with" | "signin_with" | "signup_with" | "signin";
 
 type GoogleAccountsId = {
   initialize: (config: {
@@ -17,8 +14,21 @@ type GoogleAccountsId = {
     callback: (response: GoogleCredentialCallback) => void;
     auto_select?: boolean;
     cancel_on_tap_outside?: boolean;
+    use_fedcm_for_button?: boolean;
   }) => void;
-  prompt: (listener: (moment: PromptMoment) => void) => void;
+  renderButton: (
+    parent: HTMLElement,
+    options: {
+      type: "standard";
+      theme: "outline";
+      size: GoogleButtonSize;
+      text: GoogleButtonText;
+      shape: "rectangular";
+      logo_alignment: "left";
+      width: number;
+      locale: string;
+    },
+  ) => void;
 };
 
 declare global {
@@ -32,6 +42,7 @@ declare global {
 }
 
 let scriptPromise: Promise<void> | null = null;
+let mountGeneration = 0;
 
 export function googleClientId() {
   return import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || "";
@@ -55,46 +66,81 @@ function loadGoogleScript() {
   return scriptPromise;
 }
 
-export function requestGoogleCredential() {
-  const clientId = googleClientId();
-  if (!clientId) return Promise.reject(new Error("not-configured"));
+export type GoogleSignInMount = {
+  cancel: () => void;
+};
 
-  return loadGoogleScript().then(
-    () =>
-      new Promise<string>((resolve, reject) => {
-        const googleId = window.google?.accounts?.id;
-        if (!googleId) {
-          reject(new Error("unavailable"));
-          return;
-        }
-        let settled = false;
-        const finish = (error?: Error, credential?: string) => {
-          if (settled) return;
-          settled = true;
-          if (credential) resolve(credential);
-          else reject(error ?? new Error("cancelled"));
-        };
-        googleId.initialize({
-          client_id: clientId,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-          callback: (response) => {
-            if (response.credential) finish(undefined, response.credential);
-            else finish(new Error("unavailable"));
-          },
-        });
-        googleId.prompt((moment) => {
-          if (moment.isNotDisplayed() || moment.isSkippedMoment()) {
-            finish(new Error("unavailable"));
-            return;
-          }
-          if (
-            moment.isDismissedMoment() &&
-            moment.getDismissedReason() !== "credential_returned"
-          ) {
-            finish(new Error("cancelled"));
-          }
-        });
-      }),
-  );
+type MountGoogleSignInOptions = {
+  fullWidth?: boolean;
+  onCredential: (credential: string) => void | Promise<void>;
+  onFailure?: (error: Error) => void;
+  size?: GoogleButtonSize;
+  text?: GoogleButtonText;
+};
+
+function buttonWidth(parent: HTMLElement, fullWidth: boolean) {
+  if (!fullWidth) return 240;
+  const measured = Math.round(parent.getBoundingClientRect().width);
+  return Math.min(400, Math.max(240, measured || 320));
+}
+
+// One Tap (`prompt`) is aborted by FedCM when a custom button opens it.
+// The Sign in with Google button returns the same ID token from the click itself.
+export function mountGoogleSignInButton(
+  parent: HTMLElement,
+  options: MountGoogleSignInOptions,
+): GoogleSignInMount {
+  const generation = ++mountGeneration;
+  let disposed = false;
+  let busy = false;
+
+  void loadGoogleScript()
+    .then(() => {
+      if (disposed || generation !== mountGeneration) return;
+      const clientId = googleClientId();
+      const googleId = window.google?.accounts?.id;
+      if (!clientId || !googleId) {
+        options.onFailure?.(new Error(clientId ? "unavailable" : "not-configured"));
+        return;
+      }
+
+      googleId.initialize({
+        client_id: clientId,
+        auto_select: false,
+        cancel_on_tap_outside: false,
+        use_fedcm_for_button: false,
+        callback: (response) => {
+          const credential = response.credential;
+          if (disposed || generation !== mountGeneration || busy || !credential) return;
+          busy = true;
+          void Promise.resolve(options.onCredential(credential)).finally(() => {
+            busy = false;
+          });
+        },
+      });
+
+      parent.replaceChildren();
+      googleId.renderButton(parent, {
+        type: "standard",
+        theme: "outline",
+        size: options.size ?? "large",
+        text: options.text ?? "continue_with",
+        shape: "rectangular",
+        logo_alignment: "left",
+        width: buttonWidth(parent, options.fullWidth ?? true),
+        locale: "pt-BR",
+      });
+    })
+    .catch((error: unknown) => {
+      if (disposed || generation !== mountGeneration) return;
+      options.onFailure?.(error instanceof Error ? error : new Error("unavailable"));
+    });
+
+  return {
+    cancel() {
+      disposed = true;
+      if (generation === mountGeneration) mountGeneration += 1;
+      parent.replaceChildren();
+    },
+  };
 }

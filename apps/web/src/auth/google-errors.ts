@@ -2,8 +2,9 @@ import { ApiError, describeApiError } from "../services/api/errors";
 
 export function describeGoogleError(error: unknown) {
   if (error instanceof Error && error.message === "cancelled") return "";
+  if (error instanceof DOMException && error.name === "AbortError") return "";
   if (error instanceof Error && error.message === "unavailable") {
-    return "O Google não abriu a seleção de conta. Tente novamente.";
+    return "O login com Google não carregou. Tente novamente.";
   }
   if (!(error instanceof ApiError)) return describeApiError(error);
 

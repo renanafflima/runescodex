@@ -376,6 +376,20 @@
   content: "";
 }
 
+.google-sign-in {
+  display: flex;
+  min-height: 2.5rem;
+}
+
+.google-sign-in--full {
+  width: 100%;
+}
+
+.google-sign-in--disabled {
+  pointer-events: none;
+  opacity: 0.72;
+}
+
 .auth-form {
   display: grid;
   gap: var(--space-4);

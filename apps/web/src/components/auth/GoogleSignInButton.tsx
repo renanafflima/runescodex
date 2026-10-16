@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { googleClientId, requestGoogleCredential } from "../../auth/google-identity";
+import { useEffect, useRef, useState } from "react";
+import { googleClientId, mountGoogleSignInButton } from "../../auth/google-identity";
 import { describeGoogleError } from "../../auth/google-errors";
 import { Button } from "../ui/Button";
 
@@ -13,6 +13,12 @@ type GoogleSignInButtonProps = {
   size?: "sm" | "md" | "lg";
 };
 
+const BUTTON_SIZE = {
+  sm: "small",
+  md: "medium",
+  lg: "large",
+} as const;
+
 export function GoogleSignInButton({
   disabled = false,
   fullWidth = true,
@@ -23,9 +29,47 @@ export function GoogleSignInButton({
   size = "lg",
 }: GoogleSignInButtonProps) {
   const clientId = googleClientId();
+  const hostRef = useRef<HTMLDivElement>(null);
+  const onCredentialRef = useRef(onCredential);
+  const onErrorRef = useRef(onError);
   const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  if (!clientId) {
+  onCredentialRef.current = onCredential;
+  onErrorRef.current = onError;
+
+  useEffect(() => {
+    const parent = hostRef.current;
+    if (!parent || !clientId) return;
+    let alive = true;
+    const handle = mountGoogleSignInButton(parent, {
+      fullWidth,
+      size: BUTTON_SIZE[size],
+      text: "continue_with",
+      onFailure: () => {
+        if (alive) setFailed(true);
+      },
+      onCredential: async (credential) => {
+        if (alive) setPending(true);
+        try {
+          await onCredentialRef.current(credential);
+        } catch (error: unknown) {
+          if (!alive) return;
+          const message = describeGoogleError(error);
+          if (message) onErrorRef.current?.(message);
+        } finally {
+          if (alive) setPending(false);
+        }
+      },
+    });
+
+    return () => {
+      alive = false;
+      handle.cancel();
+    };
+  }, [clientId, fullWidth, size]);
+
+  if (!clientId || failed) {
     if (!showUnavailable) return null;
     return (
       <>
@@ -33,33 +77,25 @@ export function GoogleSignInButton({
           {label}
         </Button>
         <p className="auth-panel__footnote">
-          O login com Google não está configurado neste ambiente.
+          {clientId
+            ? "O login com Google não carregou. Tente novamente."
+            : "O login com Google não está configurado neste ambiente."}
         </p>
       </>
     );
   }
 
   return (
-    <Button
-      className="google-button"
-      disabled={disabled || pending}
-      fullWidth={fullWidth}
-      loading={pending}
-      onClick={() => {
-        setPending(true);
-        void requestGoogleCredential()
-          .then((credential) => onCredential(credential))
-          .catch((error: unknown) => {
-            const message = describeGoogleError(error);
-            if (message) onError?.(message);
-          })
-          .finally(() => setPending(false));
-      }}
-      size={size}
-      type="button"
-      variant="secondary"
-    >
-      {label}
-    </Button>
+    <div
+      aria-busy={pending}
+      className={[
+        "google-sign-in",
+        fullWidth ? "google-sign-in--full" : "",
+        disabled || pending ? "google-sign-in--disabled" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      ref={hostRef}
+    />
   );
 }
