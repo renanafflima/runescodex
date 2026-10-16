@@ -17,6 +17,21 @@ export function loginUser(email: string, password: string) {
   });
 }
 
+export function loginWithGoogle(credential: string) {
+  return apiRequest<AuthResponse>("/auth/google", {
+    method: "POST",
+    json: { credential },
+    auth: false,
+  });
+}
+
+export function linkGoogleAccount(credential: string) {
+  return apiRequest<{ user: AuthUser }>("/auth/google/link", {
+    method: "POST",
+    json: { credential },
+  });
+}
+
 export function fetchMe() {
   return apiRequest<AuthUser>("/auth/me");
 }

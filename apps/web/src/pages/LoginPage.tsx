@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { GoogleSignInButton } from "../components/auth/GoogleSignInButton";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -11,7 +12,7 @@ import { describeApiError } from "../services/api/errors";
 type AuthMode = "login" | "register";
 
 export function LoginPage() {
-  const { isAuthenticated, login, register, status, user } = useAuth();
+  const { isAuthenticated, login, loginWithGoogle, register, status, user } = useAuth();
   const location = useLocation();
   const from =
     typeof location.state === "object" &&
@@ -98,18 +99,17 @@ export function LoginPage() {
             <p>A autenticação usa a mesma API do aplicativo.</p>
           </div>
 
-          <Button
-            className="google-button"
-            disabled
-            fullWidth
-            size="lg"
-            variant="secondary"
-          >
-            Continuar com Google
-          </Button>
-          <p className="auth-panel__footnote">
-            O login com Google ainda não está disponível nesta API.
-          </p>
+          <GoogleSignInButton
+            disabled={submitting}
+            onCredential={loginWithGoogle}
+            onError={(message) =>
+              setNotice({
+                title: "Não foi possível entrar com o Google",
+                message,
+                tone: "error",
+              })
+            }
+          />
 
           <div className="auth-divider">
             <span>ou acesse com email</span>

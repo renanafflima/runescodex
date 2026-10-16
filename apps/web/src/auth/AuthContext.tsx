@@ -9,7 +9,14 @@ import {
   type ReactNode,
 } from "react";
 import { ApiError } from "../services/api/errors";
-import { fetchMe, loginUser, logoutUser, registerUser } from "../services/api/auth";
+import {
+  fetchMe,
+  linkGoogleAccount,
+  loginUser,
+  loginWithGoogle as loginWithGoogleRequest,
+  logoutUser,
+  registerUser,
+} from "../services/api/auth";
 import {
   createCharacter as createCharacterRequest,
   deleteCharacter as deleteCharacterRequest,
@@ -38,6 +45,8 @@ type AuthContextValue = {
   characters: Character[];
   activeCharacter: Character | null;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
+  linkGoogle: (credential: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshMe: () => Promise<void>;
@@ -161,6 +170,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   );
 
+  const loginWithGoogle = useCallback(
+    async (credential: string) => {
+      const data = await loginWithGoogleRequest(credential);
+      const session = sessionFromAuthResponse(data);
+      if (!session.token || !session.user) {
+        throw new ApiError("HTTP_ERROR", 0, "Resposta de autenticação inválida.", data);
+      }
+      await applySession(session.token, session.user);
+    },
+    [applySession],
+  );
+
   const register = useCallback(
     async (email: string, password: string) => {
       const data = await registerUser(email, password);
@@ -185,6 +206,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [loadCharacters]);
+
+  const linkGoogle = useCallback(
+    async (credential: string) => {
+      await linkGoogleAccount(credential);
+      await refreshMe();
+    },
+    [refreshMe],
+  );
 
   const logout = useCallback(async () => {
     try {
@@ -237,6 +266,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       characters,
       activeCharacter,
       login,
+      loginWithGoogle,
+      linkGoogle,
       register,
       logout,
       refreshMe,
@@ -251,8 +282,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       activeCharacter,
       characters,
       create,
+      linkGoogle,
       loadCharacters,
       login,
+      loginWithGoogle,
       logout,
       refreshMe,
       register,

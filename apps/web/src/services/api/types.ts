@@ -9,6 +9,7 @@ export type AuthUser = {
   id: string;
   email: string;
   role?: string;
+  googleLinked?: boolean;
   premium?: PremiumAccess;
 };
 

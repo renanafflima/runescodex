@@ -7,6 +7,7 @@ import { AdminGuard } from '../admin/admin.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService, inactivePremium } from '../billing/billing.service';
 import { AuthService } from './auth.service';
+import { GoogleIdentityService } from './google-identity';
 
 jest.mock('../prisma/prisma.service', () => ({
   PrismaService: class PrismaService {},
@@ -101,6 +102,7 @@ describe('auth sessions', () => {
           provide: BillingService,
           useValue: { getPremium: jest.fn().mockResolvedValue(inactivePremium()) },
         },
+        { provide: GoogleIdentityService, useValue: { verify: jest.fn() } },
       ],
     }).compile();
     service = moduleRef.get(AuthService);

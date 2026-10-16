@@ -146,8 +146,8 @@ describe("bestiary hunt routes", () => {
     name: "Roshamuul Prison",
     levelMin: 450,
     spawn: [
-      { id: "1", slug: "dark-torturer", name: "Dark Torturer", image: null, hp: null, xp: null, elements: [], recommendedCharm: null, damageType: null, isPrimary: true, quantity: null, notes: null },
-      { id: "2", slug: "hellhound", name: "Hellhound", image: null, hp: null, xp: null, elements: [], recommendedCharm: null, damageType: null, isPrimary: false, quantity: null, notes: null },
+      { id: "1", slug: "dark-torturer", name: "Dark Torturer", image: null, hp: null, xp: null, elements: [], recommendedCharm: null, damageType: null, killPerHour: null, isPrimary: true, quantity: null, notes: null },
+      { id: "2", slug: "hellhound", name: "Hellhound", image: null, hp: null, xp: null, elements: [], recommendedCharm: null, damageType: null, killPerHour: null, isPrimary: false, quantity: null, notes: null },
     ],
   });
   const halls = huntItem({
@@ -155,7 +155,7 @@ describe("bestiary hunt routes", () => {
     name: "Halls of Ascension",
     levelMin: 400,
     spawn: [
-      { id: "1", slug: "dark-torturer", name: "Dark Torturer", image: null, hp: null, xp: null, elements: [], recommendedCharm: null, damageType: null, isPrimary: false, quantity: null, notes: null },
+      { id: "1", slug: "dark-torturer", name: "Dark Torturer", image: null, hp: null, xp: null, elements: [], recommendedCharm: null, damageType: null, killPerHour: null, isPrimary: false, quantity: null, notes: null },
     ],
   });
 

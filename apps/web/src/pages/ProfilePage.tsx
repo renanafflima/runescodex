@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { GoogleSignInButton } from "../components/auth/GoogleSignInButton";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Section } from "../components/layout/Section";
 import { Badge } from "../components/ui/Badge";
@@ -26,6 +27,7 @@ const emptyForm: CharacterPayload = {
 export function ProfilePage() {
   const {
     user,
+    linkGoogle,
     characters,
     activeCharacter,
     logout,
@@ -256,6 +258,42 @@ export function ProfilePage() {
                   <strong>Email</strong>
                   <span>{user?.email}</span>
                 </div>
+              </div>
+              <div className="account-row">
+                <span className="account-row__icon">
+                  <Icon name="user" size={19} />
+                </span>
+                <div>
+                  <strong>Google</strong>
+                  <span>
+                    {user?.googleLinked
+                      ? "Conta Google vinculada"
+                      : "Vincule a mesma conta de email para entrar com o Google"}
+                  </span>
+                </div>
+                {user?.googleLinked ? null : (
+                  <GoogleSignInButton
+                    fullWidth={false}
+                    label="Vincular Google"
+                    onCredential={async (credential) => {
+                      await linkGoogle(credential);
+                      setNotice({
+                        title: "Google vinculado",
+                        message: "Você já pode entrar com o Google.",
+                        tone: "success",
+                      });
+                    }}
+                    size="sm"
+                    onError={(message) =>
+                      setNotice({
+                        title: "Não foi possível vincular o Google",
+                        message,
+                        tone: "error",
+                      })
+                    }
+                    showUnavailable={false}
+                  />
+                )}
               </div>
               <div className="account-row">
                 <span className="account-row__icon">

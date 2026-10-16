@@ -43,6 +43,7 @@ describe('CORS for Web/PWA', () => {
   it('keeps the required web origins and merges CORS_ORIGINS', () => {
     expect(resolveCorsOrigins({})).toEqual([
       'https://tritec.app.br',
+      'https://tritech.app',
       'http://127.0.0.1:5173',
       'http://localhost:5173',
     ]);
@@ -52,6 +53,7 @@ describe('CORS for Web/PWA', () => {
       }),
     ).toEqual([
       'https://tritec.app.br',
+      'https://tritech.app',
       'http://127.0.0.1:5173',
       'http://localhost:5173',
       'https://extra.example',
@@ -62,6 +64,7 @@ describe('CORS for Web/PWA', () => {
 
   it.each([
     'https://tritec.app.br',
+    'https://tritech.app',
     'http://127.0.0.1:5173',
     'http://localhost:5173',
   ])('answers OPTIONS /hunts for %s', async (origin) => {

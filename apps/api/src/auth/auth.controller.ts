@@ -4,6 +4,7 @@ import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { AuthUser } from './decorators/current-user.decorator';
+import { GoogleCredentialDto } from './dto/google-credential.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -24,6 +25,20 @@ export class AuthController {
   @RateLimit({ ...RATE_LIMITS.login, scope: 'ip' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('google')
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ ...RATE_LIMITS.google, scope: 'ip' })
+  google(@Body() dto: GoogleCredentialDto) {
+    return this.authService.loginWithGoogle(dto.credential);
+  }
+
+  @Post('google/link')
+  @UseGuards(JwtAuthGuard, RateLimitGuard)
+  @RateLimit({ ...RATE_LIMITS.google, scope: 'user' })
+  linkGoogle(@CurrentUser() user: AuthUser, @Body() dto: GoogleCredentialDto) {
+    return this.authService.linkGoogle(user.userId, dto.credential);
   }
 
   @Get('me')
