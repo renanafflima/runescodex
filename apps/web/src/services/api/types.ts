@@ -7,7 +7,7 @@ export type PremiumAccess = {
   source?: "PURCHASE" | "VOUCHER" | "ADMIN_GRANT" | "PARTNERSHIP" | "COMPENSATION" | null;
   expiresAt?: string | null;
   activatedAt?: string | null;
-  channel?: "license" | "store" | null;
+  channel?: "license" | "store" | "staff" | null;
 };
 
 export type AuthUser = {

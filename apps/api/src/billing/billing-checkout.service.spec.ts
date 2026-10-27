@@ -141,6 +141,20 @@ describe('BillingCheckoutService', () => {
     expect(mercadoPago.createPreference).not.toHaveBeenCalled();
   });
 
+  it('does not charge an ADMIN who already has staff Premium access', async () => {
+    billing.getPremium.mockResolvedValue({
+      ...inactivePremium(),
+      access: true,
+      channel: 'staff',
+    });
+
+    await expect(service.start('admin-1', {})).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(billing.createOrder).not.toHaveBeenCalled();
+    expect(mercadoPago.createPreference).not.toHaveBeenCalled();
+  });
+
   it('does not grant premium from an invalid webhook', async () => {
     await expect(
       service.handleWebhook({

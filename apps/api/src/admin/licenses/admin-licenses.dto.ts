@@ -65,6 +65,36 @@ export class GrantLicenseDto extends LicenseReasonDto {
   category!: (typeof GRANT_CATEGORIES)[number];
 }
 
+export class SchedulePendingGrantDto extends LicenseReasonDto {
+  @IsString()
+  @MinLength(5)
+  @MaxLength(254)
+  email!: string;
+
+  @IsIn(TERMS)
+  term!: (typeof TERMS)[number];
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(3650)
+  durationDays?: number;
+
+  @IsIn(GRANT_CATEGORIES)
+  category!: (typeof GRANT_CATEGORIES)[number];
+
+  @IsOptional()
+  @IsISO8601()
+  offerExpiresAt?: string;
+}
+
+export class ListPendingGrantsQueryDto extends PageQueryDto {
+  @IsOptional()
+  @IsIn(['PENDING', 'CLAIMED', 'CANCELLED', 'EXPIRED'])
+  status?: 'PENDING' | 'CLAIMED' | 'CANCELLED' | 'EXPIRED';
+}
+
 export class CreateVoucherDto {
   @IsIn(VOUCHER_BENEFITS)
   benefit!: (typeof VOUCHER_BENEFITS)[number];

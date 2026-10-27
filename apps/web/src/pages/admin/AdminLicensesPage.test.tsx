@@ -9,6 +9,8 @@ const api = vi.hoisted(() => ({
   listAdminLicenses: vi.fn(),
   listAdminPayments: vi.fn(),
   listAdminVouchers: vi.fn(),
+  getAdminVoucher: vi.fn(),
+  listPendingGrants: vi.fn(),
   getLicenseActivity: vi.fn(),
   getAdminLicense: vi.fn(),
   getAdminPayment: vi.fn(),
@@ -16,6 +18,8 @@ const api = vi.hoisted(() => ({
   changeAdminVoucher: vi.fn(),
   createAdminVoucher: vi.fn(),
   grantAdminLicense: vi.fn(),
+  schedulePendingGrant: vi.fn(),
+  cancelPendingGrant: vi.fn(),
   searchLicenseUsers: vi.fn(),
   syncAdminPayment: vi.fn(),
 }));

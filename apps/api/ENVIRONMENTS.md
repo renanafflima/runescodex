@@ -103,3 +103,25 @@ O pacote de compras nativas exige uma development build/EAS build; Expo Go não 
 ## O que impede o desenvolvimento de usar produção
 
 Com `APP_ENV=development`, a API, o Prisma e os seeds só aceitam host local (`localhost`, `127.0.0.1`, `postgres`, `host.docker.internal`) ou o host escrito em `DEV_DATABASE_HOST`. Host de staging ou de produção é recusado antes de abrir conexão. A mensagem de erro não inclui a URL. O seed também recusa `APP_ENV=production`.
+
+## Recuperação controlada de ADMIN
+
+Papel administrativo é apenas `User.role = ADMIN`. O JWT não embute o papel; `AdminGuard` e `/auth/me` leem o banco a cada requisição. Não existe endpoint público para se auto-promover.
+
+Use somente o script idempotente:
+
+```bash
+# Conta precisa já existir no banco de destino (cadastro ou Google).
+# Nunca cria usuário nem altera senha.
+
+ALLOW_ADMIN_PROMOTE=YES \
+CONFIRM_TARGET=local|staging|production \
+CONFIRM_DATABASE_HOST=<host-exato-da-DATABASE_URL> \
+CONFIRM_DATABASE_NAME=<nome-exato-do-banco> \
+ADMIN_EMAIL=<email-normalizado> \
+APP_ENV=development|staging|production \
+DATABASE_URL=<url-do-ambiente> \
+npm run promote:admin
+```
+
+O script falha se o e-mail não existir, se o host/nome confirmados não baterem com `DATABASE_URL`, ou se `ALLOW_ADMIN_PROMOTE` não for `YES`. Em produção, rode no shell/painel do Render com a `DATABASE_URL` de produção — nunca copie essa URL para o Git.

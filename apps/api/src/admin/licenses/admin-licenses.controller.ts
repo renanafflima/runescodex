@@ -12,6 +12,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../admin.guard';
+import { PendingLicenseGrantService } from '../../billing/pending-license-grant.service';
 import {
   CreateVoucherDto,
   ExtendLicenseDto,
@@ -20,7 +21,9 @@ import {
   ListGrantsQueryDto,
   ListLicensesQueryDto,
   ListPaymentsQueryDto,
+  ListPendingGrantsQueryDto,
   ListVouchersQueryDto,
+  SchedulePendingGrantDto,
   SearchLicenseUsersQueryDto,
 } from './admin-licenses.dto';
 import { AdminLicensesService } from './admin-licenses.service';
@@ -28,7 +31,10 @@ import { AdminLicensesService } from './admin-licenses.service';
 @Controller('admin/licenses')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminLicensesController {
-  constructor(private readonly licenses: AdminLicensesService) {}
+  constructor(
+    private readonly licenses: AdminLicensesService,
+    private readonly pendingGrants: PendingLicenseGrantService,
+  ) {}
 
   @Get('overview')
   overview() {
@@ -105,6 +111,28 @@ export class AdminLicensesController {
   @Post('grants')
   grant(@CurrentUser() user: AuthUser, @Body() dto: GrantLicenseDto) {
     return this.licenses.grant(user.userId, dto);
+  }
+
+  @Get('pending-grants')
+  pendingGrantsList(@Query() query: ListPendingGrantsQueryDto) {
+    return this.pendingGrants.list(query);
+  }
+
+  @Post('pending-grants')
+  schedulePending(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: SchedulePendingGrantDto,
+  ) {
+    return this.pendingGrants.schedule(user.userId, dto);
+  }
+
+  @Post('pending-grants/:id/cancel')
+  cancelPending(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: LicenseReasonDto,
+  ) {
+    return this.pendingGrants.cancel(user.userId, id, dto.reason);
   }
 
   @Get('activity')

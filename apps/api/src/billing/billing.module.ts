@@ -7,6 +7,7 @@ import { MercadoPagoClient } from './mercado-pago.client';
 import { PremiumGuard } from './premium.guard';
 import { RevenueCatBillingService } from './revenuecat-billing.service';
 import { RevenueCatClient } from './revenuecat.client';
+import { PendingLicenseGrantService } from './pending-license-grant.service';
 import { VoucherService } from './voucher.service';
 
 @Global()
@@ -21,7 +22,13 @@ import { VoucherService } from './voucher.service';
     MercadoPagoClient,
     PremiumGuard,
     VoucherService,
+    PendingLicenseGrantService,
   ],
-  exports: [BillingService, BillingCheckoutService, PremiumGuard],
+  exports: [
+    BillingService,
+    BillingCheckoutService,
+    PremiumGuard,
+    PendingLicenseGrantService,
+  ],
 })
 export class BillingModule {}

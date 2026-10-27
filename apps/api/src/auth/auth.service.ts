@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { BillingService } from '../billing/billing.service';
+import { PendingLicenseGrantService } from '../billing/pending-license-grant.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeviceService } from './device.service';
 import { ReferralService } from '../referrals/referral.service';
@@ -61,6 +62,7 @@ export class AuthService {
     private readonly google: GoogleIdentityService,
     private readonly devices: DeviceService,
     @Optional() private readonly referrals?: ReferralService,
+    @Optional() private readonly pendingGrants?: PendingLicenseGrantService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -94,6 +96,7 @@ export class AuthService {
     }
 
     await this.attachReferral(user.id, dto.referralCode);
+    await this.claimPendingGrants(user.id, user.email);
     const deviceId = await this.devices.claim(user.id, dto.device);
     return {
       user: await this.presentUser(user),
@@ -115,6 +118,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    await this.claimPendingGrants(user.id, user.email);
     const deviceId = await this.devices.claim(user.id, dto.device);
     return {
       user: await this.presentUser(user),
@@ -137,6 +141,7 @@ export class AuthService {
           'Google account cannot be used for this email',
         );
       }
+      await this.claimPendingGrants(linked.id, linked.email);
       return this.sessionFor(linked, device);
     }
 
@@ -163,6 +168,7 @@ export class AuthService {
         },
       });
       await this.attachReferral(user.id, referralCode);
+      await this.claimPendingGrants(user.id, user.email);
       return {
         ...(await this.sessionFor(user, device)),
         accountCreated: true,
@@ -329,6 +335,11 @@ export class AuthService {
     if (!this.referrals) return;
     await this.referrals.ensureCode(userId);
     await this.referrals.attribute(userId, referralCode);
+  }
+
+  private async claimPendingGrants(userId: string, email: string) {
+    if (!this.pendingGrants) return;
+    await this.pendingGrants.claimForAuthenticatedUser(userId, email);
   }
 
   private normalizeEmail(email: string) {

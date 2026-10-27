@@ -31,6 +31,9 @@ const ORIGIN: Record<string, string> = {
 
 function licenseSummary(premium: NonNullable<ReturnType<typeof useAuth>["user"]>["premium"]) {
   if (!premium) return "Sem licença.";
+  if (premium.channel === "staff") {
+    return "Acesso administrativo. Não é uma compra e não gera pagamento.";
+  }
   if (premium.channel === "store") return "Acesso ativo pela loja do aplicativo.";
   if (premium.licenseStatus === "SUSPENDED") return "Sua licença está suspensa.";
   if (premium.licenseStatus === "REVOKED") return "Sua licença foi revogada.";
@@ -102,8 +105,18 @@ export function CheckoutPage() {
           <p className="eyebrow">RuneCodex Premium</p>
           <h1>Premium ativo</h1>
           <p>{licenseSummary(premium)}</p>
-          {premium.activatedAt ? <p>Ativação: {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" }).format(new Date(premium.activatedAt))}</p> : null}
-          {premium.source ? <p>Origem: {ORIGIN[premium.source] ?? "Conta"}</p> : null}
+          {premium.channel === "staff" ? <p>Origem: Acesso administrativo</p> : null}
+          {premium.channel !== "staff" && premium.activatedAt ? (
+            <p>
+              Ativação:{" "}
+              {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" }).format(
+                new Date(premium.activatedAt),
+              )}
+            </p>
+          ) : null}
+          {premium.channel !== "staff" && premium.source ? (
+            <p>Origem: {ORIGIN[premium.source] ?? "Conta"}</p>
+          ) : null}
           <ButtonLink to="/hunts">Ir para Hunts</ButtonLink>
         </Card>
       </PageContainer>

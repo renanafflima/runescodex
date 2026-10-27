@@ -36,6 +36,7 @@ function uniqueConflict() {
 
 function createBillingDb() {
   const state = {
+    users: [] as Row[],
     products: [] as Row[],
     prices: [] as Row[],
     orders: [] as Row[],
@@ -68,6 +69,10 @@ function createBillingDb() {
   }
 
   const api = {
+    user: {
+      findUnique: ({ where }: { where: Row }) =>
+        state.users.find((row) => matches(row, where)) ?? null,
+    },
     billingProduct: {
       findUnique: ({ where }: { where: Row }) =>
         state.products.find((row) => matches(row, where)) ?? null,
@@ -176,6 +181,7 @@ function createBillingDb() {
       try {
         return await fn(api);
       } catch (error) {
+        state.users = snapshot.users;
         state.products = snapshot.products;
         state.prices = snapshot.prices;
         state.orders = snapshot.orders;
@@ -203,6 +209,11 @@ function seedCatalog(
   },
 ) {
   const now = new Date('2026-10-10T00:00:00.000Z');
+  state.users.push({
+    id: USER_ID,
+    email: 'user@example.com',
+    role: 'USER',
+  });
   state.products.push({
     id: PRODUCT_ID,
     code: PREMIUM_PRODUCT_CODE,
@@ -596,11 +607,63 @@ describe('BillingService', () => {
     });
   });
 
+  it('grants Premium to ADMIN staff without creating a license or payment', async () => {
+    db.state.users[0]!.role = 'ADMIN';
+
+    await expect(service.getPremium(USER_ID)).resolves.toEqual({
+      productCode: PREMIUM_PRODUCT_CODE,
+      access: true,
+      licenseStatus: null,
+      paymentStatus: 'NONE',
+      term: null,
+      source: null,
+      expiresAt: null,
+      activatedAt: null,
+      channel: 'staff',
+    });
+    expect(db.state.licenses).toHaveLength(0);
+    expect(db.state.payments).toHaveLength(0);
+    expect(db.state.orders).toHaveLength(0);
+  });
+
+  it('keeps a real ADMIN license visible when one already exists', async () => {
+    db.state.users[0]!.role = 'ADMIN';
+    db.state.licenses.push({
+      id: 'license-admin',
+      userId: USER_ID,
+      productId: PRODUCT_ID,
+      status: 'ACTIVE',
+      expiresAt: null,
+      term: 'LIFETIME',
+      source: 'PURCHASE',
+      grantedAt: new Date('2026-01-01T00:00:00.000Z'),
+      activeUserProductKey: `${USER_ID}:${PRODUCT_ID}`,
+    });
+
+    await expect(service.getPremium(USER_ID)).resolves.toMatchObject({
+      access: true,
+      channel: 'license',
+      source: 'PURCHASE',
+      licenseStatus: 'ACTIVE',
+      term: 'LIFETIME',
+    });
+    expect(db.state.licenses).toHaveLength(1);
+  });
+
+  it('still blocks a USER without a license', async () => {
+    await expect(service.getPremium(USER_ID)).resolves.toMatchObject({
+      access: false,
+      channel: null,
+      paymentStatus: 'NONE',
+    });
+  });
+
   it('denies Premium when the billing schema is missing and keeps other database errors', async () => {
     const missingTable = Object.assign(new Error('table does not exist'), {
       code: 'P2021',
     });
     const prisma = {
+      user: { findUnique: jest.fn() },
       billingProduct: {
         findUnique: jest.fn().mockRejectedValue(missingTable),
       },

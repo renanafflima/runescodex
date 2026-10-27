@@ -82,7 +82,8 @@ export type PremiumView = {
     | null;
   expiresAt: string | null;
   activatedAt: string | null;
-  channel: 'license' | 'store' | null;
+  /** license/store are paid or redeemed entitlements. staff is ADMIN-only access without a purchase. */
+  channel: 'license' | 'store' | 'staff' | null;
 };
 
 export type CheckoutView = {
@@ -627,9 +628,15 @@ export class BillingService {
   }
 
   private async loadPremium(userId: string): Promise<PremiumView> {
-    const product = await this.prisma.billingProduct.findUnique({
-      where: { code: PREMIUM_PRODUCT_CODE },
-    });
+    const [product, account] = await Promise.all([
+      this.prisma.billingProduct.findUnique({
+        where: { code: PREMIUM_PRODUCT_CODE },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      }),
+    ]);
     if (!product) {
       return inactivePremium();
     }
@@ -677,17 +684,48 @@ export class BillingService {
               ? latestLicense.status
               : null;
     const shown = current ?? (active && !current ? active : suspended);
+    const entitled = Boolean(current || storeEntitlement);
+
+    if (entitled) {
+      return {
+        productCode: PREMIUM_PRODUCT_CODE,
+        access: true,
+        licenseStatus,
+        paymentStatus: payment?.status ?? (storeEntitlement ? 'PAID' : 'NONE'),
+        term: shown?.term ?? null,
+        source: shown?.source ?? null,
+        expiresAt: shown?.expiresAt?.toISOString() ?? null,
+        activatedAt: shown?.grantedAt?.toISOString() ?? null,
+        channel: current ? 'license' : 'store',
+      };
+    }
+
+    // Staff access is derived from User.role in the database, never from the client.
+    // It does not create a license, order, or Mercado Pago payment.
+    if (account?.role === 'ADMIN') {
+      return {
+        productCode: PREMIUM_PRODUCT_CODE,
+        access: true,
+        licenseStatus: null,
+        paymentStatus: payment?.status ?? 'NONE',
+        term: null,
+        source: null,
+        expiresAt: null,
+        activatedAt: null,
+        channel: 'staff',
+      };
+    }
 
     return {
       productCode: PREMIUM_PRODUCT_CODE,
-      access: Boolean(current || storeEntitlement),
+      access: false,
       licenseStatus,
-      paymentStatus: payment?.status ?? (storeEntitlement ? 'PAID' : 'NONE'),
+      paymentStatus: payment?.status ?? 'NONE',
       term: shown?.term ?? null,
       source: shown?.source ?? null,
       expiresAt: shown?.expiresAt?.toISOString() ?? null,
       activatedAt: shown?.grantedAt?.toISOString() ?? null,
-      channel: current ? 'license' : storeEntitlement ? 'store' : null,
+      channel: null,
     };
   }
 

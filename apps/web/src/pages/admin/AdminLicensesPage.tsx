@@ -2,17 +2,21 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ApiError } from "../../services/api/errors";
 import {
+  cancelPendingGrant,
   changeAdminLicense,
   changeAdminVoucher,
   createAdminVoucher,
   getAdminLicense,
   getAdminPayment,
+  getAdminVoucher,
   getLicenseActivity,
   getLicenseOverview,
   grantAdminLicense,
   listAdminLicenses,
   listAdminPayments,
   listAdminVouchers,
+  listPendingGrants,
+  schedulePendingGrant,
   searchLicenseUsers,
   syncAdminPayment,
   type AdminLicense,
@@ -22,6 +26,7 @@ import {
   type CreatedVoucher,
   type LicenseOverview,
   type LicenseUser,
+  type PendingGrant,
 } from "../../services/api/admin-licenses";
 import { AdminState, Pager, adminError } from "./admin-ui";
 
@@ -140,10 +145,17 @@ export function AdminLicensesPage() {
   const [voucherPage, setVoucherPage] = useState(1);
   const [voucherTotal, setVoucherTotal] = useState(0);
   const [voucherLimit, setVoucherLimit] = useState(20);
+  const [voucherSearch, setVoucherSearch] = useState("");
+  const [voucherStatus, setVoucherStatus] = useState("");
+  const [appliedVoucherSearch, setAppliedVoucherSearch] = useState("");
+  const [appliedVoucherStatus, setAppliedVoucherStatus] = useState("");
+  const [voucherDetail, setVoucherDetail] = useState<Awaited<ReturnType<typeof getAdminVoucher>> | null>(null);
   const [created, setCreated] = useState<CreatedVoucher | null>(null);
   const [activity, setActivity] = useState<Array<{ id: string; action: string; summary: string; createdAt: string }>>([]);
   const [users, setUsers] = useState<LicenseUser[]>([]);
   const [chosen, setChosen] = useState<LicenseUser | null>(null);
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [pendingRows, setPendingRows] = useState<PendingGrant[]>([]);
   const [grantTerm, setGrantTerm] = useState<"LIFETIME" | "FIXED">("LIFETIME");
   const [grantDays, setGrantDays] = useState("30");
   const [grantCategory, setGrantCategory] = useState("COLLABORATOR");
@@ -180,10 +192,17 @@ export function AdminLicensesPage() {
         setPaymentTotal(page.total);
         setPaymentLimit(page.limit);
       } else if (tab === "vouchers") {
-        const page = await listAdminVouchers(voucherPage);
+        const page = await listAdminVouchers({
+          page: voucherPage,
+          search: appliedVoucherSearch,
+          status: appliedVoucherStatus,
+        });
         setVouchers(page.items);
         setVoucherTotal(page.total);
         setVoucherLimit(page.limit);
+      } else if (tab === "grant") {
+        const page = await listPendingGrants({ status: "PENDING" });
+        setPendingRows(page.items);
       } else if (tab === "history") {
         setActivity(await getLicenseActivity());
       }
@@ -192,7 +211,16 @@ export function AdminLicensesPage() {
     } finally {
       setLoading(false);
     }
-  }, [appliedSearch, appliedStatus, licensePage, paymentPage, tab, voucherPage]);
+  }, [
+    appliedSearch,
+    appliedStatus,
+    appliedVoucherSearch,
+    appliedVoucherStatus,
+    licensePage,
+    paymentPage,
+    tab,
+    voucherPage,
+  ]);
 
   useEffect(() => {
     void load();
@@ -446,85 +474,252 @@ export function AdminLicensesPage() {
         ) : null}
         {tab === "vouchers" ? (
           <>
+            <form
+              className="admin-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setVoucherPage(1);
+                setAppliedVoucherSearch(voucherSearch.trim());
+                setAppliedVoucherStatus(voucherStatus);
+              }}
+            >
+              <input
+                aria-label="Pesquisar voucher"
+                onChange={(event) => setVoucherSearch(event.target.value)}
+                placeholder="Prefixo ou campanha"
+                value={voucherSearch}
+              />
+              <select
+                aria-label="Status do voucher"
+                onChange={(event) => setVoucherStatus(event.target.value)}
+                value={voucherStatus}
+              >
+                <option value="">Todos os status</option>
+                <option value="ACTIVE">Ativo</option>
+                <option value="PAUSED">Pausado</option>
+                <option value="EXHAUSTED">Esgotado</option>
+                <option value="CLOSED">Encerrado</option>
+                <option value="EXPIRED">Expirado</option>
+                <option value="SCHEDULED">Agendado</option>
+              </select>
+              <button type="submit">Filtrar</button>
+            </form>
             <VoucherPanel
               created={created}
               onCreated={setCreated}
               onError={(message) => setError(message)}
+              onOpenDetail={(id) => {
+                void getAdminVoucher(id)
+                  .then(setVoucherDetail)
+                  .catch((caught: unknown) => setError(adminError(caught)));
+              }}
               onReload={() => void load()}
               vouchers={vouchers}
             />
             <Pager limit={voucherLimit} onPage={setVoucherPage} page={voucherPage} total={voucherTotal} />
+            {voucherDetail ? (
+              <section className="admin-panel">
+                <h2>Resgates do voucher {voucherDetail.codePrefix}</h2>
+                <p>
+                  {label(STATUS, voucherDetail.status)} · {voucherDetail.redeemedCount}/{voucherDetail.maxRedemptions} usos ·
+                  restantes {voucherDetail.remaining}
+                </p>
+                {voucherDetail.notes ? <p>Observações: {voucherDetail.notes}</p> : null}
+                {voucherDetail.redemptions.length === 0 ? (
+                  <p className="admin-note">Nenhum resgate registrado.</p>
+                ) : (
+                  <div className="admin-table-wrap">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Usuário</th>
+                          <th>Resultado</th>
+                          <th>Motivo</th>
+                          <th>Licença</th>
+                          <th>Quando</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {voucherDetail.redemptions.map((row) => (
+                          <tr key={row.id}>
+                            <td>{row.userName}<br />{row.email}</td>
+                            <td>{row.result}</td>
+                            <td>{row.reason || "—"}</td>
+                            <td>{row.licenseId || "—"}</td>
+                            <td>{when(row.at)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <button onClick={() => setVoucherDetail(null)} type="button">Fechar detalhe</button>
+              </section>
+            ) : null}
           </>
         ) : null}
         {tab === "grant" ? (
-          <form
-            className="admin-form admin-panel"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (!reviewing) {
-                setReviewing(true);
-                return;
-              }
-              if (!chosen) return;
-              void grantAdminLicense({
-                userId: chosen.id,
-                term: grantTerm,
-                durationDays: grantTerm === "FIXED" ? Number(grantDays) : undefined,
-                category: grantCategory,
-                reason: grantReason,
-              })
-                .then(() => {
-                  setNotice("Licença concedida. Nenhum pagamento foi criado.");
-                  setReviewing(false);
-                  setGrantReason("");
-                  setChosen(null);
-                })
-                .catch((caught: unknown) => setError(adminError(caught)));
-            }}
-          >
-            <h2>Conceder licença</h2>
-            <input
-              aria-label="Pesquisar usuário"
-              onChange={(event) => {
-                const value = event.target.value;
-                if (value.trim().length < 2) {
-                  setUsers([]);
+          <div className="admin-panel">
+            <form
+              className="admin-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!reviewing) {
+                  setReviewing(true);
                   return;
                 }
-                void searchLicenseUsers(value).then(setUsers).catch((caught: unknown) => setError(adminError(caught)));
+                if (chosen) {
+                  void grantAdminLicense({
+                    userId: chosen.id,
+                    term: grantTerm,
+                    durationDays: grantTerm === "FIXED" ? Number(grantDays) : undefined,
+                    category: grantCategory,
+                    reason: grantReason,
+                  })
+                    .then(() => {
+                      setNotice("Licença concedida. Nenhum pagamento foi criado.");
+                      setReviewing(false);
+                      setGrantReason("");
+                      setChosen(null);
+                      void load();
+                    })
+                    .catch((caught: unknown) => setError(adminError(caught)));
+                  return;
+                }
+                if (pendingEmail.trim()) {
+                  void schedulePendingGrant({
+                    email: pendingEmail.trim(),
+                    term: grantTerm,
+                    durationDays: grantTerm === "FIXED" ? Number(grantDays) : undefined,
+                    category: grantCategory,
+                    reason: grantReason,
+                  })
+                    .then(() => {
+                      setNotice(
+                        "Oferta pendente registrada. A licença só é criada quando este e-mail autenticar no RuneCodex.",
+                      );
+                      setReviewing(false);
+                      setGrantReason("");
+                      setPendingEmail("");
+                      void load();
+                    })
+                    .catch((caught: unknown) => setError(adminError(caught)));
+                }
               }}
-              placeholder="E-mail ou personagem"
-            />
-            <ul>
-              {users.map((user) => (
-                <li key={user.id}>
-                  <button onClick={() => { setChosen(user); setReviewing(false); }} type="button">
-                    {user.name || user.email} · {user.email}
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <p>Selecionado: {chosen ? chosen.email : "nenhum"}</p>
-            <select aria-label="Modalidade" onChange={(event) => setGrantTerm(event.target.value as "LIFETIME" | "FIXED")} value={grantTerm}>
-              <option value="LIFETIME">Vitalícia</option>
-              <option value="FIXED">Com validade</option>
-            </select>
-            {grantTerm === "FIXED" ? (
-              <input aria-label="Duração em dias" min={1} onChange={(event) => setGrantDays(event.target.value)} type="number" value={grantDays} />
-            ) : null}
-            <select aria-label="Categoria" onChange={(event) => setGrantCategory(event.target.value)} value={grantCategory}>
-              {Object.entries(CATEGORY).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-            </select>
-            <textarea aria-label="Justificativa da concessão" minLength={8} onChange={(event) => setGrantReason(event.target.value)} required value={grantReason} />
-            {reviewing && chosen ? (
-              <p>
-                Confirmar {label(CATEGORY, grantCategory)} para {chosen.email}, produto RUNECODEX_PREMIUM, {grantTerm === "LIFETIME" ? "vitalícia" : `${grantDays} dias`}.
+            >
+              <h2>Conceder licença</h2>
+              <p className="admin-note">
+                Se a conta ainda não existir, registre uma oferta pendente. Digitar o e-mail não libera Premium;
+                a licença só nasce depois que essa pessoa autenticar com o mesmo e-mail.
               </p>
-            ) : null}
-            <button disabled={!chosen || grantReason.trim().length < 8} type="submit">
-              {reviewing ? "Confirmar concessão" : "Revisar"}
-            </button>
-          </form>
+              <input
+                aria-label="Pesquisar usuário"
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setPendingEmail(value);
+                  setChosen(null);
+                  setReviewing(false);
+                  if (value.trim().length < 2) {
+                    setUsers([]);
+                    return;
+                  }
+                  void searchLicenseUsers(value).then(setUsers).catch((caught: unknown) => setError(adminError(caught)));
+                }}
+                placeholder="E-mail ou personagem"
+                value={pendingEmail}
+              />
+              <ul>
+                {users.map((user) => (
+                  <li key={user.id}>
+                    <button
+                      onClick={() => {
+                        setChosen(user);
+                        setPendingEmail(user.email);
+                        setReviewing(false);
+                      }}
+                      type="button"
+                    >
+                      {user.name || user.email} · {user.email}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p>
+                {chosen
+                  ? `Conta selecionada: ${chosen.email}`
+                  : pendingEmail.trim()
+                    ? `Sem conta encontrada. Será criada oferta pendente para ${pendingEmail.trim().toLowerCase()}.`
+                    : "Nenhuma conta selecionada."}
+              </p>
+              <select aria-label="Modalidade" onChange={(event) => setGrantTerm(event.target.value as "LIFETIME" | "FIXED")} value={grantTerm}>
+                <option value="LIFETIME">Vitalícia</option>
+                <option value="FIXED">Com validade</option>
+              </select>
+              {grantTerm === "FIXED" ? (
+                <input aria-label="Duração em dias" min={1} onChange={(event) => setGrantDays(event.target.value)} type="number" value={grantDays} />
+              ) : null}
+              <select aria-label="Categoria" onChange={(event) => setGrantCategory(event.target.value)} value={grantCategory}>
+                {Object.entries(CATEGORY).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+              </select>
+              <textarea aria-label="Justificativa da concessão" minLength={8} onChange={(event) => setGrantReason(event.target.value)} required value={grantReason} />
+              {reviewing ? (
+                <p>
+                  Confirmar {label(CATEGORY, grantCategory)} para {chosen?.email || pendingEmail.trim()}, produto RUNECODEX_PREMIUM,{" "}
+                  {grantTerm === "LIFETIME" ? "vitalícia" : `${grantDays} dias`}
+                  {chosen ? "." : " como oferta pendente."}
+                </p>
+              ) : null}
+              <button
+                disabled={(!chosen && pendingEmail.trim().length < 5) || grantReason.trim().length < 8}
+                type="submit"
+              >
+                {reviewing ? "Confirmar concessão" : "Revisar"}
+              </button>
+            </form>
+            <h2>Ofertas pendentes</h2>
+            {pendingRows.length === 0 ? <p className="admin-note">Nenhuma oferta pendente.</p> : (
+              <div className="admin-table-wrap">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>E-mail</th>
+                      <th>Categoria</th>
+                      <th>Modalidade</th>
+                      <th>Validade da oferta</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingRows.map((row) => (
+                      <tr key={row.id}>
+                        <td>{row.email}</td>
+                        <td>{label(CATEGORY, row.category)}</td>
+                        <td>{row.term === "LIFETIME" ? "Vitalícia" : `${row.durationDays ?? "?"} dias`}</td>
+                        <td>{when(row.offerExpiresAt)}</td>
+                        <td>
+                          <button
+                            onClick={() => {
+                              const cancelReason = window.prompt("Motivo do cancelamento (mín. 8 caracteres)");
+                              if (!cancelReason || cancelReason.trim().length < 8) return;
+                              void cancelPendingGrant(row.id, cancelReason.trim())
+                                .then(() => {
+                                  setNotice("Oferta pendente cancelada.");
+                                  void load();
+                                })
+                                .catch((caught: unknown) => setError(adminError(caught)));
+                            }}
+                            type="button"
+                          >
+                            Cancelar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         ) : null}
         {tab === "history" ? (
           activity.length === 0 ? <p className="admin-note">Nenhum registro neste recorte.</p> : (
@@ -575,18 +770,22 @@ function VoucherPanel({
   onCreated,
   onReload,
   onError,
+  onOpenDetail,
 }: {
   vouchers: AdminVoucher[];
   created: CreatedVoucher | null;
   onCreated: (voucher: CreatedVoucher) => void;
   onReload: () => void;
   onError: (message: string) => void;
+  onOpenDetail: (id: string) => void;
 }) {
   const [benefit, setBenefit] = useState("FREE");
   const [term, setTerm] = useState<"LIFETIME" | "FIXED">("LIFETIME");
   const [days, setDays] = useState("30");
   const [maxRedemptions, setMaxRedemptions] = useState("1");
   const [perUserLimit, setPerUserLimit] = useState("1");
+  const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
   const [campaign, setCampaign] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -602,6 +801,8 @@ function VoucherPanel({
             durationDays: term === "FIXED" ? Number(days) : undefined,
             maxRedemptions: Number(maxRedemptions),
             perUserLimit: Number(perUserLimit),
+            startsAt: startsAt ? new Date(startsAt).toISOString() : undefined,
+            endsAt: endsAt ? new Date(endsAt).toISOString() : undefined,
             campaign: campaign || undefined,
             notes: notes || undefined,
           })
@@ -625,14 +826,22 @@ function VoucherPanel({
         {term === "FIXED" ? <input aria-label="Dias do voucher" min={1} onChange={(event) => setDays(event.target.value)} type="number" value={days} /> : null}
         <input aria-label="Máximo de resgates" min={1} onChange={(event) => setMaxRedemptions(event.target.value)} type="number" value={maxRedemptions} />
         <input aria-label="Limite por usuário" min={1} onChange={(event) => setPerUserLimit(event.target.value)} type="number" value={perUserLimit} />
-        <input aria-label="Campanha" onChange={(event) => setCampaign(event.target.value)} placeholder="Campanha" value={campaign} />
-        <textarea aria-label="Observações internas" onChange={(event) => setNotes(event.target.value)} placeholder="Observações internas" value={notes} />
+        <label>
+          Início
+          <input aria-label="Início do voucher" onChange={(event) => setStartsAt(event.target.value)} type="datetime-local" value={startsAt} />
+        </label>
+        <label>
+          Expiração
+          <input aria-label="Expiração do voucher" onChange={(event) => setEndsAt(event.target.value)} type="datetime-local" value={endsAt} />
+        </label>
+        <input aria-label="Campanha" onChange={(event) => setCampaign(event.target.value)} placeholder="Campanha / categoria" value={campaign} />
+        <textarea aria-label="Observações internas" onChange={(event) => setNotes(event.target.value)} placeholder="Justificativa ou observações internas" value={notes} />
         <button type="submit">Criar voucher</button>
       </form>
       {created ? (
         <div className="admin-panel" role="status">
           <p>Código gerado: <strong>{created.code}</strong></p>
-          <p>Este código não será exibido novamente.</p>
+          <p>Este código não será exibido novamente. O banco guarda apenas o hash.</p>
           <button
             onClick={() => void navigator.clipboard.writeText(created.code)}
             type="button"
@@ -648,6 +857,7 @@ function VoucherPanel({
               <tr>
                 <th>Prefixo</th>
                 <th>Tipo</th>
+                <th>Campanha</th>
                 <th>Status</th>
                 <th>Usos</th>
                 <th>Restantes</th>
@@ -660,11 +870,13 @@ function VoucherPanel({
                 <tr key={voucher.id}>
                   <td>{voucher.codePrefix}</td>
                   <td>{voucher.benefit}</td>
+                  <td>{voucher.campaign || "—"}</td>
                   <td>{label(STATUS, voucher.status)}</td>
                   <td>{voucher.redeemedCount}/{voucher.maxRedemptions}</td>
                   <td>{voucher.remaining}</td>
                   <td>{when(voucher.startsAt)} – {when(voucher.endsAt)}</td>
                   <td>
+                    <button onClick={() => onOpenDetail(voucher.id)} type="button">Detalhe</button>
                     {voucher.storedStatus === "ACTIVE" ? <button onClick={() => void changeAdminVoucher(voucher.id, "pause").then(onReload)} type="button">Pausar</button> : null}
                     {voucher.storedStatus === "PAUSED" ? <button onClick={() => void changeAdminVoucher(voucher.id, "resume").then(onReload)} type="button">Reativar</button> : null}
                     {voucher.storedStatus === "ACTIVE" || voucher.storedStatus === "PAUSED" ? <button onClick={() => void changeAdminVoucher(voucher.id, "close").then(onReload)} type="button">Encerrar</button> : null}

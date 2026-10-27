@@ -21,6 +21,7 @@ const auth = vi.hoisted(() => ({
   } as {
     id: string;
     email: string;
+    role?: string;
     premium?: {
       access: boolean;
       licenseStatus: string | null;
@@ -108,6 +109,30 @@ describe("CheckoutPage license", () => {
     show();
     expect(screen.getByText("Licença vitalícia. Ela pode ser suspensa ou revogada.")).toBeInTheDocument();
     expect(screen.getByText("Origem: Concessão")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Código do voucher")).not.toBeInTheDocument();
+  });
+
+  it("shows administrative access without asking an ADMIN to pay", () => {
+    auth.user = {
+      ...auth.user,
+      role: "ADMIN",
+      premium: {
+        access: true,
+        licenseStatus: null,
+        paymentStatus: "NONE",
+        term: null,
+        source: null,
+        expiresAt: null,
+        activatedAt: null,
+        channel: "staff",
+      },
+    };
+    show();
+    expect(
+      screen.getByText("Acesso administrativo. Não é uma compra e não gera pagamento."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Origem: Acesso administrativo")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Pagar com Mercado Pago" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Código do voucher")).not.toBeInTheDocument();
   });
 });

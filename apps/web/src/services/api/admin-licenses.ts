@@ -152,10 +152,26 @@ export function syncAdminPayment(id: string) {
   return apiRequest<AdminPayment>(`/admin/licenses/payments/${id}/sync`, { method: "POST", json: {} });
 }
 
-export function listAdminVouchers(page = 1) {
+export function listAdminVouchers(params: { page?: number; search?: string; status?: string } = {}) {
   return apiRequest<{ items: AdminVoucher[]; page: number; limit: number; total: number }>(
-    `/admin/licenses/vouchers${query({ page })}`,
+    `/admin/licenses/vouchers${query(params)}`,
   );
+}
+
+export function getAdminVoucher(id: string) {
+  return apiRequest<AdminVoucher & {
+    notes: string | null;
+    redemptions: Array<{
+      id: string;
+      userId: string;
+      userName: string;
+      email: string;
+      result: string;
+      reason: string | null;
+      licenseId: string | null;
+      at: string;
+    }>;
+  }>(`/admin/licenses/vouchers/${id}`);
 }
 
 export function createAdminVoucher(body: {
@@ -174,6 +190,45 @@ export function createAdminVoucher(body: {
 
 export function changeAdminVoucher(id: string, action: "pause" | "resume" | "close") {
   return apiRequest<AdminVoucher>(`/admin/licenses/vouchers/${id}/${action}`, { method: "POST", json: {} });
+}
+
+export type PendingGrant = {
+  id: string;
+  email: string;
+  category: string;
+  reason: string;
+  term: string;
+  durationDays: number | null;
+  status: string;
+  offerExpiresAt: string | null;
+  claimedUserId: string | null;
+  claimedLicenseId: string | null;
+  claimedAt: string | null;
+  createdAt: string;
+};
+
+export function listPendingGrants(params: { page?: number; status?: string } = {}) {
+  return apiRequest<{ items: PendingGrant[]; page: number; limit: number; total: number }>(
+    `/admin/licenses/pending-grants${query(params)}`,
+  );
+}
+
+export function schedulePendingGrant(body: {
+  email: string;
+  term: "LIFETIME" | "FIXED";
+  durationDays?: number;
+  category: string;
+  reason: string;
+  offerExpiresAt?: string;
+}) {
+  return apiRequest<PendingGrant>("/admin/licenses/pending-grants", { method: "POST", json: body });
+}
+
+export function cancelPendingGrant(id: string, reason: string) {
+  return apiRequest<PendingGrant>(`/admin/licenses/pending-grants/${id}/cancel`, {
+    method: "POST",
+    json: { reason },
+  });
 }
 
 export function searchLicenseUsers(search: string) {

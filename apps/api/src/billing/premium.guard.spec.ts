@@ -53,6 +53,18 @@ describe('PremiumGuard', () => {
     );
   });
 
+  it('allows staff Premium access computed by BillingService for ADMIN', async () => {
+    billing.getPremium.mockResolvedValue({
+      ...inactivePremium(),
+      access: true,
+      channel: 'staff',
+    });
+
+    await expect(guard.canActivate(context('admin-1') as never)).resolves.toBe(
+      true,
+    );
+  });
+
   it('does not treat a missing session as premium access', async () => {
     await expect(guard.canActivate(context() as never)).rejects.toBeInstanceOf(
       UnauthorizedException,

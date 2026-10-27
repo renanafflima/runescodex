@@ -8,6 +8,16 @@ import { hashVoucherCode } from './voucher-code';
 
 const REDEEM_ERROR = 'Código inválido ou indisponível';
 
+const REJECT_MESSAGES: Record<string, string> = {
+  PAUSED: 'Este voucher está pausado e não pode ser resgatado.',
+  CLOSED: 'Este voucher foi encerrado.',
+  EXPIRED: 'Este voucher expirou.',
+  EXHAUSTED: 'Este voucher esgotou as utilizações disponíveis.',
+  SCHEDULED: 'Este voucher ainda não está disponível.',
+  USER_LIMIT: 'Você já utilizou este voucher nesta conta.',
+  ALREADY_LICENSED: 'Sua conta já possui Premium ativo ou suspenso.',
+};
+
 @Injectable()
 export class VoucherService {
   constructor(
@@ -36,7 +46,7 @@ export class VoucherService {
             reason: effective,
           },
         });
-        return { kind: 'rejected' as const };
+        return { kind: 'rejected' as const, reason: effective };
       }
 
       const used = await tx.billingVoucherRedemption.count({
@@ -51,7 +61,7 @@ export class VoucherService {
             reason: 'USER_LIMIT',
           },
         });
-        return { kind: 'rejected' as const };
+        return { kind: 'rejected' as const, reason: 'USER_LIMIT' };
       }
 
       const existing = await tx.billingLicense.findFirst({
@@ -77,7 +87,7 @@ export class VoucherService {
             reason: 'ALREADY_LICENSED',
           },
         });
-        return { kind: 'rejected' as const };
+        return { kind: 'rejected' as const, reason: 'ALREADY_LICENSED' };
       }
       if (existing?.status === 'ACTIVE') {
         await tx.billingLicense.updateMany({
@@ -103,7 +113,7 @@ export class VoucherService {
             reason: 'EXHAUSTED',
           },
         });
-        return { kind: 'rejected' as const };
+        return { kind: 'rejected' as const, reason: 'EXHAUSTED' };
       }
 
       const fresh = await tx.billingVoucher.findUnique({
@@ -153,8 +163,13 @@ export class VoucherService {
       return { kind: 'ok' as const };
     });
 
-    if (outcome.kind !== 'ok') {
+    if (outcome.kind === 'missing') {
       throw new BadRequestException(REDEEM_ERROR);
+    }
+    if (outcome.kind === 'rejected') {
+      throw new BadRequestException(
+        REJECT_MESSAGES[outcome.reason] ?? REDEEM_ERROR,
+      );
     }
     return this.billing.getPremium(userId);
   }

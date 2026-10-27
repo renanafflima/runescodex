@@ -183,7 +183,15 @@ export function ProfilePage() {
             value={activeCharacter?.name || "—"}
           />
           <StatCard
-            detail={user?.premium?.term === "FIXED" && user.premium.expiresAt ? "Com validade" : "Vitalícia"}
+            detail={
+              user?.premium?.channel === "staff"
+                ? "Acesso administrativo"
+                : user?.premium?.term === "FIXED" && user.premium.expiresAt
+                  ? "Com validade"
+                  : user?.premium?.access
+                    ? "Vitalícia"
+                    : "Plano gratuito"
+            }
             label="Licença"
             value={user?.premium?.access ? "Ativa" : "Inativa"}
           />

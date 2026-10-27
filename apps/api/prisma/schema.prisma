@@ -110,6 +110,8 @@ model User {
   voucherRedemptions     BillingVoucherRedemption[]
   licenseGrantsReceived  BillingLicenseGrant[]        @relation("GrantBeneficiary")
   licenseGrantsIssued    BillingLicenseGrant[]        @relation("GrantActor")
+  pendingLicenseGrantsIssued BillingPendingLicenseGrant[] @relation("PendingGrantActor")
+  pendingLicenseGrantsClaimed BillingPendingLicenseGrant[] @relation("PendingGrantClaimedBy")
   authDevices            AuthDevice[]
   referralsMade          ReferralAttribution[] @relation("ReferralReferrer")
   referralReceived       ReferralAttribution?  @relation("ReferralReferred")
@@ -1037,6 +1039,7 @@ model BillingProduct {
   licenses  BillingLicense[]
   storeEntitlements BillingStoreEntitlement[]
   vouchers  BillingVoucher[]
+  pendingGrants BillingPendingLicenseGrant[]
 
   @@index([active])
 }
@@ -1209,6 +1212,7 @@ model BillingLicense {
   grantedBy            User?                @relation("LicenseGrantedBy", fields: [grantedByUserId], references: [id], onDelete: Restrict)
   grant                BillingLicenseGrant?
   redemption           BillingVoucherRedemption?
+  pendingClaim         BillingPendingLicenseGrant?
 
   @@index([userId, productId, status])
   @@index([source, status])
@@ -1282,6 +1286,43 @@ model BillingLicenseGrant {
   @@index([userId, createdAt])
   @@index([actorUserId])
   @@index([category])
+}
+
+enum BillingPendingGrantStatus {
+  PENDING
+  CLAIMED
+  CANCELLED
+  EXPIRED
+}
+
+/// Offer recorded for an email that does not have an account yet.
+/// No license is created until that email authenticates (password or Google) and claims it.
+model BillingPendingLicenseGrant {
+  id              String                     @id @default(uuid())
+  emailNormalized String
+  productId       String
+  actorUserId     String
+  category        BillingGrantCategory
+  reason          String
+  term            BillingLicenseTerm
+  durationDays    Int?
+  status          BillingPendingGrantStatus  @default(PENDING)
+  offerExpiresAt  DateTime?
+  claimedUserId   String?
+  claimedLicenseId String?                   @unique
+  claimedAt       DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  product         BillingProduct             @relation(fields: [productId], references: [id], onDelete: Restrict)
+  actor           User                       @relation("PendingGrantActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  claimedBy       User?                      @relation("PendingGrantClaimedBy", fields: [claimedUserId], references: [id], onDelete: Restrict)
+  claimedLicense  BillingLicense?            @relation(fields: [claimedLicenseId], references: [id], onDelete: Restrict)
+
+  @@index([emailNormalized, status])
+  @@index([status, offerExpiresAt])
+  @@index([actorUserId, createdAt])
 }
 
 /// Store entitlements synced from a server-verified external billing provider.
