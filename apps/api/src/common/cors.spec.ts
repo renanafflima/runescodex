@@ -1,4 +1,4 @@
-import { Controller, Get, Module } from '@nestjs/common';
+import { Controller, Get, Module, Post } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
@@ -20,8 +20,16 @@ class BestiaryCorsStub {
   }
 }
 
+@Controller('auth/devices')
+class DeviceChallengeCorsStub {
+  @Post('challenge')
+  challenge() {
+    return { challengeId: 'ok', nonce: 'ok' };
+  }
+}
+
 @Module({
-  controllers: [HuntsCorsStub, BestiaryCorsStub],
+  controllers: [HuntsCorsStub, BestiaryCorsStub, DeviceChallengeCorsStub],
 })
 class CorsTestModule {}
 
@@ -45,17 +53,20 @@ describe('CORS for Web/PWA', () => {
       'https://tritec.app.br',
       'https://tritech.app',
       'https://tritech.app.br',
+      'https://runescodex-web.onrender.com',
       'http://127.0.0.1:5173',
       'http://localhost:5173',
     ]);
     expect(
       resolveCorsOrigins({
-        CORS_ORIGINS: 'https://extra.example, https://tritec.app.br',
+        CORS_ORIGINS:
+          'https://extra.example/, https://tritec.app.br, https://runescodex-web.onrender.com/',
       }),
     ).toEqual([
       'https://tritec.app.br',
       'https://tritech.app',
       'https://tritech.app.br',
+      'https://runescodex-web.onrender.com',
       'http://127.0.0.1:5173',
       'http://localhost:5173',
       'https://extra.example',
@@ -68,6 +79,7 @@ describe('CORS for Web/PWA', () => {
     'https://tritec.app.br',
     'https://tritech.app',
     'https://tritech.app.br',
+    'https://runescodex-web.onrender.com',
     'http://127.0.0.1:5173',
     'http://localhost:5173',
   ])('answers OPTIONS /hunts for %s', async (origin) => {
@@ -81,6 +93,8 @@ describe('CORS for Web/PWA', () => {
     expect(response.headers['access-control-allow-origin']).toBe(origin);
     expect(response.headers['access-control-allow-credentials']).toBe('true');
     expect(response.headers['access-control-allow-methods']).toMatch(/GET/);
+    expect(response.headers['access-control-allow-methods']).toMatch(/POST/);
+    expect(response.headers['access-control-allow-methods']).toMatch(/OPTIONS/);
     expect(response.headers['access-control-allow-headers']).toMatch(
       /authorization/i,
     );
@@ -88,6 +102,45 @@ describe('CORS for Web/PWA', () => {
       /content-type/i,
     );
   });
+
+  it.each([
+    'https://tritech.app.br',
+    'https://runescodex-web.onrender.com',
+  ])(
+    'answers the device challenge preflight for %s',
+    async (origin) => {
+      const response = await request(app.getHttpServer())
+        .options('/auth/devices/challenge')
+        .set('Origin', origin)
+        .set('Access-Control-Request-Method', 'POST')
+        .set('Access-Control-Request-Headers', 'content-type,authorization');
+
+      expect(response.status).toBe(204);
+      expect(response.headers['access-control-allow-origin']).toBe(origin);
+      expect(response.headers['access-control-allow-methods']).toMatch(/POST/);
+      expect(response.headers['access-control-allow-methods']).toMatch(
+        /OPTIONS/,
+      );
+      expect(response.headers['access-control-allow-headers']).toMatch(
+        /content-type/i,
+      );
+      expect(response.headers['access-control-allow-headers']).toMatch(
+        /authorization/i,
+      );
+
+      const posted = await request(app.getHttpServer())
+        .post('/auth/devices/challenge')
+        .set('Origin', origin)
+        .set('Content-Type', 'application/json')
+        .send({
+          installationId: '6f1d7c3a-2d4b-4f4a-9c1e-8a7b6c5d4e3f',
+          publicKeySpki: 'dGVzdC1wdWJsaWMta2V5LXNwa2k=',
+        });
+
+      expect(posted.status).toBe(201);
+      expect(posted.headers['access-control-allow-origin']).toBe(origin);
+    },
+  );
 
   it('does not reflect unknown origins', async () => {
     const response = await request(app.getHttpServer())
