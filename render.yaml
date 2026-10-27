@@ -7,7 +7,7 @@ services:
     name: runescodex-api
     runtime: node
     rootDir: apps/api
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build && npm prune --omit=dev
     startCommand: npm run start:prod
     healthCheckPath: /health
     envVars:
