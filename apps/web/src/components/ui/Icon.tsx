@@ -5,6 +5,7 @@ export type IconName =
   | "book"
   | "chevron-right"
   | "close"
+  | "crown"
   | "download"
   | "gift"
   | "home"
@@ -41,6 +42,13 @@ function IconPath({ name }: { name: IconName }) {
       return <path d="m9 5 7 7-7 7" />;
     case "close":
       return <path d="m6 6 12 12M18 6 6 18" />;
+    case "crown":
+      return (
+        <>
+          <path d="M4 16h16" />
+          <path d="m5 16 2-8 5 4 5-4 2 8" />
+        </>
+      );
     case "download":
       return (
         <>

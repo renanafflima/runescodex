@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -18,6 +19,10 @@ export class UpdateAdminHuntUpdateRequestDto {
   @IsOptional()
   @IsEnum(HuntUpdateRequestStatus)
   status?: HuntUpdateRequestStatus;
+
+  @IsOptional()
+  @IsUUID()
+  ticketId?: string;
 
   @IsOptional()
   @Transform(({ value }) => trimString(value))

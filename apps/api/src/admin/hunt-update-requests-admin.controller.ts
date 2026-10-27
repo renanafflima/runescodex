@@ -8,6 +8,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from './admin.guard';
 import { ListAdminHuntUpdateRequestsQueryDto } from './dto/list-admin-hunt-update-requests-query.dto';
@@ -31,9 +33,10 @@ export class HuntUpdateRequestsAdminController {
 
   @Patch(':id')
   update(
+    @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateAdminHuntUpdateRequestDto,
   ) {
-    return this.requests.update(id, dto);
+    return this.requests.update(user.userId, id, dto);
   }
 }

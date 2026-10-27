@@ -1,9 +1,6 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { OAuth2Client, type TokenPayload } from 'google-auth-library';
-import {
-  GoogleIdentityService,
-  readGoogleIdentity,
-} from './google-identity';
+import { GoogleIdentityService, readGoogleIdentity } from './google-identity';
 
 jest.mock('google-auth-library', () => ({
   OAuth2Client: jest.fn(),

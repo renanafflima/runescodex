@@ -1,15 +1,18 @@
 import {
   BadGatewayException,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Inject,
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
   PayloadTooLargeException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import {
+  Prisma,
   TicketEvidenceSource,
   TicketImpact,
   TicketOrigin,
@@ -18,6 +21,8 @@ import {
   TicketStatus,
   TicketVocation,
 } from '../../generated/prisma/client.js';
+import { createTicketProtocol } from '../admin/insights/admin-text';
+import { AdminAuditService } from '../audit/admin-audit.service';
 import { publicHttpsUrl } from '../common/https-url';
 import { pageResult, resolvePage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
@@ -40,6 +45,7 @@ import {
   type TicketImageMime,
 } from './tickets.constants';
 import { UpdateTicketStatusDto } from './dto/update-ticket-status.dto';
+import { STATUS_TRANSITIONS } from './ticket-status';
 
 const HUNT_PROBLEM_TYPES = new Set<TicketProblemType>([
   'XP_PER_HOUR',
@@ -47,13 +53,6 @@ const HUNT_PROBLEM_TYPES = new Set<TicketProblemType>([
   'HUNT_OUTDATED',
   'DIFFICULTY',
 ]);
-
-const STATUS_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
-  OPEN: [TicketStatus.IN_REVIEW, TicketStatus.REJECTED],
-  IN_REVIEW: [TicketStatus.RESOLVED, TicketStatus.REJECTED],
-  RESOLVED: [],
-  REJECTED: [],
-};
 
 const TICKET_INCLUDE = {
   author: { select: { id: true } },
@@ -93,6 +92,18 @@ type TicketRecord = {
   rewardGrantedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  protocol?: string;
+  priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  assigneeId?: string | null;
+  firstResponseAt?: Date | null;
+  contentAppliedAt?: Date | null;
+  messages?: Array<{
+    id: string;
+    visibility: 'PUBLIC' | 'INTERNAL';
+    body: string;
+    createdAt: Date;
+    author: { id: string; activeCharacter: { name: string } | null };
+  }>;
   author: { id: string };
   hunt: { id: string; name: string; slug: string } | null;
   creature: { id: string; name: string; slug: string } | null;
@@ -122,6 +133,7 @@ export class TicketsService {
     @Inject(TICKET_STORAGE) private readonly storage: TicketStorage,
     @Inject(TICKET_EVIDENCE_MAX_BYTES)
     private readonly maxEvidenceBytes: number,
+    @Optional() private readonly audit?: AdminAuditService,
   ) {}
 
   async create(userId: string, dto: CreateTicketDto) {
@@ -167,10 +179,12 @@ export class TicketsService {
       };
     });
 
-    const ticket = await this.prisma.ticket.create({
+    const ticket = await this.insertTicket({
       data: {
+        protocol: createTicketProtocol(),
         authorId: userId,
         status: TicketStatus.OPEN,
+        priority: 'NORMAL',
         problemType: dto.problemType,
         impact: dto.impact,
         origin: dto.origin,
@@ -193,7 +207,7 @@ export class TicketsService {
       include: TICKET_INCLUDE,
     });
 
-    return this.serialize(ticket);
+    return this.serialize(ticket as unknown as TicketRecord);
   }
 
   async findAll(userId: string, query: ListTicketsQueryDto) {
@@ -225,7 +239,25 @@ export class TicketsService {
   async findById(userId: string, ticketId: string) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
-      include: TICKET_INCLUDE,
+      include: {
+        ...TICKET_INCLUDE,
+        messages: {
+          where: { visibility: 'PUBLIC' },
+          select: {
+            id: true,
+            visibility: true,
+            body: true,
+            createdAt: true,
+            author: {
+              select: {
+                id: true,
+                activeCharacter: { select: { name: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
     });
     if (!ticket) {
       throw new NotFoundException('Ticket not found');
@@ -343,7 +375,7 @@ export class TicketsService {
 
     const current = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, updatedAt: true },
     });
     if (!current) {
       throw new NotFoundException('Ticket not found');
@@ -361,6 +393,7 @@ export class TicketsService {
     if (terminal && !resolutionNote) {
       throw new BadRequestException('Resolution note is required');
     }
+    this.assertCurrentUpdate(current.updatedAt, dto.expectedUpdatedAt);
 
     const ticket = await this.prisma.ticket.update({
       where: { id: ticketId },
@@ -373,8 +406,64 @@ export class TicketsService {
       },
       include: TICKET_INCLUDE,
     });
+    await this.audit?.record({
+      actorUserId: actorId,
+      action: 'ticket.status',
+      entityType: 'ticket',
+      entityId: ticketId,
+      summary: `Status ${current.status} → ${dto.status}`,
+      metadata: { from: current.status, to: dto.status },
+    });
 
     return this.serialize(ticket);
+  }
+
+  async reopen(actorId: string, ticketId: string, reason: string) {
+    if (!(await this.isAdmin(actorId))) {
+      throw new ForbiddenException('Admin access required');
+    }
+    const note = reason.trim();
+    if (note.length < 3) {
+      throw new BadRequestException('Reopen reason is required');
+    }
+    const current = await this.prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true, status: true },
+    });
+    if (!current) {
+      throw new NotFoundException('Ticket not found');
+    }
+    if (
+      current.status !== TicketStatus.RESOLVED &&
+      current.status !== TicketStatus.REJECTED
+    ) {
+      throw new BadRequestException('Only closed tickets can be reopened');
+    }
+
+    const moved = await this.prisma.ticket.updateMany({
+      where: {
+        id: ticketId,
+        status: { in: [TicketStatus.RESOLVED, TicketStatus.REJECTED] },
+      },
+      data: {
+        status: TicketStatus.OPEN,
+        resolutionNote: note,
+        resolvedAt: null,
+        resolvedByUserId: null,
+      },
+    });
+    if (moved.count !== 1) {
+      throw new ConflictException('Ticket changed while it was being reopened');
+    }
+    await this.audit?.record({
+      actorUserId: actorId,
+      action: 'ticket.reopen',
+      entityType: 'ticket',
+      entityId: ticketId,
+      summary: `Reaberto a partir de ${current.status}`,
+      metadata: { from: current.status, to: TicketStatus.OPEN },
+    });
+    return this.findById(actorId, ticketId);
   }
 
   private huntContext(dto: CreateTicketDto) {
@@ -479,6 +568,34 @@ export class TicketsService {
     };
   }
 
+  private assertCurrentUpdate(updatedAt: Date, expected?: string) {
+    if (!expected) return;
+    const seen = new Date(expected);
+    if (
+      Number.isNaN(seen.getTime()) ||
+      seen.getTime() !== updatedAt.getTime()
+    ) {
+      throw new ConflictException('Ticket was updated by someone else');
+    }
+  }
+
+  private async insertTicket(args: Prisma.TicketCreateArgs) {
+    try {
+      return await this.prisma.ticket.create(args);
+    } catch (error) {
+      if ((error as { code?: string }).code !== 'P2002') {
+        throw error;
+      }
+      return this.prisma.ticket.create({
+        ...args,
+        data: {
+          ...(args.data as Prisma.TicketCreateInput),
+          protocol: createTicketProtocol(),
+        },
+      });
+    }
+  }
+
   private optionalText(value: string | undefined) {
     const trimmed = value?.trim();
     return trimmed ? trimmed : null;
@@ -517,6 +634,22 @@ export class TicketsService {
       resolvedAt: ticket.resolvedAt,
       rewardPoints: ticket.rewardPoints,
       rewardGrantedAt: ticket.rewardGrantedAt,
+      protocol: ticket.protocol ?? null,
+      priority: ticket.priority ?? 'NORMAL',
+      assigneeId: ticket.assigneeId ?? null,
+      firstResponseAt: ticket.firstResponseAt ?? null,
+      contentAppliedAt: ticket.contentAppliedAt ?? null,
+      messages: (ticket.messages ?? [])
+        .filter((message) => message.visibility === 'PUBLIC')
+        .map((message) => ({
+          id: message.id,
+          body: message.body,
+          createdAt: message.createdAt,
+          author: {
+            id: message.author.id,
+            name: message.author.activeCharacter?.name ?? null,
+          },
+        })),
       evidences: ticket.evidences,
       createdAt: ticket.createdAt,
       updatedAt: ticket.updatedAt,

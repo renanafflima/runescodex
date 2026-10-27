@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { AccountDevices } from "./AccountDevices";
+import { AccountReferrals } from "./AccountReferrals";
 import { GoogleSignInButton } from "../components/auth/GoogleSignInButton";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Section } from "../components/layout/Section";
@@ -180,9 +182,15 @@ export function ProfilePage() {
             label="Personagem ativo"
             value={activeCharacter?.name || "—"}
           />
-          <StatCard detail="Sessão autenticada" label="Acesso" value="Conta" />
+          <StatCard
+            detail={user?.premium?.term === "FIXED" && user.premium.expiresAt ? "Com validade" : "Vitalícia"}
+            label="Licença"
+            value={user?.premium?.access ? "Ativa" : "Inativa"}
+          />
         </div>
 
+        <AccountReferrals />
+        <AccountDevices />
         <div className="profile-layout">
           <Section
             actions={

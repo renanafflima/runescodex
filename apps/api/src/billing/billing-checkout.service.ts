@@ -78,6 +78,15 @@ export class BillingCheckoutService {
     return this.billing.getPremium(userId);
   }
 
+  async reconcileProviderPayment(providerPaymentId: string) {
+    const payment = await this.mercadoPago.getPayment(providerPaymentId);
+    await this.applyConfirmedPayment(payment);
+    return {
+      providerStatus: payment.status,
+      providerPaymentId: payment.id,
+    };
+  }
+
   async handleWebhook(notification: MercadoPagoNotification) {
     const config = this.mercadoPago.config();
     const valid = verifyMercadoPagoSignature({

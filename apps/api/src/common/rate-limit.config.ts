@@ -6,6 +6,10 @@ export const RATE_LIMITS = {
   huntCommentWrite: { limit: 20, windowMs: 60_000 },
   huntUpdateRequestWrite: { limit: 20, windowMs: 60_000 },
   ticketWrite: { limit: 20, windowMs: 60_000 },
+  analyticsWrite: { limit: 60, windowMs: 60_000 },
   checkout: { limit: 10, windowMs: 60_000 },
+  voucherRedeem: { limit: 8, windowMs: 60_000 },
+  deviceChallenge: { limit: 20, windowMs: 60_000 },
+  deviceRemove: { limit: 5, windowMs: 60_000 },
   billingWebhook: { limit: 120, windowMs: 60_000 },
 } as const;

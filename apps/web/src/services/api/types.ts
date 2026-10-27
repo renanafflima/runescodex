@@ -1,8 +1,13 @@
 export type PremiumAccess = {
   productCode: string;
   access: boolean;
-  licenseStatus: "ACTIVE" | "REVOKED" | null;
+  licenseStatus: "ACTIVE" | "SUSPENDED" | "REVOKED" | "EXPIRED" | null;
   paymentStatus: "NONE" | "PENDING" | "PAID" | "FAILED" | "REFUNDED";
+  term?: "LIFETIME" | "FIXED" | null;
+  source?: "PURCHASE" | "VOUCHER" | "ADMIN_GRANT" | "PARTNERSHIP" | "COMPENSATION" | null;
+  expiresAt?: string | null;
+  activatedAt?: string | null;
+  channel?: "license" | "store" | null;
 };
 
 export type AuthUser = {
@@ -16,6 +21,7 @@ export type AuthUser = {
 export type AuthResponse = {
   user: AuthUser;
   accessToken: string;
+  accountCreated?: boolean;
 };
 
 export type Character = {

@@ -32,6 +32,9 @@ vi.mock("../pages/HuntDetailPage", () => ({
 vi.mock("../pages/BestiaryPage", () => ({
   BestiaryPage: () => <h1>Bestiário protegido</h1>,
 }));
+vi.mock("../pages/BosstiaryPage", () => ({
+  BosstiaryPage: () => <h1>Bosstiário protegido</h1>,
+}));
 vi.mock("../pages/BestiaryCreaturePage", () => ({
   BestiaryCreaturePage: () => <h1>Criatura protegida</h1>,
 }));
@@ -99,6 +102,7 @@ describe("Web premium routes", () => {
       "/hunts",
       "/hunts/cyclops",
       "/bestiary",
+      "/bosstiary",
       "/bestiary/rat",
       "/bestiary/rat/hunts",
       "/forum",

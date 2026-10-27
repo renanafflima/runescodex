@@ -10,6 +10,7 @@ import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { AdminDashboardController } from '../admin/admin-dashboard.controller';
+import { AdminLicensesController } from '../admin/licenses/admin-licenses.controller';
 import { HuntUpdateRequestsAdminController } from '../admin/hunt-update-requests-admin.controller';
 import { RewardsAdminController } from '../admin/rewards-admin.controller';
 import { AppController } from '../app.controller';
@@ -94,6 +95,18 @@ describe('Premium access on API routes', () => {
     expect(guardsOf(handler(BillingController, 'webhook'))).not.toContain(
       PremiumGuard,
     );
+    expect(guardsOf(handler(BillingController, 'license'))).toContain(
+      JwtAuthGuard,
+    );
+    expect(guardsOf(handler(BillingController, 'license'))).not.toContain(
+      PremiumGuard,
+    );
+    expect(guardsOf(handler(BillingController, 'redeem'))).toContain(
+      JwtAuthGuard,
+    );
+    expect(guardsOf(handler(BillingController, 'redeem'))).not.toContain(
+      PremiumGuard,
+    );
   });
 
   it('keeps administrative routes behind admin permission', () => {
@@ -117,6 +130,10 @@ describe('Premium access on API routes', () => {
       ),
     ).toBe(true);
     expect(guardsOf(AdminDashboardController)).not.toContain(PremiumGuard);
+    expect(guardsOf(AdminLicensesController)).toEqual(
+      expect.arrayContaining([JwtAuthGuard, AdminGuard]),
+    );
+    expect(guardsOf(AdminLicensesController)).not.toContain(PremiumGuard);
   });
 });
 

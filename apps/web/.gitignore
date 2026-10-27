@@ -1,5 +1,6 @@
 node_modules/
 dist/
+render-publish/
 .env
 .env.local
 .env.*.local

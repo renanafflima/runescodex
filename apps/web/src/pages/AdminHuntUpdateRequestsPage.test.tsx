@@ -18,6 +18,12 @@ function request(overrides: Partial<AdminHuntUpdateRequest> = {}): AdminHuntUpda
     type: "XP",
     description: "O XP dessa hunt está desatualizado.",
     status: "OPEN",
+    currentValue: null,
+    proposedValue: null,
+    vocation: null,
+    ticketId: null,
+    appliedAt: null,
+    autoApplicable: false,
     adminResponse: null,
     createdAt: "2026-10-05T12:00:00.000Z",
     updatedAt: "2026-10-05T12:00:00.000Z",
@@ -138,7 +144,9 @@ describe("AdminHuntUpdateRequestsPage", () => {
       target: { value: "XP atualizado." },
     });
     fireEvent.click(screen.getByRole("button", { name: "Resolver" }));
-    expect(screen.getByText("Tem certeza que deseja resolver esta solicitação?")).toBeInTheDocument();
+    expect(
+      screen.getByText("Tem certeza que deseja resolver esta solicitação? O texto livre não altera a Hunt."),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
 
     await waitFor(() =>
@@ -149,6 +157,28 @@ describe("AdminHuntUpdateRequestsPage", () => {
     );
     expect(await screen.findByText("Solicitação atualizada.")).toBeInTheDocument();
     expect(api.listAdminHuntUpdateRequests.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it("compares a structured proposal before applying it", async () => {
+    api.listAdminHuntUpdateRequests.mockResolvedValue(
+      page([
+        request({
+          status: "IN_REVIEW",
+          currentValue: "1500000",
+          proposedValue: "1800000",
+          vocation: "EK",
+          autoApplicable: true,
+        }),
+      ]),
+    );
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Ver" }));
+    expect(screen.getByText("1500000")).toBeInTheDocument();
+    expect(screen.getByText("1800000")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Resolver" }));
+    expect(
+      screen.getByText("Resolver grava o valor proposto na Hunt. A mesma correção não será aplicada de novo."),
+    ).toBeInTheDocument();
   });
 
   it("asks for confirmation before rejecting", async () => {

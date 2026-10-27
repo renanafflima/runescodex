@@ -3,8 +3,10 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
+import { AdminAuditService } from '../audit/admin-audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { userRedemptionMessage } from '../rewards/rewards.redemption';
 import { ApproveRedemptionDto } from './dto/approve-redemption.dto';
@@ -33,7 +35,10 @@ const DETAIL_INCLUDE = {
 
 @Injectable()
 export class RewardsAdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly audit?: AdminAuditService,
+  ) {}
 
   async list(query: ListAdminRedemptionsQueryDto) {
     const where = this.buildWhere(query);
@@ -111,6 +116,13 @@ export class RewardsAdminService {
           note: dto.adminNote,
         },
       });
+      await this.noteRedemption(
+        tx,
+        adminUserId,
+        id,
+        'reward.approve',
+        'Resgate aprovado',
+      );
 
       return this.loadDetail(tx, id);
     });
@@ -150,6 +162,13 @@ export class RewardsAdminService {
           note: dto.deliveryNote,
         },
       });
+      await this.noteRedemption(
+        tx,
+        adminUserId,
+        id,
+        'reward.deliver',
+        'Resgate entregue',
+      );
 
       return this.loadDetail(tx, id);
     });
@@ -226,9 +245,35 @@ export class RewardsAdminService {
           note: dto.cancellationReason ?? dto.adminNote,
         },
       });
+      await this.noteRedemption(
+        tx,
+        adminUserId,
+        id,
+        'reward.cancel',
+        'Resgate cancelado',
+      );
 
       return this.loadDetail(tx, id);
     });
+  }
+
+  private noteRedemption(
+    tx: Prisma.TransactionClient,
+    actorUserId: string,
+    id: string,
+    action: string,
+    summary: string,
+  ) {
+    return this.audit?.record(
+      {
+        actorUserId,
+        action,
+        entityType: 'reward_redemption',
+        entityId: id,
+        summary,
+      },
+      tx,
+    );
   }
 
   private async loadDetail(tx: Prisma.TransactionClient, id: string) {

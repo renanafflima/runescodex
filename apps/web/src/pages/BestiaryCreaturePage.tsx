@@ -11,6 +11,8 @@ import { formatEstimatedHours, mapBestiaryEntry, uniqueHuntCreatures } from "../
 import { formatCount } from "../domain/format";
 import { mapHuntListItem } from "../domain/hunts";
 import { describeApiError } from "../services/api/errors";
+import { ReportProblem } from "../components/tickets/ReportProblem";
+import { recordContentView } from "../services/api/admin-portal";
 import { getBestiaryBySlug } from "../services/api/bestiary";
 import { listFilteredHunts } from "../services/api/hunts";
 import type { BestiaryEntry, HuntListItem } from "../services/api/types";
@@ -69,6 +71,12 @@ export function BestiaryCreaturePage() {
   }, [loadCreature]);
 
   const involved = useMemo(() => uniqueHuntCreatures(hunts).length, [hunts]);
+
+  useEffect(() => {
+    if (entry?.id && /^[0-9a-f-]{36}$/i.test(entry.id)) {
+      recordContentView("CREATURE", entry.id);
+    }
+  }, [entry?.id]);
   const estimatedTime = entry ? formatEstimatedHours(entry.estimatedHours) : null;
 
   if (loading) {
@@ -146,6 +154,7 @@ export function BestiaryCreaturePage() {
           ) : null}
         </section>
 
+        <ReportProblem creatureId={entry.id} origin="BESTIARY" />
         <nav className="bestiary-tabs" aria-label="Seções do caminho de evolução">
           <NavLink className={({ isActive }) => `bestiary-tab${isActive ? " is-active" : ""}`} end to={`/bestiary/${entry.slug}`}>
             Rotas recomendadas

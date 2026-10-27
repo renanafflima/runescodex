@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -6,7 +7,13 @@ import {
 import {
   HuntUpdateRequestStatus,
   HuntUpdateRequestType,
+  Vocation,
 } from '../../generated/prisma/client.js';
+import {
+  assertHuntVocation,
+  isAutoApplicableHuntUpdate,
+  parseProposedHuntNumber,
+} from './hunt-field-proposal';
 import { PageQueryDto } from '../common/dto/page-query.dto';
 import { pageResult, resolvePage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
@@ -21,6 +28,10 @@ export type HuntUpdateRequestView = {
   id: string;
   type: HuntUpdateRequestType;
   description: string;
+  currentValue: string | null;
+  proposedValue: string | null;
+  vocation: Vocation | null;
+  appliedAt: Date | null;
   status: HuntUpdateRequestStatus;
   adminResponse: string | null;
   createdAt: Date;
@@ -32,6 +43,10 @@ const REQUEST_SELECT = {
   id: true,
   type: true,
   description: true,
+  currentValue: true,
+  proposedValue: true,
+  vocation: true,
+  appliedAt: true,
   status: true,
   adminResponse: true,
   createdAt: true,
@@ -88,6 +103,7 @@ export class HuntUpdateRequestsService {
         'Você já tem uma solicitação em aberto deste tipo para esta hunt.',
       );
     }
+    const proposal = await this.snapshot(hunt.id, dto);
     return this.prisma.huntUpdateRequest.create({
       data: {
         huntId: hunt.id,
@@ -95,9 +111,69 @@ export class HuntUpdateRequestsService {
         type: dto.type,
         description: dto.description,
         status: HuntUpdateRequestStatus.OPEN,
+        currentValue: proposal.currentValue,
+        proposedValue: proposal.proposedValue,
+        vocation: proposal.vocation,
       },
       select: REQUEST_SELECT,
     });
+  }
+
+  private async snapshot(huntId: string, dto: CreateHuntUpdateRequestDto) {
+    const proposedValue = dto.proposedValue ?? null;
+    const vocation = dto.vocation ?? null;
+    const numericType =
+      dto.type === HuntUpdateRequestType.XP ||
+      dto.type === HuntUpdateRequestType.PROFIT ||
+      dto.type === HuntUpdateRequestType.LEVEL
+        ? dto.type
+        : null;
+    if (proposedValue && numericType) {
+      assertHuntVocation(vocation);
+      parseProposedHuntNumber(numericType, proposedValue);
+    }
+    if (proposedValue && dto.type === HuntUpdateRequestType.LOCATION) {
+      if (proposedValue.length < 2) {
+        throw new BadRequestException(
+          'A localização proposta precisa ter pelo menos 2 caracteres.',
+        );
+      }
+    }
+    if (
+      proposedValue &&
+      !numericType &&
+      dto.type !== HuntUpdateRequestType.LOCATION &&
+      !isAutoApplicableHuntUpdate(dto.type)
+    ) {
+      throw new BadRequestException(
+        'Este tipo de solicitação não aceita um valor estruturado. Descreva a alteração no texto.',
+      );
+    }
+    let currentValue: string | null = null;
+    if (numericType && vocation) {
+      const stats = await this.prisma.huntVocation.findUnique({
+        where: { huntId_vocation: { huntId, vocation } },
+        select: { xpPerHour: true, profitPerHour: true, levelMin: true },
+      });
+      if (!stats) {
+        throw new BadRequestException('Esta Hunt não tem a vocação informada.');
+      }
+      currentValue = String(
+        dto.type === HuntUpdateRequestType.XP
+          ? stats.xpPerHour
+          : dto.type === HuntUpdateRequestType.PROFIT
+            ? stats.profitPerHour
+            : stats.levelMin,
+      );
+    }
+    if (dto.type === HuntUpdateRequestType.LOCATION) {
+      const hunt = await this.prisma.hunt.findUnique({
+        where: { id: huntId },
+        select: { location: true },
+      });
+      currentValue = hunt?.location ?? null;
+    }
+    return { currentValue, proposedValue, vocation };
   }
 
   private async requireHunt(slug: string) {

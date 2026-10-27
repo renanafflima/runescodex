@@ -143,7 +143,10 @@ describe('CharactersService', () => {
       world: 'World',
     };
     prisma.character.findFirst.mockResolvedValueOnce(owned);
-    prisma.user.update.mockResolvedValue({ id: 'user-a', activeCharacterId: 'char-1' });
+    prisma.user.update.mockResolvedValue({
+      id: 'user-a',
+      activeCharacterId: 'char-1',
+    });
 
     await expect(service.setActive('user-a', 'char-1')).resolves.toEqual(owned);
     expect(prisma.user.update).toHaveBeenCalledWith({

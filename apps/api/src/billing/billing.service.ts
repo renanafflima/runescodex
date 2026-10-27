@@ -2,9 +2,14 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
+  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { AdminAuditService } from '../audit/admin-audit.service';
+import { ReferralService } from '../referrals/referral.service';
+import { licenseGrantsAccess } from './license-access';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -65,8 +70,19 @@ export type ApplyBillingEventInput = {
 export type PremiumView = {
   productCode: typeof PREMIUM_PRODUCT_CODE;
   access: boolean;
-  licenseStatus: 'ACTIVE' | 'REVOKED' | null;
+  licenseStatus: 'ACTIVE' | 'SUSPENDED' | 'REVOKED' | 'EXPIRED' | null;
   paymentStatus: 'NONE' | 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  term: 'LIFETIME' | 'FIXED' | null;
+  source:
+    | 'PURCHASE'
+    | 'VOUCHER'
+    | 'ADMIN_GRANT'
+    | 'PARTNERSHIP'
+    | 'COMPENSATION'
+    | null;
+  expiresAt: string | null;
+  activatedAt: string | null;
+  channel: 'license' | 'store' | null;
 };
 
 export type CheckoutView = {
@@ -83,16 +99,29 @@ export function inactivePremium(): PremiumView {
     access: false,
     licenseStatus: null,
     paymentStatus: 'NONE',
+    term: null,
+    source: null,
+    expiresAt: null,
+    activatedAt: null,
+    channel: null,
   };
 }
 
+function prismaCode(error: unknown) {
+  if (typeof error !== 'object' || error === null || !('code' in error)) {
+    return undefined;
+  }
+  const code = (error as { code?: unknown }).code;
+  return typeof code === 'string' ? code : undefined;
+}
+
 function isUniqueConflict(error: unknown) {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: string }).code === 'P2002'
-  );
+  return prismaCode(error) === 'P2002';
+}
+
+function isMissingBillingSchema(error: unknown) {
+  const code = prismaCode(error);
+  return code === 'P2021' || code === 'P2022';
 }
 
 function isEventType(value: string): value is BillingEventTypeCode {
@@ -101,7 +130,13 @@ function isEventType(value: string): value is BillingEventTypeCode {
 
 @Injectable()
 export class BillingService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(BillingService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly audit?: AdminAuditService,
+    @Optional() private readonly referrals?: ReferralService,
+  ) {}
 
   async createOrder(userId: string, market: string): Promise<BillingOrderView> {
     if (!isBillingMarket(market)) {
@@ -136,7 +171,13 @@ export class BillingService {
         status: 'ACTIVE',
       },
     });
-    if (activeLicense) {
+    if (activeLicense && licenseGrantsAccess(activeLicense)) {
+      throw new ConflictException('Active license already exists');
+    }
+    const suspendedLicense = await this.prisma.billingLicense.findFirst({
+      where: { userId, productId: product.id, status: 'SUSPENDED' },
+    });
+    if (suspendedLicense) {
       throw new ConflictException('Active license already exists');
     }
 
@@ -163,6 +204,20 @@ export class BillingService {
     };
   }
 
+  private async syncReferral(type: string, orderId: string) {
+    if (!this.referrals) return;
+    try {
+      if (type === 'PAYMENT_PAID')
+        await this.referrals.settlePaidOrder(orderId);
+      if (type === 'PAYMENT_REFUNDED')
+        await this.referrals.holdAfterRefund(orderId);
+    } catch (error) {
+      this.logger.error(
+        `Referral sync failed for order ${orderId}: ${error instanceof Error ? error.message : 'unknown'}`,
+      );
+    }
+  }
+
   async applyProviderEvent(
     input: ApplyBillingEventInput,
   ): Promise<BillingEventResult> {
@@ -185,9 +240,11 @@ export class BillingService {
     };
 
     try {
-      return await this.prisma.$transaction((tx) =>
+      const result = await this.prisma.$transaction((tx) =>
         this.applyInTransaction(tx, event),
       );
+      await this.syncReferral(event.type, event.orderId);
+      return result;
     } catch (error) {
       if (!isUniqueConflict(error)) {
         throw error;
@@ -202,6 +259,7 @@ export class BillingService {
         existing.orderId === orderId &&
         existing.type === event.type
       ) {
+        await this.syncReferral(event.type, orderId);
         return this.readResult(this.prisma, orderId, true);
       }
       throw new ConflictException('Billing record already exists');
@@ -244,6 +302,23 @@ export class BillingService {
         paymentId: payment.id,
       },
     });
+    if (this.audit) {
+      await this.audit.record(
+        {
+          actorUserId: order.userId,
+          action: 'payment.status',
+          entityType: 'payment',
+          entityId: payment.id,
+          summary: `Pagamento ${input.type}`,
+          metadata: {
+            provider: input.provider,
+            type: input.type,
+            orderId: order.id,
+          },
+        },
+        tx,
+      );
+    }
     return this.readResult(tx, order.id, false);
   }
 
@@ -355,6 +430,9 @@ export class BillingService {
     return this.savePayment(tx, order, input, 'FAILED');
   }
 
+  // Refund and chargeback revoke the license but keep the row and the payment.
+  // A later approved event cannot reopen that order. A transient provider
+  // lookup never reaches this method, so it cannot revoke access by itself.
   private async markRefunded(
     tx: BillingTx,
     order: OrderRow,
@@ -419,7 +497,23 @@ export class BillingService {
         status: 'ACTIVE',
       },
     });
-    if (other) {
+    if (other && licenseGrantsAccess(other)) {
+      throw new ConflictException('Active license already exists');
+    }
+    if (other?.status === 'ACTIVE') {
+      await tx.billingLicense.updateMany({
+        where: { id: other.id, status: 'ACTIVE' },
+        data: { status: 'EXPIRED', activeUserProductKey: null },
+      });
+    }
+    const suspended = await tx.billingLicense.findFirst({
+      where: {
+        userId: order.userId,
+        productId: order.productId,
+        status: 'SUSPENDED',
+      },
+    });
+    if (suspended) {
       throw new ConflictException('Active license already exists');
     }
 
@@ -428,6 +522,8 @@ export class BillingService {
         userId: order.userId,
         productId: order.productId,
         orderId: order.id,
+        source: 'PURCHASE',
+        term: 'LIFETIME',
         status: 'ACTIVE',
         activeUserProductKey: activeUserProductKey(
           order.userId,
@@ -517,6 +613,20 @@ export class BillingService {
   }
 
   async getPremium(userId: string): Promise<PremiumView> {
+    try {
+      return await this.loadPremium(userId);
+    } catch (error) {
+      if (!isMissingBillingSchema(error)) {
+        throw error;
+      }
+      this.logger.error(
+        `Billing schema is unavailable (${prismaCode(error)}). Premium access denied until the billing migrations are applied.`,
+      );
+      return inactivePremium();
+    }
+  }
+
+  private async loadPremium(userId: string): Promise<PremiumView> {
     const product = await this.prisma.billingProduct.findUnique({
       where: { code: PREMIUM_PRODUCT_CODE },
     });
@@ -527,6 +637,12 @@ export class BillingService {
     const active = await this.prisma.billingLicense.findFirst({
       where: { userId, productId: product.id, status: 'ACTIVE' },
     });
+    const current = active && licenseGrantsAccess(active) ? active : null;
+    const suspended = current
+      ? null
+      : await this.prisma.billingLicense.findFirst({
+          where: { userId, productId: product.id, status: 'SUSPENDED' },
+        });
     const storeEntitlement =
       await this.prisma.billingStoreEntitlement.findFirst({
         where: {
@@ -537,7 +653,8 @@ export class BillingService {
         },
       });
     const latestLicense =
-      active ??
+      current ??
+      suspended ??
       (await this.prisma.billingLicense.findFirst({
         where: { userId, productId: product.id },
         orderBy: { createdAt: 'desc' },
@@ -546,18 +663,31 @@ export class BillingService {
       where: { order: { userId, productId: product.id } },
       orderBy: { createdAt: 'desc' },
     });
+    const licenseStatus = current
+      ? 'ACTIVE'
+      : active
+        ? 'EXPIRED'
+        : suspended
+          ? 'SUSPENDED'
+          : storeEntitlement
+            ? 'ACTIVE'
+            : latestLicense?.status === 'REVOKED' ||
+                latestLicense?.status === 'EXPIRED' ||
+                latestLicense?.status === 'SUSPENDED'
+              ? latestLicense.status
+              : null;
+    const shown = current ?? (active && !current ? active : suspended);
 
     return {
       productCode: PREMIUM_PRODUCT_CODE,
-      access: Boolean(active || storeEntitlement),
-      licenseStatus:
-        active || storeEntitlement
-          ? 'ACTIVE'
-          : latestLicense?.status === 'REVOKED'
-            ? 'REVOKED'
-            : null,
-      paymentStatus:
-        active || storeEntitlement ? 'PAID' : (payment?.status ?? 'NONE'),
+      access: Boolean(current || storeEntitlement),
+      licenseStatus,
+      paymentStatus: payment?.status ?? (storeEntitlement ? 'PAID' : 'NONE'),
+      term: shown?.term ?? null,
+      source: shown?.source ?? null,
+      expiresAt: shown?.expiresAt?.toISOString() ?? null,
+      activatedAt: shown?.grantedAt?.toISOString() ?? null,
+      channel: current ? 'license' : storeEntitlement ? 'store' : null,
     };
   }
 

@@ -7,7 +7,14 @@ import { AdminGuard } from '../admin/admin.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService, inactivePremium } from '../billing/billing.service';
 import { AuthService } from './auth.service';
+import { DeviceService } from './device.service';
 import { GoogleIdentityService } from './google-identity';
+
+const deviceProof = {
+  installationId: '11111111-1111-4111-8111-111111111111',
+  challengeId: '22222222-2222-4222-8222-222222222222',
+  signature: 'c2lnbmF0dXJl',
+};
 
 jest.mock('../prisma/prisma.service', () => ({
   PrismaService: class PrismaService {},
@@ -26,6 +33,7 @@ const SECRET = 'unit-test-jwt-secret';
 type SessionRow = {
   id: string;
   userId: string;
+  deviceId: string | null;
   expiresAt: Date;
 };
 
@@ -60,11 +68,16 @@ describe('auth sessions', () => {
         },
       ),
       create: jest.fn(
-        async ({ data }: { data: { userId: string; expiresAt: Date } }) => {
+        async ({
+          data,
+        }: {
+          data: { userId: string; deviceId?: string; expiresAt: Date };
+        }) => {
           sequence += 1;
           const row = {
             id: `session-${sequence}`,
             userId: data.userId,
+            deviceId: data.deviceId ?? null,
             expiresAt: data.expiresAt,
           };
           sessions.set(row.id, row);
@@ -74,6 +87,15 @@ describe('auth sessions', () => {
       findUnique: jest.fn(async ({ where }: { where: { id: string } }) => {
         return sessions.get(where.id) ?? null;
       }),
+    },
+    authDevice: {
+      findUnique: jest.fn(async () => ({
+        id: 'device-1',
+        userId: 'user-1',
+        status: 'ACTIVE',
+        lastSeenAt: new Date(),
+      })),
+      updateMany: jest.fn(async () => ({ count: 1 })),
     },
   };
   const jwtService = {
@@ -100,9 +122,15 @@ describe('auth sessions', () => {
         { provide: JwtService, useValue: jwtService },
         {
           provide: BillingService,
-          useValue: { getPremium: jest.fn().mockResolvedValue(inactivePremium()) },
+          useValue: {
+            getPremium: jest.fn().mockResolvedValue(inactivePremium()),
+          },
         },
         { provide: GoogleIdentityService, useValue: { verify: jest.fn() } },
+        {
+          provide: DeviceService,
+          useValue: { claim: jest.fn().mockResolvedValue('device-1') },
+        },
       ],
     }).compile();
     service = moduleRef.get(AuthService);
@@ -112,6 +140,7 @@ describe('auth sessions', () => {
     const result = await service.login({
       email: 'user@email.com',
       password: 'password1',
+      device: deviceProof,
     });
     return result.accessToken;
   }
@@ -158,6 +187,20 @@ describe('auth sessions', () => {
       SECRET,
       { expiresIn: '-1s' },
     );
+
+    await expect(service.authenticate(token)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+  });
+
+  it('rejects a token after its device is revoked', async () => {
+    const token = await login();
+    prisma.authDevice.findUnique.mockResolvedValueOnce({
+      id: 'device-1',
+      userId: 'user-1',
+      status: 'REVOKED',
+      lastSeenAt: new Date(),
+    });
 
     await expect(service.authenticate(token)).rejects.toBeInstanceOf(
       UnauthorizedException,

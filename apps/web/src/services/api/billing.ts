@@ -22,3 +22,10 @@ export function refreshCheckout() {
     json: {},
   });
 }
+
+export function redeemVoucher(code: string) {
+  return apiRequest<PremiumAccess>("/billing/vouchers/redeem", {
+    method: "POST",
+    json: { code },
+  });
+}

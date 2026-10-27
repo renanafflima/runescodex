@@ -20,6 +20,10 @@ export type HuntUpdateRequest = {
   id: string;
   type: HuntUpdateRequestType;
   description: string;
+  currentValue: string | null;
+  proposedValue: string | null;
+  vocation: string | null;
+  appliedAt: string | null;
   status: HuntUpdateRequestStatus;
   adminResponse: string | null;
   createdAt: string;
@@ -42,9 +46,17 @@ export function listHuntUpdateRequests(slug: string, page = 1, limit = 50) {
   );
 }
 
-export function createHuntUpdateRequest(slug: string, type: HuntUpdateRequestType, description: string) {
+export function createHuntUpdateRequest(
+  slug: string,
+  body: {
+    type: HuntUpdateRequestType;
+    description: string;
+    vocation?: string;
+    proposedValue?: string;
+  },
+) {
   return apiRequest<HuntUpdateRequest>(`/hunts/${encodeURIComponent(slug)}/update-requests`, {
     method: "POST",
-    json: { type, description },
+    json: body,
   });
 }

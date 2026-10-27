@@ -244,4 +244,32 @@ describe('BillingCheckoutService', () => {
       }),
     );
   });
+
+  it('does not grant premium when the provider payment has no known order', async () => {
+    mercadoPago.getPayment.mockResolvedValue(
+      payment({ externalReference: '' }),
+    );
+
+    await service.handleWebhook(signed('9001'));
+
+    expect(billing.findOrderForProvider).not.toHaveBeenCalled();
+    expect(billing.applyProviderEvent).not.toHaveBeenCalled();
+  });
+
+  it('maps a chargeback to the refund event and does not approve it', async () => {
+    mercadoPago.getPayment.mockResolvedValue(
+      payment({ status: 'charged_back' }),
+    );
+    billing.findOrderForProvider.mockResolvedValue({
+      id: 'order-1',
+      amountMinor: 4990,
+      currency: 'BRL',
+    });
+
+    await service.handleWebhook(signed('9001'));
+
+    expect(billing.applyProviderEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'PAYMENT_REFUNDED' }),
+    );
+  });
 });

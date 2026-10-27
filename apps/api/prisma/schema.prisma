@@ -71,6 +71,8 @@ model User {
   /// Google subject (`sub`). Unique when present; never grants a role or Premium.
   googleSub         String?                 @unique
   role              UserRole                @default(USER)
+  /// Public referral code. Not a session token and not a sequential user id.
+  referralCode      String?                 @unique
   activeCharacterId String?                 @unique
   createdAt         DateTime                @default(now())
   updatedAt         DateTime                @updatedAt
@@ -82,6 +84,7 @@ model User {
   huntComments           HuntComment[]
   huntCommentLikes       HuntCommentLike[]
   huntUpdateRequests     HuntUpdateRequest[]
+  decidedHuntUpdates     HuntUpdateRequest[]             @relation("HuntUpdateDecidedBy")
   rewardWallet           RewardWallet?
   missionProgress        UserMissionProgress[]
   rewardRedemptions      RewardRedemption[]
@@ -97,18 +100,138 @@ model User {
   billingOrders          BillingOrder[]
   billingLicenses        BillingLicense[]
   billingStoreEntitlements BillingStoreEntitlement[]
+  assignedTickets        Ticket[]                    @relation("TicketAssignee")
+  ticketMessages         TicketMessage[]
+  auditEvents            AdminAuditEvent[]
+  updatedAdminSettings   AdminSetting[]
+  contentViews           ContentViewEvent[]
+  grantedLicenses        BillingLicense[]             @relation("LicenseGrantedBy")
+  createdVouchers        BillingVoucher[]             @relation("VoucherCreatedBy")
+  voucherRedemptions     BillingVoucherRedemption[]
+  licenseGrantsReceived  BillingLicenseGrant[]        @relation("GrantBeneficiary")
+  licenseGrantsIssued    BillingLicenseGrant[]        @relation("GrantActor")
+  authDevices            AuthDevice[]
+  referralsMade          ReferralAttribution[] @relation("ReferralReferrer")
+  referralReceived       ReferralAttribution?  @relation("ReferralReferred")
+  referralRewardsEarned  ReferralReward[]      @relation("ReferralRewardEarner")
+  referralRewardsConfirmed ReferralReward[]    @relation("ReferralRewardDeliveredBy")
 }
 
-/// Active login. Logout deletes this row, so that device token stops working.
+/// Active login. Logout deletes this row, so that token stops working.
 /// Other devices keep their own rows. Expired rows are removed on the next login.
+/// deviceId is null only for sessions created before device binding.
 model AuthSession {
-  id        String   @id @default(uuid())
+  id        String      @id @default(uuid())
   userId    String
+  deviceId  String?
   expiresAt DateTime
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device    AuthDevice? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expiresAt])
+  @@index([deviceId])
+}
+
+enum ReferralRewardStatus {
+  PENDING_DELIVERY
+  DELIVERED
+  INELIGIBLE
+  ON_HOLD
+}
+
+enum ReferralStage {
+  WAITING_PURCHASE
+  REWARDED
+}
+
+/// One friend can be attributed once. The referrer cannot be changed later.
+model ReferralAttribution {
+  id             String        @id @default(uuid())
+  referrerUserId String
+  referredUserId String        @unique
+  code           String
+  stage          ReferralStage @default(WAITING_PURCHASE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  referrer       User          @relation("ReferralReferrer", fields: [referrerUserId], references: [id], onDelete: Restrict)
+  referred       User          @relation("ReferralReferred", fields: [referredUserId], references: [id], onDelete: Restrict)
+  reward         ReferralReward?
+
+  @@index([referrerUserId, createdAt])
+  @@index([code])
+}
+
+/// Manual 100 TC reward. One row per attribution and per eligible order.
+model ReferralReward {
+  id                String               @id @default(uuid())
+  attributionId     String               @unique
+  referrerUserId    String
+  referredUserId    String
+  tibiaCoins        Int                  @default(100)
+  status            ReferralRewardStatus @default(PENDING_DELIVERY)
+  orderId           String               @unique
+  paymentId         String?
+  licenseId         String?
+  ticketId          String?              @unique
+  holdReason        String?
+  reviewRequired    Boolean              @default(false)
+  reviewReason      String?
+  releasedAt        DateTime             @default(now())
+  deliveredAt       DateTime?
+  deliveredByUserId String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  attribution       ReferralAttribution  @relation(fields: [attributionId], references: [id], onDelete: Restrict)
+  referrer          User                 @relation("ReferralRewardEarner", fields: [referrerUserId], references: [id], onDelete: Restrict)
+  deliveredBy       User?                @relation("ReferralRewardDeliveredBy", fields: [deliveredByUserId], references: [id], onDelete: SetNull)
+  ticket            Ticket?              @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([referrerUserId, createdAt])
+}
+
+enum AuthDeviceStatus {
+  ACTIVE
+  REVOKED
+}
+
+/// A linked browser installation. The private key never leaves the browser.
+/// At most two ACTIVE rows per user: slots 1 and 2, enforced by a partial unique index.
+model AuthDevice {
+  id             String           @id @default(uuid())
+  userId         String
+  installationId String
+  publicKeyHash  String
+  publicKeySpki  String
+  label          String
+  deviceType     String?
+  osName         String?
+  clientName     String?
+  status         AuthDeviceStatus @default(ACTIVE)
+  slot           Int?
+  createdAt      DateTime         @default(now())
+  lastSeenAt     DateTime         @default(now())
+  revokedAt      DateTime?
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions       AuthSession[]
+
+  @@unique([userId, installationId])
+  @@index([userId, status])
+}
+
+/// Short-lived nonce signed by the device private key. Possession of the public id is not enough.
+model AuthDeviceChallenge {
+  id             String    @id @default(uuid())
+  installationId String
+  publicKeyHash  String
+  publicKeySpki  String
+  nonce          String    @unique
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime  @default(now())
+
   @@index([expiresAt])
 }
 
@@ -368,24 +491,36 @@ enum HuntUpdateRequestType {
 
 /// A player report that one fact on a hunt is outdated. Visible only to its author.
 model HuntUpdateRequest {
-  id            String                 @id @default(uuid())
-  huntId        String
-  userId        String
-  type          HuntUpdateRequestType
-  description   String
-  status        HuntUpdateRequestStatus @default(OPEN)
-  adminResponse String?
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-  resolvedAt    DateTime?
-  hunt          Hunt                   @relation(fields: [huntId], references: [id], onDelete: Cascade)
-  user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String                 @id @default(uuid())
+  huntId          String
+  userId          String
+  type            HuntUpdateRequestType
+  description     String
+  /// Value read from the hunt when the proposal was created. Not trusted from the client.
+  currentValue    String?
+  /// Present only when the author submitted a structured value. Free text stays in description.
+  proposedValue   String?
+  vocation        Vocation?
+  ticketId        String?                @unique
+  status          HuntUpdateRequestStatus @default(OPEN)
+  adminResponse   String?
+  decidedByUserId String?
+  /// Set in the same transaction that writes the authorized hunt field. A second approval does not write again.
+  appliedAt       DateTime?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  resolvedAt      DateTime?
+  hunt            Hunt                   @relation(fields: [huntId], references: [id], onDelete: Cascade)
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  decidedBy       User?                  @relation("HuntUpdateDecidedBy", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+  ticket          Ticket?                @relation(fields: [ticketId], references: [id], onDelete: SetNull)
 
   @@index([huntId])
   @@index([userId])
   @@index([status])
   @@index([createdAt])
   @@index([huntId, userId, createdAt])
+  @@index([decidedByUserId])
 }
 
 /// Bestiary-specific official data. Name, image, HP, XP and difficulty come from Creature.
@@ -674,8 +809,30 @@ model RewardLedgerEntry {
 enum TicketStatus {
   OPEN
   IN_REVIEW
+  /// Staff is waiting for the author. Existing OPEN and IN_REVIEW rows are unchanged.
+  WAITING_ON_USER
+  /// Staff is waiting for another team member. Existing rows are unchanged.
+  WAITING_ON_STAFF
   RESOLVED
   REJECTED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum TicketMessageVisibility {
+  PUBLIC
+  INTERNAL
+}
+
+enum ContentSubject {
+  HUNT
+  CREATURE
+  BOSS
 }
 
 enum TicketProblemType {
@@ -726,8 +883,14 @@ enum TicketEvidenceSource {
 /// Support ticket. rewardPoints is reserved for a future reputation grant and is not filled here.
 model Ticket {
   id               String             @id @default(uuid())
+  /// Stable public protocol. Distinct from the internal id.
+  protocol         String             @unique
   authorId         String
   status           TicketStatus       @default(OPEN)
+  priority         TicketPriority     @default(NORMAL)
+  /// Required while priority is URGENT. Hidden from the ticket author.
+  urgentReason     String?
+  assigneeId       String?
   problemType      TicketProblemType
   impact           TicketImpact
   origin           TicketOrigin
@@ -741,21 +904,101 @@ model Ticket {
   resolutionNote   String?
   resolvedByUserId String?
   resolvedAt       DateTime?
+  /// First public staff reply. Internal notes do not set this.
+  firstResponseAt  DateTime?
+  /// Set when a confirmed catalog correction was written. A repeat apply does nothing.
+  contentAppliedAt DateTime?
   rewardPoints     Int?
   rewardGrantedAt  DateTime?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   author           User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  assignee         User?              @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   resolvedBy       User?              @relation("TicketResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
   hunt             Hunt?              @relation(fields: [huntId], references: [id], onDelete: SetNull)
   creature         Creature?          @relation(fields: [creatureId], references: [id], onDelete: SetNull)
   vocations        TicketVocationSelection[]
   evidences        TicketEvidence[]
+  messages          TicketMessage[]
+  huntUpdateRequest HuntUpdateRequest?
+  referralReward    ReferralReward?
 
   @@index([authorId, createdAt])
   @@index([status, createdAt])
   @@index([huntId])
   @@index([creatureId])
+  @@index([assigneeId, status, createdAt])
+  @@index([priority, createdAt])
+}
+
+/// Public replies and staff-only notes. INTERNAL rows must never leave admin queries.
+model TicketMessage {
+  id         String                  @id @default(uuid())
+  ticketId   String
+  authorId   String
+  visibility TicketMessageVisibility
+  body       String
+  createdAt  DateTime                @default(now())
+  ticket     Ticket                  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author     User                    @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId, createdAt])
+  @@index([authorId])
+}
+
+/// Append-only staff audit. Ordinary operations must not update or delete these rows.
+model AdminAuditEvent {
+  id          String   @id @default(uuid())
+  actorUserId String
+  action      String
+  entityType  String
+  entityId    String
+  summary     String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  actor       User     @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([entityType, entityId, createdAt])
+  @@index([action, createdAt])
+}
+
+/// Staff-owned operational limits. Absent keys mean the related alert is not calculated.
+model AdminSetting {
+  key             String   @id
+  value           Json
+  updatedByUserId String?
+  updatedAt       DateTime @updatedAt
+  updatedBy       User?    @relation(fields: [updatedByUserId], references: [id], onDelete: SetNull)
+}
+
+/// One content open per session, subject and clock hour. History starts at the first stored row.
+model ContentViewEvent {
+  id          String         @id @default(uuid())
+  subject     ContentSubject
+  subjectId   String
+  sessionKey  String
+  userId      String?
+  bucketStart DateTime
+  createdAt   DateTime       @default(now())
+  user        User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionKey, subject, subjectId, bucketStart])
+  @@index([subject, subjectId, createdAt])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+/// Minimized record of a catalog search that returned no rows. No user id is stored.
+model SearchMiss {
+  id        String   @id @default(uuid())
+  category  String
+  term      String
+  createdAt DateTime @default(now())
+
+  @@index([category, createdAt])
+  @@index([createdAt])
 }
 
 model TicketVocationSelection {
@@ -793,6 +1036,7 @@ model BillingProduct {
   orders    BillingOrder[]
   licenses  BillingLicense[]
   storeEntitlements BillingStoreEntitlement[]
+  vouchers  BillingVoucher[]
 
   @@index([active])
 }
@@ -880,6 +1124,9 @@ model BillingPayment {
   amountMinor       Int
   paidAt            DateTime?
   refundedAt        DateTime?
+  /// Provider status label from the last confirmed lookup. Not a secret and not proof by itself.
+  providerStatus    String?
+  syncedAt          DateTime?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
   order             BillingOrder         @relation(fields: [orderId], references: [id], onDelete: Restrict)
@@ -892,27 +1139,149 @@ model BillingPayment {
 
 enum BillingLicenseStatus {
   ACTIVE
+  SUSPENDED
   REVOKED
+  EXPIRED
 }
 
-/// Access grant for one paid order. Revocation keeps the row and clears activeUserProductKey.
+enum BillingLicenseSource {
+  PURCHASE
+  VOUCHER
+  ADMIN_GRANT
+  PARTNERSHIP
+  COMPENSATION
+}
+
+enum BillingLicenseTerm {
+  LIFETIME
+  FIXED
+}
+
+enum BillingVoucherBenefit {
+  FREE
+  PARTNERSHIP
+  PROMOTIONAL
+}
+
+enum BillingVoucherStatus {
+  ACTIVE
+  PAUSED
+  EXHAUSTED
+  CLOSED
+}
+
+enum BillingRedemptionResult {
+  SUCCESS
+  REJECTED
+}
+
+enum BillingGrantCategory {
+  COLLABORATOR
+  PARTNERSHIP
+  CONTENT_CREATOR
+  COMPENSATION
+  OTHER
+}
+
+/// Access grant. A purchase keeps its order. Grants and vouchers do not invent a payment.
+/// Revocation keeps the row and clears activeUserProductKey. Suspension keeps the key.
 model BillingLicense {
   id                   String               @id @default(uuid())
   userId               String
   productId            String
-  orderId              String               @unique
+  orderId              String?              @unique
+  source               BillingLicenseSource @default(PURCHASE)
+  term                 BillingLicenseTerm   @default(LIFETIME)
   status               BillingLicenseStatus @default(ACTIVE)
-  /// userId:productId while ACTIVE. Null after revocation, so a later order can grant again.
+  /// userId:productId while the row still occupies the product slot. Null after revocation or expiry.
   activeUserProductKey String?              @unique
+  expiresAt            DateTime?
   grantedAt            DateTime             @default(now())
   revokedAt            DateTime?
+  suspendedAt          DateTime?
+  reason               String?
+  grantedByUserId      String?
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
   user                 User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
   product              BillingProduct       @relation(fields: [productId], references: [id], onDelete: Restrict)
-  order                BillingOrder         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  order                BillingOrder?        @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  grantedBy            User?                @relation("LicenseGrantedBy", fields: [grantedByUserId], references: [id], onDelete: Restrict)
+  grant                BillingLicenseGrant?
+  redemption           BillingVoucherRedemption?
 
   @@index([userId, productId, status])
+  @@index([source, status])
+  @@index([expiresAt])
+  @@index([grantedByUserId])
+}
+
+/// Redeemable code. Only the hash is stored. The plaintext is returned once, at creation.
+model BillingVoucher {
+  id              String                 @id @default(uuid())
+  codeHash        String                 @unique
+  codePrefix      String
+  benefit         BillingVoucherBenefit
+  productId       String
+  term            BillingLicenseTerm
+  durationDays    Int?
+  maxRedemptions  Int
+  redeemedCount   Int                    @default(0)
+  perUserLimit    Int                    @default(1)
+  startsAt        DateTime               @default(now())
+  endsAt          DateTime?
+  status          BillingVoucherStatus   @default(ACTIVE)
+  campaign        String?
+  notes           String?
+  createdByUserId String
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  product         BillingProduct         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  createdBy       User                   @relation("VoucherCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  redemptions     BillingVoucherRedemption[]
+
+  @@index([status, endsAt])
+  @@index([createdByUserId])
+}
+
+model BillingVoucherRedemption {
+  id        String                  @id @default(uuid())
+  voucherId String
+  userId    String
+  result    BillingRedemptionResult
+  reason    String?
+  licenseId String?                 @unique
+  createdAt DateTime                @default(now())
+  voucher   BillingVoucher          @relation(fields: [voucherId], references: [id], onDelete: Restrict)
+  user      User                    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  license   BillingLicense?         @relation(fields: [licenseId], references: [id], onDelete: Restrict)
+
+  @@index([voucherId, userId])
+  @@index([userId, createdAt])
+}
+
+/// Administrative grant. This is a business classification, not an authentication role.
+model BillingLicenseGrant {
+  id           String               @id @default(uuid())
+  userId       String
+  actorUserId  String
+  category     BillingGrantCategory
+  reason       String
+  term         BillingLicenseTerm
+  startsAt     DateTime             @default(now())
+  expiresAt    DateTime?
+  licenseId    String               @unique
+  revokedAt    DateTime?
+  revokeReason String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  user         User                 @relation("GrantBeneficiary", fields: [userId], references: [id], onDelete: Restrict)
+  actor        User                 @relation("GrantActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  license      BillingLicense       @relation(fields: [licenseId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([actorUserId])
+  @@index([category])
 }
 
 /// Store entitlements synced from a server-verified external billing provider.

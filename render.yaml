@@ -47,3 +47,34 @@ services:
         sync: false
       - key: REVENUECAT_WEBHOOK_AUTHORIZATION
         sync: false
+
+  # Static Vite app. The API service above is unchanged.
+  # Files are published under /runescodex/ so Vercel can proxy that path
+  # without replacing https://tritech.app.br/.
+  - type: web
+    name: runescodex-web
+    runtime: static
+    rootDir: apps/web
+    buildCommand: npm ci && npm run build:render
+    staticPublishPath: ./apps/web/render-publish
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: VITE_API_BASE_URL
+        value: https://runescodex-api.onrender.com
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+    routes:
+      - type: rewrite
+        source: /runescodex
+        destination: /runescodex/index.html
+      - type: rewrite
+        source: /runescodex/*
+        destination: /runescodex/index.html
+    headers:
+      - path: /runescodex/sw.js
+        name: Cache-Control
+        value: no-cache
+      - path: /runescodex/index.html
+        name: Cache-Control
+        value: no-cache

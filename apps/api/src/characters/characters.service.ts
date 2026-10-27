@@ -47,7 +47,9 @@ export class CharactersService {
       where: { id },
       data: {
         ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
-        ...(dto.vocation !== undefined ? { vocation: dto.vocation.trim() } : {}),
+        ...(dto.vocation !== undefined
+          ? { vocation: dto.vocation.trim() }
+          : {}),
         ...(dto.level !== undefined ? { level: dto.level } : {}),
         ...(dto.world !== undefined ? { world: dto.world.trim() } : {}),
       },

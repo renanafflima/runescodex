@@ -1,14 +1,18 @@
-import {
-  ConflictException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { BillingService, inactivePremium } from '../billing/billing.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
+import { DeviceService } from './device.service';
 import { GoogleIdentityService } from './google-identity';
+
+const device = {
+  installationId: '11111111-1111-4111-8111-111111111111',
+  challengeId: '22222222-2222-4222-8222-222222222222',
+  signature: 'c2lnbmF0dXJl',
+};
 
 jest.mock('../prisma/prisma.service', () => ({
   PrismaService: class PrismaService {},
@@ -59,6 +63,10 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: jwtService },
         { provide: BillingService, useValue: billing },
         { provide: GoogleIdentityService, useValue: google },
+        {
+          provide: DeviceService,
+          useValue: { claim: jest.fn().mockResolvedValue('device-1') },
+        },
       ],
     }).compile();
 
@@ -77,6 +85,7 @@ describe('AuthService', () => {
     const result = await service.register({
       email: '  User@Email.com ',
       password: 'password1',
+      device,
     });
 
     expect(prisma.user.create).toHaveBeenCalledWith({
@@ -102,7 +111,11 @@ describe('AuthService', () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'user-1' });
 
     await expect(
-      service.register({ email: 'user@email.com', password: 'password1' }),
+      service.register({
+        email: 'user@email.com',
+        password: 'password1',
+        device,
+      }),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(prisma.user.create).not.toHaveBeenCalled();
   });
@@ -113,7 +126,11 @@ describe('AuthService', () => {
     prisma.user.create.mockRejectedValue({ code: 'P2002' });
 
     await expect(
-      service.register({ email: 'user@email.com', password: 'password1' }),
+      service.register({
+        email: 'user@email.com',
+        password: 'password1',
+        device,
+      }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
@@ -129,6 +146,7 @@ describe('AuthService', () => {
     const result = await service.login({
       email: 'user@email.com',
       password: 'password1',
+      device,
     });
 
     expect(result.user).toEqual({
@@ -149,7 +167,11 @@ describe('AuthService', () => {
     prisma.user.findUnique.mockResolvedValue(null);
 
     await expect(
-      service.login({ email: 'missing@email.com', password: 'password1' }),
+      service.login({
+        email: 'missing@email.com',
+        password: 'password1',
+        device,
+      }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
 
     prisma.user.findUnique.mockResolvedValue({
@@ -160,7 +182,7 @@ describe('AuthService', () => {
     (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
     await expect(
-      service.login({ email: 'user@email.com', password: 'wrong' }),
+      service.login({ email: 'user@email.com', password: 'wrong', device }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
@@ -190,7 +212,7 @@ describe('AuthService', () => {
     });
 
     await expect(
-      service.login({ email: 'user@email.com', password: 'password1' }),
+      service.login({ email: 'user@email.com', password: 'password1', device }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(bcrypt.compare).not.toHaveBeenCalled();
   });
@@ -200,9 +222,9 @@ describe('AuthService', () => {
       new UnauthorizedException('Invalid Google credential'),
     );
 
-    await expect(service.loginWithGoogle('invalid-token')).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(
+      service.loginWithGoogle('invalid-token', device),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
     expect(prisma.user.create).not.toHaveBeenCalled();
   });
@@ -213,7 +235,7 @@ describe('AuthService', () => {
     );
 
     await expect(
-      service.loginWithGoogle('unverified-token'),
+      service.loginWithGoogle('unverified-token', device),
     ).rejects.toMatchObject({ message: 'Google email is not verified' });
     expect(prisma.user.create).not.toHaveBeenCalled();
   });
@@ -239,9 +261,9 @@ describe('AuthService', () => {
       },
     );
 
-    await expect(service.loginWithGoogle('valid-token')).rejects.toBeInstanceOf(
-      ConflictException,
-    );
+    await expect(
+      service.loginWithGoogle('valid-token', device),
+    ).rejects.toBeInstanceOf(ConflictException);
     expect(prisma.user.create).not.toHaveBeenCalled();
     expect(jwtService.signAsync).not.toHaveBeenCalled();
   });
@@ -259,7 +281,7 @@ describe('AuthService', () => {
       googleSub: 'google-subject',
     });
 
-    const result = await service.loginWithGoogle('valid-token');
+    const result = await service.loginWithGoogle('valid-token', device);
 
     expect(prisma.user.create).toHaveBeenCalledWith({
       data: { email: 'new@email.com', googleSub: 'google-subject' },
@@ -296,7 +318,7 @@ describe('AuthService', () => {
       googleSub: 'google-subject',
     });
 
-    const result = await service.loginWithGoogle('valid-token');
+    const result = await service.loginWithGoogle('valid-token', device);
 
     expect(prisma.user.create).not.toHaveBeenCalled();
     expect(result.user.googleLinked).toBe(true);

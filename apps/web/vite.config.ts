@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
-const WEB_BASE_PATH = "/runes/";
+const WEB_BASE_PATH = "/runescodex/";
 
 export default defineConfig({
   base: WEB_BASE_PATH,
@@ -52,8 +52,8 @@ export default defineConfig({
         clientsClaim: false,
         skipWaiting: false,
         navigateFallback: `${WEB_BASE_PATH}index.html`,
-        navigateFallbackAllowlist: [/^\/runes(?:\/.*)?$/],
-        navigateFallbackDenylist: [/^\/runes\/api(?:\/|$)/],
+        navigateFallbackAllowlist: [/^\/runescodex(?:\/.*)?$/],
+        navigateFallbackDenylist: [/^\/runescodex\/api(?:\/|$)/],
       },
       devOptions: {
         enabled: false,

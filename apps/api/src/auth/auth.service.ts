@@ -1,14 +1,18 @@
 import {
   ConflictException,
   Injectable,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { BillingService } from '../billing/billing.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { DeviceService } from './device.service';
+import { ReferralService } from '../referrals/referral.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import type { DeviceProofDto } from './dto/device-proof.dto';
 import { GoogleIdentityService } from './google-identity';
 
 const BCRYPT_ROUNDS = 10;
@@ -55,6 +59,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly billing: BillingService,
     private readonly google: GoogleIdentityService,
+    private readonly devices: DeviceService,
+    @Optional() private readonly referrals?: ReferralService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -87,9 +93,12 @@ export class AuthService {
       throw error;
     }
 
+    await this.attachReferral(user.id, dto.referralCode);
+    const deviceId = await this.devices.claim(user.id, dto.device);
     return {
       user: await this.presentUser(user),
-      accessToken: await this.openSession(user.id, user.email),
+      accessToken: await this.openSession(user.id, user.email, deviceId),
+      accountCreated: true,
     };
   }
 
@@ -106,13 +115,18 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    const deviceId = await this.devices.claim(user.id, dto.device);
     return {
       user: await this.presentUser(user),
-      accessToken: await this.openSession(user.id, user.email),
+      accessToken: await this.openSession(user.id, user.email, deviceId),
     };
   }
 
-  async loginWithGoogle(credential: string) {
+  async loginWithGoogle(
+    credential: string,
+    device: DeviceProofDto,
+    referralCode?: string,
+  ) {
     const identity = await this.google.verify(credential);
     const linked = await this.prisma.user.findUnique({
       where: { googleSub: identity.sub },
@@ -123,7 +137,7 @@ export class AuthService {
           'Google account cannot be used for this email',
         );
       }
-      return this.sessionFor(linked);
+      return this.sessionFor(linked, device);
     }
 
     const existing = await this.prisma.user.findUnique({
@@ -148,7 +162,11 @@ export class AuthService {
           googleSub: true,
         },
       });
-      return this.sessionFor(user);
+      await this.attachReferral(user.id, referralCode);
+      return {
+        ...(await this.sessionFor(user, device)),
+        accountCreated: true,
+      };
     } catch (error) {
       if (isUniqueConflict(error)) {
         throw new ConflictException(
@@ -241,6 +259,20 @@ export class AuthService {
     ) {
       throw new UnauthorizedException();
     }
+    if (!session.deviceId) return;
+    const device = await this.prisma.authDevice.findUnique({
+      where: { id: session.deviceId },
+    });
+    if (!device || device.userId !== userId || device.status !== 'ACTIVE') {
+      throw new UnauthorizedException();
+    }
+    const staleBefore = Date.now() - 10 * 60 * 1000;
+    if (device.lastSeenAt.getTime() < staleBefore) {
+      await this.prisma.authDevice.updateMany({
+        where: { id: device.id, status: 'ACTIVE' },
+        data: { lastSeenAt: new Date() },
+      });
+    }
   }
 
   async me(userId: string) {
@@ -261,15 +293,19 @@ export class AuthService {
     return this.presentUser(user);
   }
 
-  private async sessionFor(user: {
-    id: string;
-    email: string;
-    role: string;
-    googleSub?: string | null;
-  }) {
+  private async sessionFor(
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      googleSub?: string | null;
+    },
+    device: DeviceProofDto,
+  ) {
+    const deviceId = await this.devices.claim(user.id, device);
     return {
       user: await this.presentUser(user),
-      accessToken: await this.openSession(user.id, user.email),
+      accessToken: await this.openSession(user.id, user.email, deviceId),
     };
   }
 
@@ -289,17 +325,24 @@ export class AuthService {
     };
   }
 
+  private async attachReferral(userId: string, referralCode?: string) {
+    if (!this.referrals) return;
+    await this.referrals.ensureCode(userId);
+    await this.referrals.attribute(userId, referralCode);
+  }
+
   private normalizeEmail(email: string) {
     return email.trim().toLowerCase();
   }
 
-  private async openSession(userId: string, email: string) {
+  private async openSession(userId: string, email: string, deviceId: string) {
     await this.prisma.authSession.deleteMany({
       where: { expiresAt: { lt: new Date() } },
     });
     const session = await this.prisma.authSession.create({
       data: {
         userId,
+        deviceId,
         expiresAt: new Date(Date.now() + accessTokenTtlMs()),
       },
     });

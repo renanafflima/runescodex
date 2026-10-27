@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ApiError, describeApiError } from "../services/api/errors";
 import {
   listAdminHuntUpdateRequests,
@@ -61,14 +62,16 @@ function formatWhen(value: string | null) {
 }
 
 export function AdminHuntUpdateRequestsPage() {
+  const [params] = useSearchParams();
+  const searchFromUrl = params.get("search") || "";
   const [page, setPage] = useState<AdminHuntUpdateRequestPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [status, setStatus] = useState<HuntUpdateRequestStatus | "">("");
   const [type, setType] = useState<HuntUpdateRequestType | "">("");
-  const [search, setSearch] = useState("");
-  const [appliedSearch, setAppliedSearch] = useState("");
+  const [search, setSearch] = useState(searchFromUrl);
+  const [appliedSearch, setAppliedSearch] = useState(searchFromUrl);
   const [currentPage, setCurrentPage] = useState(1);
   const [selected, setSelected] = useState<AdminHuntUpdateRequest | null>(null);
   const [response, setResponse] = useState("");
@@ -98,6 +101,12 @@ export function AdminHuntUpdateRequestsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setSearch(searchFromUrl);
+    setAppliedSearch(searchFromUrl);
+    setCurrentPage(1);
+  }, [searchFromUrl]);
 
   function openRequest(request: AdminHuntUpdateRequest) {
     setSelected(request);
@@ -272,6 +281,23 @@ export function AdminHuntUpdateRequestsPage() {
               <strong>Status:</strong> {STATUS_LABEL[selected.status]}
             </p>
             <p>
+              <strong>Valor atual:</strong> {selected.currentValue || "Não registrado"}
+            </p>
+            <p>
+              <strong>Valor proposto:</strong> {selected.proposedValue || "Texto livre, sem valor estruturado"}
+            </p>
+            <p>
+              <strong>Vocação:</strong> {selected.vocation || "—"}
+            </p>
+            <p>
+              <strong>Aplicado no catálogo:</strong>{" "}
+              {selected.appliedAt
+                ? formatWhen(selected.appliedAt)
+                : selected.autoApplicable
+                  ? "Será aplicado ao resolver"
+                  : "Não. Este tipo não altera a Hunt automaticamente."}
+            </p>
+            <p>
               <strong>Descrição:</strong> {selected.description}
             </p>
             <p>
@@ -303,7 +329,9 @@ export function AdminHuntUpdateRequestsPage() {
                 <p>
                   {confirming === "reject"
                     ? "Tem certeza que deseja rejeitar esta solicitação?"
-                    : "Tem certeza que deseja resolver esta solicitação?"}
+                    : selected.autoApplicable
+                      ? "Resolver grava o valor proposto na Hunt. A mesma correção não será aplicada de novo."
+                      : "Tem certeza que deseja resolver esta solicitação? O texto livre não altera a Hunt."}
                 </p>
                 <Button
                   disabled={pending}

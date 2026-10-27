@@ -64,17 +64,17 @@
   --content-wide: 84rem;
   --header-height: 4.5rem;
 
-  --img-home-hero: url("/runes/images/home/home-hero.webp");
-  --img-home-background: url("/runes/images/home/home-background.webp");
-  --img-hunts: url("/runes/images/sections/hunts-background.webp");
-  --img-hunts-background: url("/runes/images/hunts/hunts_background.webp");
-  --img-hunts-hero: url("/runes/images/hunts/hunts_hero.webp");
-  --img-hunt-background: url("/runes/images/hunts/hunt_background.webp");
-  --img-hunt-hero: url("/runes/images/hunts/hunt_hero.webp");
-  --img-bestiary: url("/runes/images/sections/bestiary-background.webp");
-  --img-forum: url("/runes/images/sections/forum-background.webp");
-  --img-forum-page: url("/runes/images/forum/background_forum.png");
-  --img-rewards: url("/runes/images/sections/rewards-background.webp");
-  --img-profile-hero: url("/runes/images/profile/profile-hero.webp");
-  --img-profile-background: url("/runes/images/profile/profile-background.webp");
+  --img-home-hero: url("/runescodex/images/home/home-hero.webp");
+  --img-home-background: url("/runescodex/images/home/home-background.webp");
+  --img-hunts: url("/runescodex/images/sections/hunts-background.webp");
+  --img-hunts-background: url("/runescodex/images/hunts/hunts_background.webp");
+  --img-hunts-hero: url("/runescodex/images/hunts/hunts_hero.webp");
+  --img-hunt-background: url("/runescodex/images/hunts/hunt_background.webp");
+  --img-hunt-hero: url("/runescodex/images/hunts/hunt_hero.webp");
+  --img-bestiary: url("/runescodex/images/sections/bestiary-background.webp");
+  --img-forum: url("/runescodex/images/sections/forum-background.webp");
+  --img-forum-page: url("/runescodex/images/forum/background_forum.png");
+  --img-rewards: url("/runescodex/images/sections/rewards-background.webp");
+  --img-profile-hero: url("/runescodex/images/profile/profile-hero.webp");
+  --img-profile-background: url("/runescodex/images/profile/profile-background.webp");
 }

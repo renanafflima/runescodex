@@ -5,6 +5,12 @@ export type AdminHuntUpdateRequest = {
   id: string;
   type: HuntUpdateRequestType;
   description: string;
+  currentValue: string | null;
+  proposedValue: string | null;
+  vocation: string | null;
+  ticketId: string | null;
+  appliedAt: string | null;
+  autoApplicable: boolean;
   status: HuntUpdateRequestStatus;
   adminResponse: string | null;
   createdAt: string;
@@ -45,7 +51,7 @@ export function listAdminHuntUpdateRequests(query: AdminHuntUpdateRequestQuery =
 
 export function updateAdminHuntUpdateRequest(
   id: string,
-  body: { status?: HuntUpdateRequestStatus; adminResponse?: string },
+  body: { status?: HuntUpdateRequestStatus; adminResponse?: string; ticketId?: string },
 ) {
   return apiRequest<AdminHuntUpdateRequest>(`/admin/hunt-update-requests/${encodeURIComponent(id)}`, {
     method: "PATCH",

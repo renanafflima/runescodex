@@ -8,6 +8,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { clearReferralCode, readReferralCode } from "./referral-code";
+import { withDeviceProof } from "../services/api/devices";
 import { ApiError } from "../services/api/errors";
 import {
   fetchMe,
@@ -160,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const data = await loginUser(email, password);
+      const data = await withDeviceProof((device) => loginUser(email, password, device));
       const session = sessionFromAuthResponse(data);
       if (!session.token || !session.user) {
         throw new ApiError("HTTP_ERROR", 0, "Resposta de autenticação inválida.", data);
@@ -172,7 +174,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithGoogle = useCallback(
     async (credential: string) => {
-      const data = await loginWithGoogleRequest(credential);
+      const data = await withDeviceProof((device) =>
+        loginWithGoogleRequest(credential, device, readReferralCode() || undefined),
+      );
+      if (data.accountCreated) clearReferralCode();
       const session = sessionFromAuthResponse(data);
       if (!session.token || !session.user) {
         throw new ApiError("HTTP_ERROR", 0, "Resposta de autenticação inválida.", data);
@@ -184,7 +189,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = useCallback(
     async (email: string, password: string) => {
-      const data = await registerUser(email, password);
+      const data = await withDeviceProof((device) =>
+        registerUser(email, password, device, readReferralCode() || undefined),
+      );
+      if (data.accountCreated) clearReferralCode();
       const session = sessionFromAuthResponse(data);
       if (!session.token || !session.user) {
         throw new ApiError("HTTP_ERROR", 0, "Resposta de autenticação inválida.", data);

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service';
+import { normalizeSearchTerm } from '../admin/insights/admin-text';
 import { publicHttpsUrl } from '../common/https-url';
 import { pageResult, resolvePage } from '../common/pagination';
 import { ListHuntsQueryDto } from './dto/list-hunts-query.dto';
@@ -120,6 +121,10 @@ export class HuntsService {
         take: limit,
       }),
     ]);
+
+    if ((query.page ?? 1) === 1 && total === 0) {
+      await this.noteSearchMiss(query.search);
+    }
 
     const creaturesById = await this.listCreaturesById(
       hunts.flatMap((hunt) => hunt.creatures.map((item) => item.creatureId)),
@@ -339,5 +344,24 @@ export class HuntsService {
       select,
     });
     return new Map(creatures.map((creature) => [creature.id, creature]));
+  }
+
+  private async noteSearchMiss(search: string | undefined) {
+    const term = search ? normalizeSearchTerm(search) : null;
+    const writer = (
+      this.prisma as unknown as {
+        searchMiss?: {
+          create: (args: {
+            data: { category: string; term: string };
+          }) => Promise<unknown>;
+        };
+      }
+    ).searchMiss;
+    if (!term || !writer) return;
+    try {
+      await writer.create({ data: { category: 'HUNT', term } });
+    } catch {
+      // A catalog response must not fail because the miss log could not be stored.
+    }
   }
 }

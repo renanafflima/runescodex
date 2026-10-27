@@ -1,4 +1,12 @@
-import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsEmail,
+  IsString,
+  MaxLength,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
+import { DeviceProofDto } from './device-proof.dto';
 
 export class LoginDto {
   @IsEmail()
@@ -9,4 +17,8 @@ export class LoginDto {
   @MinLength(1)
   @MaxLength(72)
   password: string;
+
+  @ValidateNested()
+  @Type(() => DeviceProofDto)
+  device!: DeviceProofDto;
 }

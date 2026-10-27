@@ -1,6 +1,7 @@
 const DEFAULT_WEB_ORIGINS = [
   'https://tritec.app.br',
   'https://tritech.app',
+  'https://tritech.app.br',
   'http://127.0.0.1:5173',
   'http://localhost:5173',
 ] as const;

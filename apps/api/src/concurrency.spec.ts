@@ -3,6 +3,8 @@ import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth/auth.service';
+import { DeviceService } from './auth/device.service';
+import { GoogleIdentityService } from './auth/google-identity';
 import { BillingService, inactivePremium } from './billing/billing.service';
 import { BestiaryService } from './bestiary/bestiary.service';
 import { ForumService } from './forum/forum.service';
@@ -463,12 +465,33 @@ describe('concurrent writes', () => {
           provide: BillingService,
           useValue: { getPremium: async () => inactivePremium() },
         },
+        {
+          provide: GoogleIdentityService,
+          useValue: {
+            verify: () =>
+              Promise.resolve({ sub: 'unused', email: 'unused@email.com' }),
+          },
+        },
+        { provide: DeviceService, useValue: { claim: async () => 'device-1' } },
       ],
     }).compile();
     const service = moduleRef.get(AuthService);
+    const device = {
+      installationId: '11111111-1111-4111-8111-111111111111',
+      challengeId: '22222222-2222-4222-8222-222222222222',
+      signature: 'c2lnbmF0dXJl',
+    };
     const results = await Promise.allSettled([
-      service.register({ email: 'same@email.com', password: 'password1' }),
-      service.register({ email: 'same@email.com', password: 'password1' }),
+      service.register({
+        email: 'same@email.com',
+        password: 'password1',
+        device,
+      }),
+      service.register({
+        email: 'same@email.com',
+        password: 'password1',
+        device,
+      }),
     ]);
 
     expect(results.filter((item) => item.status === 'fulfilled')).toHaveLength(

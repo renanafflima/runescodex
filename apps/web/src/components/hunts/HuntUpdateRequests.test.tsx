@@ -25,6 +25,10 @@ function request(status: HuntUpdateRequest["status"], id: string = status): Hunt
     id,
     type: status === "OPEN" ? "XP" : "PROFIT",
     description: `Descrição ${status}`,
+    currentValue: null,
+    proposedValue: null,
+    vocation: null,
+    appliedAt: null,
     status,
     adminResponse: status === "REJECTED" ? "Fora do escopo." : null,
     createdAt: "2026-10-05T12:00:00.000Z",
@@ -128,7 +132,10 @@ describe("HuntUpdateRequests", () => {
     fireEvent.click(screen.getByRole("button", { name: "Enviar solicitação" }));
 
     await waitFor(() =>
-      expect(api.createHuntUpdateRequest).toHaveBeenCalledWith("cyclops", "LOOT", "O loot principal mudou."),
+      expect(api.createHuntUpdateRequest).toHaveBeenCalledWith("cyclops", {
+        type: "LOOT",
+        description: "O loot principal mudou.",
+      }),
     );
     expect(await screen.findByText("Solicitação enviada com sucesso.")).toBeInTheDocument();
   });

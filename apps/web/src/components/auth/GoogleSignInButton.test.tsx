@@ -9,6 +9,20 @@ describe("GoogleSignInButton", () => {
     delete window.google;
   });
 
+  it("explains that Google sign-in is not configured when the public client id is missing", () => {
+    vi.stubEnv("VITE_GOOGLE_CLIENT_ID", "");
+    const onCredential = vi.fn();
+
+    render(<GoogleSignInButton onCredential={onCredential} />);
+
+    const button = document.querySelector("button");
+    expect(button).toBeDisabled();
+    expect(button?.textContent).toMatch(/Continuar com Google/);
+    expect(screenText()).toMatch(/não está configurado neste ambiente/);
+    expect(screenText()).not.toMatch(/client_secret|apps\.googleusercontent\.com/);
+    expect(onCredential).not.toHaveBeenCalled();
+  });
+
   it("does not surface an error when the account chooser is dismissed", async () => {
     vi.stubEnv("VITE_GOOGLE_CLIENT_ID", "public-client-id");
     const prompt = vi.fn();

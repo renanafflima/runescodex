@@ -126,9 +126,10 @@ describe('TicketsService', () => {
 
     expect(prisma.ticket.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: {
+        data: expect.objectContaining({
           authorId: USER_ID,
           status: 'OPEN',
+          priority: 'NORMAL',
           problemType: 'OTHER',
           impact: 'LOW',
           origin: 'GENERAL',
@@ -139,7 +140,8 @@ describe('TicketsService', () => {
           partyFormat: null,
           catalogValue: null,
           userValue: null,
-        },
+          protocol: expect.stringMatching(/^RC-[A-Z0-9]{10}$/),
+        }),
       }),
     );
     expect(result.status).toBe('OPEN');
@@ -238,9 +240,10 @@ describe('TicketsService', () => {
 
     expect(prisma.ticket.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: {
+        data: expect.objectContaining({
           authorId: USER_ID,
           status: 'OPEN',
+          priority: 'NORMAL',
           problemType: 'XP_PER_HOUR',
           impact: 'HIGH',
           origin: 'HUNT',
@@ -270,7 +273,7 @@ describe('TicketsService', () => {
               },
             ],
           },
-        },
+        }),
       }),
     );
     expect(prisma.hunt.findUnique).toHaveBeenCalledWith({
@@ -308,9 +311,10 @@ describe('TicketsService', () => {
     expect(prisma.hunt.findUnique).not.toHaveBeenCalled();
     expect(prisma.ticket.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: {
+        data: expect.objectContaining({
           authorId: USER_ID,
           status: 'OPEN',
+          priority: 'NORMAL',
           problemType: 'OTHER',
           impact: 'LOW',
           origin: 'GENERAL',
@@ -321,7 +325,7 @@ describe('TicketsService', () => {
           partyFormat: null,
           catalogValue: null,
           userValue: null,
-        },
+        }),
       }),
     );
   });
@@ -371,6 +375,40 @@ describe('TicketsService', () => {
 
     expect(result.id).toBe(TICKET_ID);
     expect(result.author).toEqual({ id: USER_ID });
+  });
+
+  it('hides internal notes from the ticket author payload', async () => {
+    prisma.user.findUnique.mockResolvedValue({ role: 'USER' });
+    prisma.ticket.findUnique.mockResolvedValue(
+      ticketRow({
+        messages: [
+          {
+            id: 'public-1',
+            visibility: 'PUBLIC',
+            body: 'Pode enviar outro print?',
+            createdAt: new Date('2026-10-01T00:00:00.000Z'),
+            author: { id: ADMIN_ID, activeCharacter: { name: 'Staff' } },
+          },
+          {
+            id: 'internal-1',
+            visibility: 'INTERNAL',
+            body: 'Nota só da equipe',
+            createdAt: new Date('2026-10-01T00:05:00.000Z'),
+            author: { id: ADMIN_ID, activeCharacter: { name: 'Staff' } },
+          },
+        ],
+      }),
+    );
+
+    const result = await service.findById(USER_ID, TICKET_ID);
+
+    expect(result.messages).toEqual([
+      expect.objectContaining({
+        id: 'public-1',
+        body: 'Pode enviar outro print?',
+      }),
+    ]);
+    expect(JSON.stringify(result)).not.toContain('Nota só da equipe');
   });
 
   it('lets staff move OPEN to IN_REVIEW and then to RESOLVED', async () => {
@@ -429,6 +467,25 @@ describe('TicketsService', () => {
       service.updateStatus(USER_ID, TICKET_ID, { status: 'IN_REVIEW' }),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(prisma.ticket.update).not.toHaveBeenCalled();
+  });
+
+  it('lets staff mark a ticket as waiting on the author', async () => {
+    prisma.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
+    prisma.ticket.findUnique.mockResolvedValue(ticketRow());
+    prisma.ticket.update.mockResolvedValue(
+      ticketRow({ status: 'WAITING_ON_USER' }),
+    );
+
+    const waiting = await service.updateStatus(ADMIN_ID, TICKET_ID, {
+      status: 'WAITING_ON_USER',
+    });
+
+    expect(waiting.status).toBe('WAITING_ON_USER');
+    expect(prisma.ticket.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { status: 'WAITING_ON_USER' },
+      }),
+    );
   });
 
   it('rejects an invalid status transition', async () => {

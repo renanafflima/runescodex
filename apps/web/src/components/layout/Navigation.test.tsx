@@ -20,10 +20,10 @@ describe("Navigation admin entry", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.queryByRole("link", { name: "Solicitações de Hunts" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Administração" })).not.toBeInTheDocument();
   });
 
-  it("shows hunt requests to an administrator", () => {
+  it("shows the administration portal to an administrator", () => {
     auth.user = { id: "admin-1", role: "ADMIN" };
     render(
       <MemoryRouter>
@@ -31,9 +31,6 @@ describe("Navigation admin entry", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("link", { name: "Solicitações de Hunts" })).toHaveAttribute(
-      "href",
-      "/admin/hunt-update-requests",
-    );
+    expect(screen.getByRole("link", { name: "Administração" })).toHaveAttribute("href", "/admin");
   });
 });

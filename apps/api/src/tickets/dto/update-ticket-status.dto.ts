@@ -1,5 +1,6 @@
 import {
   IsEnum,
+  IsISO8601,
   IsOptional,
   IsString,
   MaxLength,
@@ -16,4 +17,9 @@ export class UpdateTicketStatusDto {
   @MinLength(1)
   @MaxLength(5000)
   resolutionNote?: string;
+
+  /** When sent, the update fails if another staff member changed the ticket. */
+  @IsOptional()
+  @IsISO8601()
+  expectedUpdatedAt?: string;
 }

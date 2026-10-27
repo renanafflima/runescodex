@@ -31,7 +31,11 @@ export class AuthController {
   @UseGuards(RateLimitGuard)
   @RateLimit({ ...RATE_LIMITS.google, scope: 'ip' })
   google(@Body() dto: GoogleCredentialDto) {
-    return this.authService.loginWithGoogle(dto.credential);
+    return this.authService.loginWithGoogle(
+      dto.credential,
+      dto.device,
+      dto.referralCode,
+    );
   }
 
   @Post('google/link')

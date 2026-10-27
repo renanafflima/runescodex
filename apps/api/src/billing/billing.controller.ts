@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   Post,
   Req,
@@ -13,8 +14,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RATE_LIMITS } from '../common/rate-limit.config';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 import { BillingCheckoutService } from './billing-checkout.service';
+import { BillingService } from './billing.service';
+import { RedeemVoucherDto } from './dto/redeem-voucher.dto';
 import { RevenueCatBillingService } from './revenuecat-billing.service';
 import { StartCheckoutDto } from './dto/start-checkout.dto';
+import { VoucherService } from './voucher.service';
 
 function readDataId(request: Request) {
   const query = request.query as Record<string, unknown>;
@@ -40,7 +44,22 @@ export class BillingController {
   constructor(
     private readonly checkout: BillingCheckoutService,
     private readonly revenueCat: RevenueCatBillingService,
+    private readonly billing: BillingService,
+    private readonly vouchers: VoucherService,
   ) {}
+
+  @Get('license')
+  @UseGuards(JwtAuthGuard)
+  license(@CurrentUser() user: AuthUser) {
+    return this.billing.getPremium(user.userId);
+  }
+
+  @Post('vouchers/redeem')
+  @UseGuards(JwtAuthGuard, RateLimitGuard)
+  @RateLimit({ ...RATE_LIMITS.voucherRedeem, scope: 'user' })
+  redeem(@CurrentUser() user: AuthUser, @Body() dto: RedeemVoucherDto) {
+    return this.vouchers.redeem(user.userId, dto.code);
+  }
 
   @Post('checkout')
   @UseGuards(JwtAuthGuard, RateLimitGuard)

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run typecheck && vite build",
+    "build:render": "npm run build && node scripts/prepare-render-publish.mjs",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "preview": "vite preview",

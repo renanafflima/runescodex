@@ -48,6 +48,10 @@ describe('HuntUpdateRequestsAdminService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    huntVocation: { updateMany: jest.fn() },
+    hunt: { update: jest.fn() },
+    ticket: { findUnique: jest.fn() },
+    $transaction: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -122,7 +126,7 @@ describe('HuntUpdateRequestsAdminService', () => {
       row(HuntUpdateRequestStatus.IN_REVIEW),
     );
 
-    await service.update('request-1', {
+    await service.update('admin-1', 'request-1', {
       status: HuntUpdateRequestStatus.IN_REVIEW,
     });
 
@@ -152,7 +156,7 @@ describe('HuntUpdateRequestsAdminService', () => {
           }),
       );
 
-      const result = await service.update('request-1', {
+      const result = await service.update('admin-1', 'request-1', {
         status,
         adminResponse: 'XP atualizado.',
       });
@@ -164,12 +168,72 @@ describe('HuntUpdateRequestsAdminService', () => {
     },
   );
 
+  it('applies a structured XP proposal once when the request is resolved', async () => {
+    prisma.huntUpdateRequest.findUnique
+      .mockResolvedValueOnce({
+        ...row(HuntUpdateRequestStatus.IN_REVIEW),
+        huntId: 'hunt-1',
+        proposedValue: '1800000',
+        vocation: 'EK',
+        appliedAt: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'request-1',
+        huntId: 'hunt-1',
+        type: HuntUpdateRequestType.XP,
+        proposedValue: '1800000',
+        vocation: 'EK',
+        appliedAt: null,
+        status: HuntUpdateRequestStatus.IN_REVIEW,
+      });
+    prisma.$transaction.mockImplementation(
+      async (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
+    prisma.huntVocation.updateMany.mockResolvedValue({ count: 1 });
+    prisma.huntUpdateRequest.update.mockResolvedValue({
+      ...row(HuntUpdateRequestStatus.RESOLVED),
+      currentValue: '1500000',
+      proposedValue: '1800000',
+      vocation: 'EK',
+      appliedAt: now,
+    });
+
+    const result = await service.update('admin-1', 'request-1', {
+      status: HuntUpdateRequestStatus.RESOLVED,
+      adminResponse: 'XP atualizado.',
+    });
+
+    expect(result.appliedAt).toEqual(now);
+    expect(prisma.huntVocation.updateMany).toHaveBeenCalledWith({
+      where: { huntId: 'hunt-1', vocation: 'EK' },
+      data: { xpPerHour: 1_800_000 },
+    });
+    expect(prisma.huntUpdateRequest.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not write the hunt when a free-text request is resolved', async () => {
+    prisma.huntUpdateRequest.findUnique.mockResolvedValue(
+      row(HuntUpdateRequestStatus.IN_REVIEW),
+    );
+    prisma.huntUpdateRequest.update.mockResolvedValue(
+      row(HuntUpdateRequestStatus.RESOLVED),
+    );
+
+    await service.update('admin-1', 'request-1', {
+      status: HuntUpdateRequestStatus.RESOLVED,
+      adminResponse: 'Vamos revisar o texto.',
+    });
+
+    expect(prisma.huntVocation.updateMany).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('rejects an incoherent transition and a closed request', async () => {
     prisma.huntUpdateRequest.findUnique.mockResolvedValue(
       row(HuntUpdateRequestStatus.OPEN),
     );
     await expect(
-      service.update('request-1', {
+      service.update('admin-1', 'request-1', {
         status: HuntUpdateRequestStatus.RESOLVED,
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -178,7 +242,7 @@ describe('HuntUpdateRequestsAdminService', () => {
       row(HuntUpdateRequestStatus.RESOLVED),
     );
     await expect(
-      service.update('request-1', {
+      service.update('admin-1', 'request-1', {
         adminResponse: 'Nova resposta',
       }),
     ).rejects.toBeInstanceOf(BadRequestException);

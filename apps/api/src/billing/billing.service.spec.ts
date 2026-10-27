@@ -515,4 +515,122 @@ describe('BillingService', () => {
     expect(inactive.access).toBe(false);
     expect(inactive.paymentStatus).toBe('NONE');
   });
+
+  it('does not reactivate a refunded license when a later approval arrives', async () => {
+    const order = await service.createOrder(USER_ID, 'BR');
+    await service.applyProviderEvent({
+      provider: 'test',
+      providerEventId: 'evt-paid',
+      providerPaymentId: 'pay-1',
+      orderId: order.id,
+      type: 'PAYMENT_PAID',
+    });
+    await service.applyProviderEvent({
+      provider: 'test',
+      providerEventId: 'evt-refund',
+      providerPaymentId: 'pay-1',
+      orderId: order.id,
+      type: 'PAYMENT_REFUNDED',
+    });
+
+    await expect(
+      service.applyProviderEvent({
+        provider: 'test',
+        providerEventId: 'evt-paid-late',
+        providerPaymentId: 'pay-1',
+        orderId: order.id,
+        type: 'PAYMENT_PAID',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(db.state.licenses).toEqual([
+      expect.objectContaining({
+        status: 'REVOKED',
+        activeUserProductKey: null,
+      }),
+    ]);
+  });
+
+  it('keeps an approved license when an older pending event arrives later', async () => {
+    const order = await service.createOrder(USER_ID, 'BR');
+    await service.applyProviderEvent({
+      provider: 'test',
+      providerEventId: 'evt-paid',
+      providerPaymentId: 'pay-1',
+      orderId: order.id,
+      type: 'PAYMENT_PAID',
+    });
+
+    const late = await service.applyProviderEvent({
+      provider: 'test',
+      providerEventId: 'evt-pending-late',
+      providerPaymentId: 'pay-1',
+      orderId: order.id,
+      type: 'PAYMENT_PENDING',
+    });
+
+    expect(late).toMatchObject({
+      orderStatus: 'PAID',
+      licenseStatus: 'ACTIVE',
+    });
+    expect(db.state.payments[0]).toMatchObject({ status: 'PAID' });
+    expect(db.state.licenses).toHaveLength(1);
+  });
+
+  it('does not treat an expired license as access', async () => {
+    db.state.licenses.push({
+      id: 'license-expired',
+      userId: USER_ID,
+      productId: PRODUCT_ID,
+      status: 'ACTIVE',
+      expiresAt: new Date('2020-01-01T00:00:00.000Z'),
+      term: 'FIXED',
+      source: 'VOUCHER',
+      grantedAt: new Date('2019-01-01T00:00:00.000Z'),
+      activeUserProductKey: `${USER_ID}:${PRODUCT_ID}`,
+    });
+
+    await expect(service.getPremium(USER_ID)).resolves.toMatchObject({
+      access: false,
+      licenseStatus: 'EXPIRED',
+      channel: null,
+    });
+  });
+
+  it('denies Premium when the billing schema is missing and keeps other database errors', async () => {
+    const missingTable = Object.assign(new Error('table does not exist'), {
+      code: 'P2021',
+    });
+    const prisma = {
+      billingProduct: {
+        findUnique: jest.fn().mockRejectedValue(missingTable),
+      },
+      billingLicense: { findFirst: jest.fn() },
+      billingStoreEntitlement: { findFirst: jest.fn() },
+      billingPayment: { findFirst: jest.fn() },
+    };
+    const moduleRef = await Test.createTestingModule({
+      providers: [BillingService, { provide: PrismaService, useValue: prisma }],
+    }).compile();
+    const isolated = moduleRef.get(BillingService);
+
+    await expect(isolated.getPremium(USER_ID)).resolves.toEqual({
+      productCode: PREMIUM_PRODUCT_CODE,
+      access: false,
+      licenseStatus: null,
+      paymentStatus: 'NONE',
+      term: null,
+      source: null,
+      expiresAt: null,
+      activatedAt: null,
+      channel: null,
+    });
+    expect(prisma.billingLicense.findFirst).not.toHaveBeenCalled();
+
+    prisma.billingProduct.findUnique.mockRejectedValue(
+      new Error('connection lost'),
+    );
+    await expect(isolated.getPremium(USER_ID)).rejects.toThrow(
+      'connection lost',
+    );
+  });
 });

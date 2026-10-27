@@ -1,6 +1,8 @@
 const MAX_URL_LENGTH = 2000;
 
-export function publicHttpsUrl(value: string | null | undefined): string | null {
+export function publicHttpsUrl(
+  value: string | null | undefined,
+): string | null {
   if (typeof value !== 'string') {
     return null;
   }

@@ -17,7 +17,9 @@ import {
 } from "../domain/hunts";
 import { HuntComments } from "../components/hunts/HuntComments";
 import { HuntUpdateRequests } from "../components/hunts/HuntUpdateRequests";
+import { ReportProblem } from "../components/tickets/ReportProblem";
 import { describeApiError } from "../services/api/errors";
+import { recordContentView } from "../services/api/admin-portal";
 import { getHuntBySlug } from "../services/api/hunts";
 
 export function HuntDetailPage() {
@@ -61,6 +63,12 @@ export function HuntDetailPage() {
     () => (rawHunt ? mapHuntDetail(rawHunt, preferred) : null),
     [preferred, rawHunt],
   );
+
+  useEffect(() => {
+    if (hunt?.id && /^[0-9a-f-]{36}$/i.test(hunt.id)) {
+      recordContentView("HUNT", hunt.id);
+    }
+  }, [hunt?.id]);
 
   const summary = hunt ? huntSummary(hunt) : null;
   const spawn = useMemo(() => hunt?.spawn || [], [hunt]);
@@ -340,6 +348,7 @@ export function HuntDetailPage() {
         ) : null}
 
         <HuntUpdateRequests slug={hunt.slug} />
+        <ReportProblem huntId={hunt.id} origin="HUNT" />
         <HuntComments slug={hunt.slug} />
       </div>
 

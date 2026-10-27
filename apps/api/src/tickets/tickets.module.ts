@@ -23,5 +23,6 @@ import {
       useFactory: () => ticketEvidenceMaxBytes(process.env),
     },
   ],
+  exports: [TicketsService],
 })
 export class TicketsModule {}

@@ -63,6 +63,8 @@ export function HuntUpdateRequests({ slug }: HuntUpdateRequestsProps) {
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<HuntUpdateRequestType>("XP");
+  const [vocation, setVocation] = useState("EK");
+  const [proposedValue, setProposedValue] = useState("");
   const [description, setDescription] = useState("");
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState("");
@@ -100,8 +102,15 @@ export function HuntUpdateRequests({ slug }: HuntUpdateRequestsProps) {
     setPending(true);
     setNotice("");
     try {
-      await createHuntUpdateRequest(slug, type, text);
+      const structured = type === "XP" || type === "PROFIT" || type === "LEVEL" || type === "LOCATION";
+      await createHuntUpdateRequest(slug, {
+        type,
+        description: text,
+        ...(structured && vocation && type !== "LOCATION" ? { vocation } : {}),
+        ...(structured && proposedValue.trim() ? { proposedValue: proposedValue.trim() } : {}),
+      });
       setDescription("");
+      setProposedValue("");
       setOpen(false);
       setNotice("Solicitação enviada com sucesso.");
       await load();
@@ -160,6 +169,45 @@ export function HuntUpdateRequests({ slug }: HuntUpdateRequestsProps) {
                 </option>
               ))}
             </select>
+            {type === "XP" || type === "PROFIT" || type === "LEVEL" ? (
+              <>
+                <label htmlFor="hunt-update-vocation">Vocação</label>
+                <select
+                  className="field__control"
+                  id="hunt-update-vocation"
+                  onChange={(event) => setVocation(event.target.value)}
+                  value={vocation}
+                >
+                  <option value="EK">Elite Knight</option>
+                  <option value="RP">Royal Paladin</option>
+                  <option value="ED">Elder Druid</option>
+                  <option value="MS">Master Sorcerer</option>
+                  <option value="EM">Exalted Monk</option>
+                </select>
+                <label htmlFor="hunt-update-proposed">Valor proposto</label>
+                <input
+                  className="field__control"
+                  id="hunt-update-proposed"
+                  inputMode="numeric"
+                  onChange={(event) => setProposedValue(event.target.value)}
+                  placeholder="Número inteiro. Deixe vazio para enviar só o texto."
+                  value={proposedValue}
+                />
+              </>
+            ) : null}
+            {type === "LOCATION" ? (
+              <>
+                <label htmlFor="hunt-update-proposed">Localização proposta</label>
+                <input
+                  className="field__control"
+                  id="hunt-update-proposed"
+                  maxLength={120}
+                  onChange={(event) => setProposedValue(event.target.value)}
+                  placeholder="Opcional. Sem este campo, a solicitação continua em texto."
+                  value={proposedValue}
+                />
+              </>
+            ) : null}
             <label htmlFor="hunt-update-description">Descreva o que precisa ser atualizado</label>
             <textarea
               className="field__control hunt-update__input"

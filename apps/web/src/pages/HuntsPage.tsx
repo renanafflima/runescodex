@@ -30,6 +30,7 @@ import {
 } from "../domain/hunts";
 import { normalizeVocation } from "../domain/vocation";
 import { describeApiError } from "../services/api/errors";
+import { recordSearchMiss } from "../services/api/admin-portal";
 import { listFilteredHunts } from "../services/api/hunts";
 import type { HuntListItem } from "../services/api/types";
 
@@ -124,6 +125,14 @@ export function HuntsPage() {
       }),
     [activeCharacter, attackElement, defenseElement, hunts, query, vocation],
   );
+
+  useEffect(() => {
+    const term = query.trim();
+    if (loading || term.length < 2 || filtered.length > 0) return;
+    if (attackElement !== "Any" || defenseElement !== "Any") return;
+    const timer = window.setTimeout(() => recordSearchMiss(term), 700);
+    return () => window.clearTimeout(timer);
+  }, [attackElement, defenseElement, filtered.length, loading, query]);
 
   return (
     <div className="hunts-list">

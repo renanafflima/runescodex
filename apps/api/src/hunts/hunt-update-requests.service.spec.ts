@@ -43,7 +43,8 @@ function row(overrides: Record<string, unknown> = {}) {
 describe('HuntUpdateRequestsService', () => {
   let service: HuntUpdateRequestsService;
   const prisma = {
-    hunt: { findFirst: jest.fn() },
+    hunt: { findFirst: jest.fn(), findUnique: jest.fn() },
+    huntVocation: { findUnique: jest.fn() },
     huntUpdateRequest: {
       count: jest.fn(),
       findMany: jest.fn(),
@@ -81,11 +82,18 @@ describe('HuntUpdateRequestsService', () => {
         type: HuntUpdateRequestType.XP,
         description,
         status: HuntUpdateRequestStatus.OPEN,
+        currentValue: null,
+        proposedValue: null,
+        vocation: null,
       },
       select: {
         id: true,
         type: true,
         description: true,
+        currentValue: true,
+        proposedValue: true,
+        vocation: true,
+        appliedAt: true,
         status: true,
         adminResponse: true,
         createdAt: true,
@@ -93,6 +101,46 @@ describe('HuntUpdateRequestsService', () => {
         resolvedAt: true,
       },
     });
+  });
+
+  it('stores the current hunt value and does not trust a client current value', async () => {
+    prisma.huntUpdateRequest.findFirst.mockResolvedValue(null);
+    prisma.huntVocation.findUnique.mockResolvedValue({
+      xpPerHour: 1_500_000,
+      profitPerHour: 80_000,
+      levelMin: 250,
+    });
+    prisma.huntUpdateRequest.create.mockResolvedValue(row());
+
+    await service.create('cyclops', 'user-a', {
+      type: HuntUpdateRequestType.XP,
+      description,
+      vocation: 'EK',
+      proposedValue: '1800000',
+    });
+
+    expect(prisma.huntUpdateRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          currentValue: '1500000',
+          proposedValue: '1800000',
+          vocation: 'EK',
+        }) as unknown as Record<string, unknown>,
+      }),
+    );
+  });
+
+  it('rejects a structured value for a field that cannot be applied automatically', async () => {
+    prisma.huntUpdateRequest.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.create('cyclops', 'user-a', {
+        type: HuntUpdateRequestType.LOOT,
+        description,
+        proposedValue: 'gold',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.huntUpdateRequest.create).not.toHaveBeenCalled();
   });
 
   it('rejects a missing hunt', async () => {

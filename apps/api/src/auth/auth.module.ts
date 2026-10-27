@@ -1,14 +1,18 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { ReferralsModule } from '../referrals/referrals.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { assertJwtSecret, resolveAppEnv } from '../common/database-target';
 import { AuthController } from './auth.controller';
+import { AuthDevicesController } from './auth-devices.controller';
 import { AuthService } from './auth.service';
+import { DeviceService } from './device.service';
 import { GoogleIdentityService } from './google-identity';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
+    forwardRef(() => ReferralsModule),
     PassportModule,
     JwtModule.registerAsync({
       useFactory: () => {
@@ -27,8 +31,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       },
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, GoogleIdentityService, JwtStrategy],
+  controllers: [AuthController, AuthDevicesController],
+  providers: [AuthService, DeviceService, GoogleIdentityService, JwtStrategy],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

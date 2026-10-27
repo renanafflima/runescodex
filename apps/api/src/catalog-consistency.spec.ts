@@ -74,6 +74,8 @@ describe('catalog schema consistency', () => {
     expect(killPerHourMigration).toContain(
       'ALTER TABLE "HuntCreature" ADD COLUMN "killPerHour" INTEGER',
     );
-    expect(killPerHourMigration).not.toMatch(/\b(DROP|DELETE|TRUNCATE|UPDATE)\b/i);
+    expect(killPerHourMigration).not.toMatch(
+      /\b(DROP|DELETE|TRUNCATE|UPDATE)\b/i,
+    );
   });
 });

@@ -28,6 +28,17 @@ export function messageFromBody(data: unknown) {
   return "";
 }
 
+export function apiErrorCode(error: unknown) {
+  if (!(error instanceof ApiError) || !error.body || typeof error.body !== "object" || !("code" in error.body)) {
+    return "";
+  }
+  const code = error.body.code;
+  return typeof code === "string" ? code : "";
+}
+
+export const DEVICE_LIMIT_MESSAGE =
+  "Sua conta RuneCodex já está vinculada a dois equipamentos. Para entrar neste dispositivo, remova um equipamento existente em Meus equipamentos.";
+
 export function describeApiError(error: unknown) {
   if (error instanceof ApiError) {
     if (error.code === "NETWORK") {

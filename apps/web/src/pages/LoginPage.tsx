@@ -7,7 +7,7 @@ import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/FormControls";
 import { Toast } from "../components/ui/Toast";
-import { describeApiError } from "../services/api/errors";
+import { apiErrorCode, describeApiError, DEVICE_LIMIT_MESSAGE } from "../services/api/errors";
 
 type AuthMode = "login" | "register";
 
@@ -26,6 +26,8 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [limited, setLimited] = useState(false);
+  const [explainLimit, setExplainLimit] = useState(false);
   const [fieldError, setFieldError] = useState(false);
   const [notice, setNotice] = useState<{
     message: string;
@@ -62,6 +64,10 @@ export function LoginPage() {
       if (mode === "register") await register(email.trim(), password);
       else await login(email.trim(), password);
     } catch (error) {
+      if (apiErrorCode(error) === "DEVICE_LIMIT") {
+        setLimited(true);
+        return;
+      }
       setNotice({
         title: mode === "register" ? "Não foi possível criar a conta" : "Não foi possível entrar",
         message: describeApiError(error),
@@ -91,6 +97,37 @@ export function LoginPage() {
         </section>
 
         <section className="auth-panel" aria-labelledby="login-title">
+          {limited ? (
+            <div className="device-limit">
+              <Badge tone="gold">Equipamentos</Badge>
+              <h2 id="login-title">Limite de equipamentos atingido</h2>
+              <p>{DEVICE_LIMIT_MESSAGE}</p>
+              {explainLimit ? (
+                <p>
+                  Cada conta fica vinculada a no máximo dois equipamentos. Entrar outra vez no mesmo navegador não ocupa
+                  uma vaga nova. Limpar os dados do navegador ou trocar de navegador cria um equipamento novo. Para
+                  liberar uma vaga, entre em um equipamento já autorizado e remova o outro em Meus equipamentos. Este
+                  aparelho não pode ver nem remover os vínculos sem uma sessão autorizada.
+                </p>
+              ) : null}
+              <div className="device-limit__actions">
+                <Button
+                  onClick={() => {
+                    setLimited(false);
+                    setExplainLimit(false);
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  Voltar ao login
+                </Button>
+                <Button onClick={() => setExplainLimit((current) => !current)} type="button">
+                  Entender como funciona
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
           <div className="auth-panel__heading">
             <Badge tone="gold">Acesso RuneCodex</Badge>
             <h2 id="login-title">
@@ -102,13 +139,17 @@ export function LoginPage() {
           <GoogleSignInButton
             disabled={submitting}
             onCredential={loginWithGoogle}
-            onError={(message) =>
+            onError={(message) => {
+              if (message === DEVICE_LIMIT_MESSAGE) {
+                setLimited(true);
+                return;
+              }
               setNotice({
                 title: "Não foi possível entrar com o Google",
                 message,
                 tone: "error",
-              })
-            }
+              });
+            }}
           />
 
           <div className="auth-divider">
@@ -167,6 +208,8 @@ export function LoginPage() {
               {mode === "register" ? "Entrar" : "Criar conta"}
             </button>
           </p>
+            </>
+          )}
         </section>
       </PageContainer>
 

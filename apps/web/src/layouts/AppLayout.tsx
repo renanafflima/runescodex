@@ -1,10 +1,15 @@
 import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import { captureReferralCode } from "../auth/referral-code";
 import { Header } from "../components/layout/Header";
 import { PageContainer } from "../components/layout/PageContainer";
 
 export function AppLayout() {
   const location = useLocation();
+
+  useEffect(() => {
+    captureReferralCode(location.search);
+  }, [location.search]);
 
   useEffect(() => {
     if (!location.hash) {

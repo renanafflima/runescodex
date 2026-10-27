@@ -18,16 +18,20 @@ const manifest = JSON.parse(
 );
 const indexHtml = await readFile(resolve(distDirectory, "index.html"), "utf8");
 
-if (manifest.start_url !== "/runes/" || manifest.scope !== "/runes/") {
-  throw new Error("Manifest sem start_url/scope corretos para /runes/.");
+if (manifest.start_url !== "/runescodex/" || manifest.scope !== "/runescodex/") {
+  throw new Error("Manifest sem start_url/scope corretos para /runescodex/.");
 }
 
 if (manifest.display !== "standalone") {
   throw new Error("Manifest não está configurado como standalone.");
 }
 
-if (!indexHtml.includes("/runes/")) {
-  throw new Error("Build não contém referências ao base path /runes/.");
+if (!indexHtml.includes("/runescodex/")) {
+  throw new Error("Build não contém referências ao base path /runescodex/.");
 }
 
-console.log("PWA válida: manifest, service worker e base path /runes/ encontrados.");
+if (indexHtml.includes("/runes/")) {
+  throw new Error("Build ainda contém o caminho-base antigo /runes/.");
+}
+
+console.log("PWA válida: manifest, service worker e base path /runescodex/ encontrados.");

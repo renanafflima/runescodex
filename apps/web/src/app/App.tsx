@@ -4,7 +4,7 @@ import { AppRoutes } from "../routes/AppRoutes";
 
 export function App() {
   return (
-    <BrowserRouter basename="/runes">
+    <BrowserRouter basename="/runescodex">
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>
