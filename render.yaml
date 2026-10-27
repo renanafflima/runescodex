@@ -56,7 +56,7 @@ services:
     runtime: static
     rootDir: apps/web
     buildCommand: npm ci && npm run build:render
-    staticPublishPath: ./apps/web/render-publish
+    staticPublishPath: ./render-publish
     envVars:
       - key: NODE_VERSION
         value: "22"
