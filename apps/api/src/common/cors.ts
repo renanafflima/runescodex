@@ -1,7 +1,10 @@
 const DEFAULT_WEB_ORIGINS = [
   'https://tritec.app.br',
+  'https://www.tritec.app.br',
   'https://tritech.app',
+  'https://www.tritech.app',
   'https://tritech.app.br',
+  'https://www.tritech.app.br',
   'https://runescodex-web.onrender.com',
   'http://127.0.0.1:5173',
   'http://localhost:5173',

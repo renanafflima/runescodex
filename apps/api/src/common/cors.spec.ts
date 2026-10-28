@@ -51,8 +51,11 @@ describe('CORS for Web/PWA', () => {
   it('keeps the required web origins and merges CORS_ORIGINS', () => {
     expect(resolveCorsOrigins({})).toEqual([
       'https://tritec.app.br',
+      'https://www.tritec.app.br',
       'https://tritech.app',
+      'https://www.tritech.app',
       'https://tritech.app.br',
+      'https://www.tritech.app.br',
       'https://runescodex-web.onrender.com',
       'http://127.0.0.1:5173',
       'http://localhost:5173',
@@ -64,8 +67,11 @@ describe('CORS for Web/PWA', () => {
       }),
     ).toEqual([
       'https://tritec.app.br',
+      'https://www.tritec.app.br',
       'https://tritech.app',
+      'https://www.tritech.app',
       'https://tritech.app.br',
+      'https://www.tritech.app.br',
       'https://runescodex-web.onrender.com',
       'http://127.0.0.1:5173',
       'http://localhost:5173',
@@ -77,8 +83,11 @@ describe('CORS for Web/PWA', () => {
 
   it.each([
     'https://tritec.app.br',
+    'https://www.tritec.app.br',
     'https://tritech.app',
+    'https://www.tritech.app',
     'https://tritech.app.br',
+    'https://www.tritech.app.br',
     'https://runescodex-web.onrender.com',
     'http://127.0.0.1:5173',
     'http://localhost:5173',
@@ -105,6 +114,7 @@ describe('CORS for Web/PWA', () => {
 
   it.each([
     'https://tritech.app.br',
+    'https://www.tritech.app.br',
     'https://runescodex-web.onrender.com',
   ])(
     'answers the device challenge preflight for %s',
