@@ -1,9 +1,11 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   Optional,
   UnauthorizedException,
 } from '@nestjs/common';
+import { loggedErrorSummary } from '../common/redact-error';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { BillingService } from '../billing/billing.service';
@@ -55,6 +57,8 @@ function accessTokenTtlMs() {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -132,6 +136,7 @@ export class AuthService {
     referralCode?: string,
   ) {
     const identity = await this.google.verify(credential);
+    this.logger.log('auth.google.stage=verified');
     const linked = await this.prisma.user.findUnique({
       where: { googleSub: identity.sub },
     });
@@ -141,6 +146,7 @@ export class AuthService {
           'Google account cannot be used for this email',
         );
       }
+      this.logger.log('auth.google.stage=linked_user');
       await this.claimPendingGrants(linked.id, linked.email);
       return this.sessionFor(linked, device);
     }
@@ -167,6 +173,7 @@ export class AuthService {
           googleSub: true,
         },
       });
+      this.logger.log('auth.google.stage=created_user');
       await this.attachReferral(user.id, referralCode);
       await this.claimPendingGrants(user.id, user.email);
       return {
@@ -339,7 +346,13 @@ export class AuthService {
 
   private async claimPendingGrants(userId: string, email: string) {
     if (!this.pendingGrants) return;
-    await this.pendingGrants.claimForAuthenticatedUser(userId, email);
+    try {
+      await this.pendingGrants.claimForAuthenticatedUser(userId, email);
+    } catch (error) {
+      this.logger.warn(
+        `auth.pending_grant.skipped ${loggedErrorSummary(error)}`,
+      );
+    }
   }
 
   private normalizeEmail(email: string) {

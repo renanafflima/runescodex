@@ -1,4 +1,4 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { OAuth2Client, type TokenPayload } from 'google-auth-library';
 import { GoogleIdentityService, readGoogleIdentity } from './google-identity';
 
@@ -62,6 +62,16 @@ describe('GoogleIdentityService', () => {
 
   afterEach(() => {
     delete process.env.GOOGLE_CLIENT_ID;
+  });
+
+  it('fails closed when Google sign-in is not configured', async () => {
+    delete process.env.GOOGLE_CLIENT_ID;
+    const service = new GoogleIdentityService();
+
+    await expect(service.verify('signed-token')).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
+    );
+    expect(verifyIdToken).not.toHaveBeenCalled();
   });
 
   it('rejects a token the Google library will not verify', async () => {

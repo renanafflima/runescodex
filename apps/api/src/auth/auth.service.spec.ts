@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { BillingService, inactivePremium } from '../billing/billing.service';
+import { PendingLicenseGrantService } from '../billing/pending-license-grant.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { DeviceService } from './device.service';
@@ -52,10 +53,14 @@ describe('AuthService', () => {
   const google = {
     verify: jest.fn(),
   };
+  const pendingGrants = {
+    claimForAuthenticatedUser: jest.fn().mockResolvedValue({ claimed: 0 }),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
     billing.getPremium.mockResolvedValue(inactivePremium());
+    pendingGrants.claimForAuthenticatedUser.mockResolvedValue({ claimed: 0 });
     const moduleRef = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -63,6 +68,7 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: jwtService },
         { provide: BillingService, useValue: billing },
         { provide: GoogleIdentityService, useValue: google },
+        { provide: PendingLicenseGrantService, useValue: pendingGrants },
         {
           provide: DeviceService,
           useValue: { claim: jest.fn().mockResolvedValue('device-1') },
@@ -326,5 +332,57 @@ describe('AuthService', () => {
     expect(jwtService.signAsync).toHaveBeenCalledWith(
       expect.objectContaining({ sub: 'user-1', sid: 'session-1' }),
     );
+  });
+
+  it('keeps Google login working when pending grants are unavailable', async () => {
+    google.verify.mockResolvedValue({
+      sub: 'google-subject',
+      email: 'user@email.com',
+    });
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'user-1',
+      email: 'user@email.com',
+      role: 'ADMIN',
+      googleSub: 'google-subject',
+    });
+    billing.getPremium.mockResolvedValue({
+      productCode: 'runescodex_premium',
+      access: true,
+      channel: 'staff',
+    });
+    pendingGrants.claimForAuthenticatedUser.mockRejectedValue(
+      Object.assign(new Error('table does not exist'), { code: 'P2021' }),
+    );
+
+    const result = await service.loginWithGoogle('valid-token', device);
+
+    expect(result.accessToken).toBe('signed-token');
+    expect(result.user.role).toBe('ADMIN');
+    expect(result.user.premium).toMatchObject({
+      access: true,
+      channel: 'staff',
+    });
+  });
+
+  it('does not turn a pending-grant failure into a password login 500', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'user-1',
+      email: 'user@email.com',
+      passwordHash: 'hashed-password',
+      role: 'USER',
+    });
+    (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+    pendingGrants.claimForAuthenticatedUser.mockRejectedValue(
+      new Error('database timeout'),
+    );
+
+    const result = await service.login({
+      email: 'user@email.com',
+      password: 'password1',
+      device,
+    });
+
+    expect(result.accessToken).toBe('signed-token');
+    expect(result.user.role).toBe('USER');
   });
 });

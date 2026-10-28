@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { AdminAuditService } from '../audit/admin-audit.service';
@@ -43,6 +44,19 @@ function requireReason(reason: string) {
   return text;
 }
 
+function prismaCode(error: unknown) {
+  if (typeof error !== 'object' || error === null || !('code' in error)) {
+    return undefined;
+  }
+  const code = (error as { code?: unknown }).code;
+  return typeof code === 'string' ? code : undefined;
+}
+
+function isMissingPendingGrantSchema(error: unknown) {
+  const code = prismaCode(error);
+  return code === 'P2021' || code === 'P2022';
+}
+
 function sourceForGrant(category: GrantCategory) {
   if (category === 'PARTNERSHIP') return 'PARTNERSHIP' as const;
   if (category === 'COMPENSATION') return 'COMPENSATION' as const;
@@ -51,6 +65,8 @@ function sourceForGrant(category: GrantCategory) {
 
 @Injectable()
 export class PendingLicenseGrantService {
+  private readonly logger = new Logger(PendingLicenseGrantService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
@@ -209,28 +225,38 @@ export class PendingLicenseGrantService {
       return { claimed: 0 };
     }
     const now = new Date();
-    await this.prisma.billingPendingLicenseGrant.updateMany({
-      where: {
-        emailNormalized: normalized,
-        status: 'PENDING',
-        offerExpiresAt: { lte: now },
-      },
-      data: { status: 'EXPIRED' },
-    });
-    const pending = await this.prisma.billingPendingLicenseGrant.findMany({
-      where: {
-        emailNormalized: normalized,
-        status: 'PENDING',
-        OR: [{ offerExpiresAt: null }, { offerExpiresAt: { gt: now } }],
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-    let claimed = 0;
-    for (const offer of pending) {
-      const ok = await this.claimOne(userId, offer);
-      if (ok) claimed += 1;
+    try {
+      await this.prisma.billingPendingLicenseGrant.updateMany({
+        where: {
+          emailNormalized: normalized,
+          status: 'PENDING',
+          offerExpiresAt: { lte: now },
+        },
+        data: { status: 'EXPIRED' },
+      });
+      const pending = await this.prisma.billingPendingLicenseGrant.findMany({
+        where: {
+          emailNormalized: normalized,
+          status: 'PENDING',
+          OR: [{ offerExpiresAt: null }, { offerExpiresAt: { gt: now } }],
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+      let claimed = 0;
+      for (const offer of pending) {
+        const ok = await this.claimOne(userId, offer);
+        if (ok) claimed += 1;
+      }
+      return { claimed };
+    } catch (error) {
+      if (isMissingPendingGrantSchema(error)) {
+        this.logger.warn(
+          'auth.pending_grant.schema_missing skipped claim until migration is applied',
+        );
+        return { claimed: 0 };
+      }
+      throw error;
     }
-    return { claimed };
   }
 
   private async claimOne(

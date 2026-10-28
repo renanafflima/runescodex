@@ -201,4 +201,16 @@ describe('PendingLicenseGrantService', () => {
       true,
     );
   });
+
+  it('skips claiming when the pending-grant table is missing', async () => {
+    users = [{ id: 'user-2', email: 'friend@example.com' }];
+    prisma.billingPendingLicenseGrant.updateMany = async () => {
+      throw Object.assign(new Error('table does not exist'), { code: 'P2021' });
+    };
+
+    await expect(
+      service.claimForAuthenticatedUser('user-2', 'friend@example.com'),
+    ).resolves.toEqual({ claimed: 0 });
+    expect(licenses).toHaveLength(0);
+  });
 });
