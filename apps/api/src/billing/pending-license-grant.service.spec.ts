@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, ServiceUnavailableException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -212,5 +212,15 @@ describe('PendingLicenseGrantService', () => {
       service.claimForAuthenticatedUser('user-2', 'friend@example.com'),
     ).resolves.toEqual({ claimed: 0 });
     expect(licenses).toHaveLength(0);
+  });
+
+  it('does not pretend pending grants exist when the table is missing', async () => {
+    prisma.billingPendingLicenseGrant.count = async () => {
+      throw Object.assign(new Error('table does not exist'), { code: 'P2021' });
+    };
+
+    await expect(service.list({})).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
+    );
   });
 });

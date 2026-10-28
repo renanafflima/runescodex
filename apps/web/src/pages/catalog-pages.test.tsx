@@ -91,7 +91,7 @@ describe("catalog pages distinguish empty data from API errors", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Internal server error");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Erro temporário no servidor");
     expect(screen.queryByText("Nenhuma criatura encontrada")).not.toBeInTheDocument();
   });
 
@@ -105,7 +105,7 @@ describe("catalog pages distinguish empty data from API errors", () => {
     );
 
     expect(await screen.findByText("Nenhuma criatura encontrada")).toBeInTheDocument();
-    expect(screen.getByText(/não retornou criaturas/i)).toBeInTheDocument();
+    expect(screen.getByText(/Não há criaturas para este filtro/i)).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
@@ -120,7 +120,7 @@ describe("catalog pages distinguish empty data from API errors", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Internal server error");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Erro temporário no servidor");
     expect(screen.queryByText("Nenhuma hunt encontrada")).not.toBeInTheDocument();
   });
 

@@ -90,7 +90,6 @@ export async function listForumThreads(query: ForumListQuery = {}) {
       page: query.page,
       limit: query.limit,
     }),
-    { auth: false },
   );
   const page = readPage<ForumThread>(payload);
   return {
@@ -105,7 +104,6 @@ export async function getForumThread(id: string, query: { page?: number; limit?:
       page: query.page,
       limit: query.limit,
     }),
-    { auth: false },
   );
   return asThread(payload);
 }

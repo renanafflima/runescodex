@@ -45,6 +45,15 @@ export function describeApiError(error: unknown) {
       return "Não foi possível conectar à API. Verifique sua conexão e tente novamente.";
     }
     if (error.status === 401) return "Sessão expirada ou credenciais inválidas.";
+    if (error.status === 403) {
+      if (/premium/i.test(error.message)) {
+        return "Este conteúdo exige acesso Premium.";
+      }
+      return "Você não tem permissão para esta ação.";
+    }
+    if (error.status === 500 || error.status === 503) {
+      return "Erro temporário no servidor. Tente novamente.";
+    }
     if (error.status === 404) return "Conteúdo não encontrado.";
     if (error.status === 409) return "Este email já está em uso.";
     if (error.status === 400) return error.message || "Dados inválidos.";

@@ -10,6 +10,8 @@ describe("api errors", () => {
   it("describes network and unauthorized errors without exposing internals", () => {
     expect(describeApiError(new ApiError("NETWORK", 0, "NETWORK", null))).toMatch(/conectar/i);
     expect(describeApiError(new ApiError("UNAUTHORIZED", 401, "Unauthorized", null))).toMatch(/sessão|credenciais/i);
+    expect(describeApiError(new ApiError("HTTP_ERROR", 403, "Premium required", null))).toMatch(/Premium/);
+    expect(describeApiError(new ApiError("HTTP_ERROR", 500, "Internal server error", null))).toMatch(/temporário/);
     expect(describeApiError(new ApiError("HTTP_ERROR", 404, "Hunt not found", null))).toMatch(/não encontrado/i);
     expect(describeApiError(new Error("boom"))).toMatch(/não foi possível/i);
   });

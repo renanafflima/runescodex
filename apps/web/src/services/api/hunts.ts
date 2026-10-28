@@ -24,7 +24,6 @@ export function listHunts(query: HuntListQuery = {}) {
       page: query.page,
       limit: query.limit,
     }),
-    { auth: false },
   );
 }
 
@@ -35,5 +34,5 @@ export function listFilteredHunts(query: HuntListQuery = {}) {
 }
 
 export function getHuntBySlug(slug: string) {
-  return apiRequest(`/hunts/${encodeURIComponent(slug)}`, { auth: false });
+  return apiRequest(`/hunts/${encodeURIComponent(slug)}`);
 }

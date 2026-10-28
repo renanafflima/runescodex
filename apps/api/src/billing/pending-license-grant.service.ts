@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { pageResult, resolvePage } from '../common/pagination';
@@ -55,6 +56,12 @@ function prismaCode(error: unknown) {
 function isMissingPendingGrantSchema(error: unknown) {
   const code = prismaCode(error);
   return code === 'P2021' || code === 'P2022';
+}
+
+function pendingGrantSchemaUnavailable() {
+  throw new ServiceUnavailableException(
+    'Concessões pendentes exigem a migration do banco',
+  );
 }
 
 function sourceForGrant(category: GrantCategory) {
@@ -148,6 +155,9 @@ export class PendingLicenseGrantService {
           'Já existe uma concessão pendente para este e-mail',
         );
       }
+      if (isMissingPendingGrantSchema(error)) {
+        pendingGrantSchemaUnavailable();
+      }
       throw error;
     }
   }
@@ -166,33 +176,48 @@ export class PendingLicenseGrantService {
         ? query.status
         : undefined;
     const where = status ? { status } : {};
-    const [total, rows] = await Promise.all([
-      this.prisma.billingPendingLicenseGrant.count({ where }),
-      this.prisma.billingPendingLicenseGrant.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-    ]);
-    return pageResult(
-      rows.map((row) => this.present(row)),
-      total,
-      page,
-      limit,
-    );
+    try {
+      const [total, rows] = await Promise.all([
+        this.prisma.billingPendingLicenseGrant.count({ where }),
+        this.prisma.billingPendingLicenseGrant.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+      ]);
+      return pageResult(
+        rows.map((row) => this.present(row)),
+        total,
+        page,
+        limit,
+      );
+    } catch (error) {
+      if (isMissingPendingGrantSchema(error)) {
+        pendingGrantSchemaUnavailable();
+      }
+      throw error;
+    }
   }
 
   async cancel(actorUserId: string, id: string, reason: string) {
     const text = requireReason(reason);
-    const updated = await this.prisma.billingPendingLicenseGrant.updateMany({
-      where: { id, status: 'PENDING' },
-      data: {
-        status: 'CANCELLED',
-        cancelledAt: new Date(),
-        cancelReason: text,
-      },
-    });
+    let updated;
+    try {
+      updated = await this.prisma.billingPendingLicenseGrant.updateMany({
+        where: { id, status: 'PENDING' },
+        data: {
+          status: 'CANCELLED',
+          cancelledAt: new Date(),
+          cancelReason: text,
+        },
+      });
+    } catch (error) {
+      if (isMissingPendingGrantSchema(error)) {
+        pendingGrantSchemaUnavailable();
+      }
+      throw error;
+    }
     if (updated.count !== 1) {
       throw new ConflictException('A oferta pendente não pode ser cancelada');
     }

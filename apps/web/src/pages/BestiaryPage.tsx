@@ -109,7 +109,7 @@ export function BestiaryPage() {
             }
             description={
               entries.length === 0
-                ? "A API não retornou criaturas para este filtro."
+                ? "Não há criaturas para este filtro."
                 : "Nenhuma criatura corresponde à busca."
             }
             title="Nenhuma criatura encontrada"

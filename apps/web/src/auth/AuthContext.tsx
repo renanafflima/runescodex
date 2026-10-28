@@ -142,9 +142,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
         if (!cancelled) setRosterLoaded(true);
-      } catch {
-        clearAccessToken();
-        if (!cancelled) resetLocalSession();
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          clearAccessToken();
+          if (!cancelled) resetLocalSession();
+          return;
+        }
+        if (!cancelled) {
+          setRosterLoaded(true);
+          setStatus("anonymous");
+        }
       }
     }
 
