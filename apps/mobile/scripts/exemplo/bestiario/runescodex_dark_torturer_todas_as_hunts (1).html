@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RuneCodex — Todas as Hunts</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#030911;color:#eef3fb;font-family:Arial,sans-serif}.wrap{max-width:1420px;margin:auto;padding:28px 34px 50px}
+button,select{font:inherit}.back{background:#081522;border:0;color:#dce7f5;border-radius:9px;padding:10px 15px;margin-bottom:14px}
+h1,h2,h3{font-family:Georgia,serif;margin:0}h1{font-size:42px}.hero{margin-top:12px;padding:22px 0;border:0;border-radius:0;background:#081521;display:flex;gap:22px;align-items:center}
+.creature-img{width:116px;height:116px;object-fit:contain;background:transparent;border:0}.hero-main{flex:1}.hero-title h2{font-size:44px;line-height:1.05;font-weight:800;letter-spacing:-.5px}.hero p{color:#9fb0c4;margin:7px 0 15px}.chips{display:flex;gap:9px;flex-wrap:wrap}.chip{padding:8px 11px;border-radius:8px;border:0;background:#081522;color:#d7e4f2;font-size:13px}
+.progress{width:330px;border:0;background:#081522;border-radius:12px;padding:15px}.progress-top{display:flex;justify-content:space-between;font-size:13px;color:#aabbd0}.bar{height:9px;background:#102335;border-radius:99px;margin:9px 0 6px}.fill{width:0;height:100%;background:#8b45ff}.percent{text-align:right;font-size:12px;color:#8fa4ba}
+.tabs{margin-top:18px;border:0;border-radius:14px;background:#081522;display:flex;overflow:hidden}.tab{flex:1;padding:15px;background:transparent;border:0;color:#a9bbce;font-weight:600}.tab.active{background:#24124d;color:#fff;box-shadow:none}
+.section-head{display:flex;justify-content:space-between;align-items:end;gap:20px;margin:28px 0 15px}.subtitle{color:#8297ad;margin-top:6px}.sort{background:#081522;border:0;color:#dce7f5;border-radius:9px;padding:10px 13px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card{background:#081522;border:0;border-radius:16px;padding:13px;display:flex;flex-direction:column;min-height:0}
+.number{display:inline-flex;width:32px;height:32px;align-items:center;justify-content:center;border-radius:50%;background:#803dff;font-weight:800;margin-bottom:8px}.card h3{font-size:22px}.place{color:#91a5ba;font-size:13px;margin:6px 0 12px}.hunt-info{display:grid;grid-template-columns:1.15fr 1fr;gap:10px;align-items:stretch;margin:10px 0 12px}
+.map{height:112px;border-radius:9px;background:#111b25;border:1px solid #1c3349;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;color:#7f94aa;font-size:38px}
+.map span{font-size:10px;letter-spacing:.08em;color:#63788e}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:8px 0 10px}.stat{background:#081522;border:0;border-radius:0;padding:8px 8px 8px 0}.stat small{display:block;color:#8096ad;font-size:11px;margin-bottom:3px}.stat strong{font-size:14px}
+.ct{color:#8ea3b8;font-size:12px;margin:3px 0 7px}.creatures{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden}.cr{min-width:0;flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 5px;border:0;background:transparent;border-radius:0;font-size:10px;white-space:nowrap}.cr .sprite{width:34px;height:34px;object-fit:contain;border-radius:5px;background:transparent;display:block;flex:0 0 auto}.cr-info{display:flex;flex-direction:column;min-width:0;line-height:1.15}.cr-name{overflow:hidden;text-overflow:ellipsis}.cr-time{color:#9aaec3;font-size:9px;margin-top:2px}.target{display:none}.actions{margin-top:auto;padding-top:13px}.details{width:100%;border:0;border-radius:8px;padding:11px;background:#873dff;color:#fff;font-weight:700}.foot{margin-top:22px;border:0;border-radius:14px;background:#081522;padding:18px;color:#93a8bd;font-size:13px}
+@media(max-width:1050px){.grid{grid-template-columns:repeat(2,1fr)}.hero{flex-wrap:wrap}.progress{width:100%}.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:680px){.wrap{padding:20px 14px}.grid{grid-template-columns:1fr}h1{font-size:32px}.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<button class="back" onclick="history.back()">← Voltar</button>
+<h1>Caminho de evolução</h1>
+<section class="hero">
+<img class="creature-img" src="https://www.tibiawiki.com.br/wiki/Special:Redirect/file/Dark_Torturer.gif" alt="Dark Torturer" onerror="this.onerror=null;this.src='https://www.tibiawiki.com.br/wiki/Special:Redirect/file/Dark_Torturer.gif'">
+<div class="hero-main"><div class="hero-title"><h2>Dark Torturer</h2></div>
+<p>Veja todas as hunts onde o Dark Torturer aparece.</p>
+<div class="chips"><span class="chip">⚔️ 6 hunts</span><span class="chip">👹 14 criaturas envolvidas</span><span class="chip">⚡ 50 Charm Points</span></div></div>
+<div class="progress"><div class="progress-top"><span>Bestiário</span><strong>0 / 2.500</strong></div><div class="bar"><div class="fill"></div></div><div class="percent">0%</div></div>
+</section>
+<div class="tabs"><button class="tab">⛓️ Rotas recomendadas</button><button class="tab active">🗺️ Todas as hunts</button></div>
+<div class="section-head"><div><h2>Todas as hunts do Dark Torturer</h2><div class="subtitle">Veja todos os locais onde o Dark Torturer pode ser feito, com tempo estimado e criaturas envolvidas.</div></div>
+<select class="sort" id="sort"><option value="level">Ordenar por: Nível</option><option value="time">Ordenar por: Tempo</option><option value="name">Ordenar por: Nome</option></select></div>
+<main class="grid" id="grid"></main>
+<div class="foot"><strong>Estimativa de Bestiário:</strong> o tempo exibido ao lado de cada criatura é uma estimativa inicial para o protótipo. Os números oficiais de abates foram conferidos nas páginas das criaturas; a taxa real de kills/h varia conforme hunt, vocação e execução e será refinada no RuneCodex.</div>
+</div>
+<script>
+const bestiaryTime = {
+  "Betrayed Wraith":"≈ 3h",
+  "Dark Torturer":"≈ 4h",
+  "Demon Outcast":"≈ 3h",
+  "Hellhound":"≈ 6h 15min",
+  "Plaguesmith":"≈ 3h",
+  "Blightwalker":"≈ 4h",
+  "Juggernaut":"≈ 6h",
+  "Lost Soul":"≈ 3h 20min",
+  "Nightmare":"≈ 3h",
+  "Defiler":"≈ 4h",
+  "Destroyer":"≈ 4h",
+  "Diabolic Imp":"≈ 3h",
+  "Hellfire Fighter":"≈ 6h 15min",
+  "Hand of Cursed Fate":"≈ 4h"
+};
+const bestiaryKills = {
+  "Destroyer":1000,
+  "Hellhound":2500,
+  "Hellfire Fighter":2500,
+  "Lost Soul":1000
+};
+const hunts=[
+{name:"Roshamuul Prison -2",place:"Roshamuul",level:450,time:"4h – 6h",xp:"4kk – 5kk",profit:"600k – 900k",creatures:["Betrayed Wraith","Dark Torturer","Demon Outcast","Hellhound","Plaguesmith"]},
+{name:"Roshamuul Prison -3",place:"Roshamuul",level:450,time:"5h – 7h",xp:"4kk – 5kk",profit:"600k – 900k",creatures:["Blightwalker","Dark Torturer","Demon Outcast","Hellhound","Juggernaut","Plaguesmith"]},
+{name:"Roshamuul Prison -1",place:"Roshamuul",level:500,time:"6h – 8h",xp:"5kk – 7kk",profit:"800k – 1.2kk",creatures:["Betrayed Wraith","Blightwalker","Dark Torturer","Demon Outcast","Hellhound","Juggernaut","Lost Soul","Nightmare","Plaguesmith"]},
+{name:"Pits of Inferno (DT City)",place:"Pits of Inferno",level:600,time:"8h – 12h",xp:"6kk – 8kk",profit:"900k – 1.5kk",creatures:["Dark Torturer","Defiler","Destroyer","Diabolic Imp","Hellfire Fighter","Nightmare","Plaguesmith"]},
+{name:"DT Seal — Inquisition",place:"Pits of Inferno",level:550,time:"6h – 10h",xp:"5kk – 7kk",profit:"800k – 1.2kk",creatures:["Betrayed Wraith","Dark Torturer","Hand of Cursed Fate","Lost Soul"]},
+{name:"Halls of Ascension",place:"Roshamuul",level:400,time:"6h – 9h",xp:"3kk – 5kk",profit:"500k – 900k",creatures:["Dark Torturer","Hand of Cursed Fate","Lost Soul"]}
+];
+function sprite(n){return "https://www.tibiawiki.com.br/images/thumb/";} 
+const gifFiles = {
+  "Betrayed Wraith":"Betrayed_Wraith.gif",
+  "Dark Torturer":"Dark_Torturer.gif",
+  "Demon Outcast":"Demon_Outcast.gif",
+  "Hellhound":"Hellhound.gif",
+  "Plaguesmith":"Plaguesmith.gif",
+  "Blightwalker":"Blightwalker.gif",
+  "Juggernaut":"Juggernaut.gif",
+  "Lost Soul":"Lost_Soul.gif",
+  "Nightmare":"Nightmare.gif",
+  "Defiler":"Defiler.gif",
+  "Destroyer":"Destroyer.gif",
+  "Diabolic Imp":"Diabolic_Imp.gif",
+  "Hellfire Fighter":"Hellfire_Fighter.gif",
+  "Hand of Cursed Fate":"Hand_of_Cursed_Fate.gif"
+};
+function gifUrl(name){
+  return "https://www.tibiawiki.com.br/wiki/Special:Redirect/file/" + encodeURIComponent(gifFiles[name] || name.replaceAll(" ","_") + ".gif");
+}
+function render(list){document.getElementById("grid").innerHTML=list.map((h,i)=>`
+<article class="card"><span class="number">${i+1}</span><h3>${h.name}</h3><div class="place">📍 ${h.place} · Nível ${h.level}+</div>
+<div class="stats">
+  <div class="stat"><small>⏱ Tempo</small><strong>${h.time}</strong></div>
+  <div class="stat"><small>⚔ XP/h</small><strong>${h.xp}</strong></div>
+  <div class="stat"><small>🪙 Profit/h</small><strong>${h.profit}</strong></div>
+</div>
+<div class="ct">CRIATURAS NESTA HUNT (${h.creatures.length})</div><div class="creatures">${h.creatures.map(c=>`<div class="cr"><img class="sprite" src="${gifUrl(c)}" alt="${c}" loading="lazy" onerror="this.style.display='none'"><span class="cr-info"><span class="cr-name">${c}</span><span class="cr-time">⏱ ${bestiaryTime[c] || "tempo a validar"}</span></span></div>`).join("")}</div>
+<div class="actions"><button class="details" onclick="goToHunt('${h.name}')">Ir para a hunt →</button></div></article>`).join("")}
+document.getElementById("sort").onchange=e=>{let a=[...hunts],v=e.target.value;if(v==="name")a.sort((x,y)=>x.name.localeCompare(y.name));if(v==="level")a.sort((x,y)=>x.level-y.level);if(v==="time")a.sort((x,y)=>parseInt(x.time)-parseInt(y.time));render(a)};render(hunts);
+function goToHunt(name){
+  alert("Abrindo a hunt: " + name + "\n\nNo RuneCodex real, este botão levará diretamente para a página da hunt.");
+}
+</script>
+</body></html>

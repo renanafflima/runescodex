@@ -107,6 +107,8 @@ export default {
     xpH: "XP/h",
     profitH: "Profit/h",
     respawn: "Respawn",
+    location: "Localização",
+    watchVideo: "Assistir",
     creatures: "Criaturas",
     elements: "Elementos predominantes",
     seeMap: "Ver no mapa",

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RuneCodex — Profile com Moldura</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#03080d;color:#eee;font-family:Georgia,serif;padding:28px}
+.profile{max-width:1100px;margin:auto;border:1px solid #354553;border-radius:18px;overflow:hidden;background:#07111a;box-shadow:0 25px 70px #000}
+.hero{min-height:360px;position:relative;display:flex;align-items:flex-end;gap:28px;padding:34px 42px;overflow:hidden;background:radial-gradient(circle at 75% 30%,#405b67,#142631 35%,#071019 75%)}
+.hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#02070bdd,#02070d77 55%,#02070d22),linear-gradient(0deg,#02070df2,transparent 55%)}
+.avatarWrap{position:relative;width:190px;height:190px;flex:none;z-index:2}
+.frame{position:absolute;z-index:1;inset:-32px;border-radius:50%;background:radial-gradient(circle,transparent 0 58%,#101c25 59% 62%,#8e6d2e 63% 66%,#d5ad50 67% 68%,transparent 69%);filter:drop-shadow(0 0 14px #2375a566)}
+.frame:before{content:"✦";position:absolute;left:50%;top:-13px;transform:translateX(-50%);font-size:32px;color:#d9b85d;text-shadow:0 0 12px #208bd0}
+.frame:after{content:"◆";position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);font-size:25px;color:#d9b85d}
+.avatar{position:absolute;z-index:3;inset:10px;border-radius:50%;border:4px solid #081018;box-shadow:0 0 0 2px #c59d45,0 12px 35px #000a;background:radial-gradient(circle at 50% 32%,#9aa9b1 0 13%,transparent 14%),radial-gradient(circle at 50% 59%,#263640 0 34%,transparent 35%),linear-gradient(145deg,#526b76,#17252e 60%,#080d12);display:grid;place-items:center;font:800 44px Arial;color:#e4c46c}
+.info{position:relative;z-index:2;padding-bottom:10px}.eyebrow{color:#d7ad4d;letter-spacing:3px;text-transform:uppercase;font:700 12px Arial}.info h1{margin:7px 0;font-size:44px}.meta{color:#9fb2c0;font:14px Arial}.desc{max-width:620px;margin-top:14px;color:#d2dbe0;font:14px/1.6 Arial}
+.content{padding:28px}.card{border:1px solid #304250;border-radius:14px;padding:22px;background:#08131c}.card h2{margin:0 0 8px;color:#e6cd8c}.card p{margin:0;color:#8fa4b2;font:13px/1.6 Arial}
+.layers{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}.layer{padding:14px;border:1px solid #263844;border-radius:10px;background:#061019;font:12px Arial}.layer b{display:block;color:#e2bd60;margin-bottom:5px}.layer span{color:#8195a3}
+@media(max-width:700px){body{padding:12px}.hero{padding:28px 20px;min-height:520px;flex-direction:column;justify-content:flex-end}.avatarWrap{margin-left:25px}.info h1{font-size:34px}.layers{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="profile">
+<section class="hero">
+  <!-- Moldura fica ATRÁS -->
+  <div class="avatarWrap">
+    <div class="frame" aria-hidden="true"></div>
+    <!-- Avatar fica NA FRENTE -->
+    <div class="avatar">R</div>
+  </div>
+  <div class="info">
+    <div class="eyebrow">Perfil do Aventureiro</div>
+    <h1>Renan, o Cronista</h1>
+    <div class="meta">Druida • Aventureiro nível 27</div>
+    <div class="desc">Explorando o mundo, registrando criaturas, descobrindo hunts e compartilhando conhecimento com outros aventureiros.</div>
+  </div>
+</section>
+<section class="content">
+  <div class="card">
+    <h2>Estrutura da moldura</h2>
+    <p>A moldura é uma imagem independente e fica atrás do avatar. Quando o jogador conquista mais badges, o sistema troca somente a moldura.</p>
+    <div class="layers">
+      <div class="layer"><b>1. Hero</b><span>Background da tela</span></div>
+      <div class="layer"><b>2. Moldura</b><span>frame_01.png, frame_02.png...</span></div>
+      <div class="layer"><b>3. Avatar</b><span>Foto do usuário por cima</span></div>
+    </div>
+  </div>
+</section>
+</main>
+</body>
+</html>

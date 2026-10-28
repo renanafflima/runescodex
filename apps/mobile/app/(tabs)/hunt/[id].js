@@ -120,6 +120,7 @@ export default function HuntDetailScreen() {
   const loot = hunt?.loot || [];
   const vocations = hunt?.vocations || [];
   const spawn = hunt?.spawn || [];
+  const videos = hunt?.videos || [];
   const mapSource = hunt ? resolveMapImage(hunt.mapImage, hunt.creature) : null;
   const heroLevel = hunt ? formatLevelRange(hunt.levelMin, hunt.levelMax) : null;
   const heroXp = hunt ? formatRate(hunt.xpH) : null;
@@ -169,9 +170,9 @@ export default function HuntDetailScreen() {
                   {hunt.vocation ? <Text style={styles.badge}>{hunt.vocation}</Text> : null}
                 </View>
                 <View style={styles.heroStats}>
-                  <HeroStat label={t("hunts.xpH")} value={heroXp} />
-                  <HeroStat label={t("hunts.profitH")} value={heroProfit} accent />
-                  <HeroStat label={t("hunts.creatures")} value={spawn.length ? String(spawn.length) : null} />
+                  <HeroStat label={t("hunts.xpH")} value={heroXp} iconLabel="XP" />
+                  <HeroStat label={t("hunts.profitH")} value={heroProfit} accent iconLabel="GP" />
+                  <HeroStat label={t("hunts.creatures")} value={spawn.length ? String(spawn.length) : null} iconLabel="N" />
                 </View>
                 <View style={styles.heroActions}>
                   {hunt.youtubeUrl ? (
@@ -191,10 +192,12 @@ export default function HuntDetailScreen() {
             </View>
 
             <View style={styles.body}>
-              {hunt.respawn ? (
-                <View style={styles.inlineFact}>
-                  <Ionicons name="time-outline" size={16} color={COLORS.goldLight} />
-                  <Text style={styles.blockText}>{t("hunts.respawn")}: {hunt.respawn}</Text>
+              {(hunt.displayLocation || hunt.respawn || hunt.difficulty || heroLevel) ? (
+                <View style={styles.infoPanel}>
+                  <InfoRow icon="location-outline" label={t("hunts.location")} value={hunt.displayLocation} last={!hunt.respawn && !hunt.difficulty && !heroLevel} />
+                  <InfoRow icon="time-outline" label={t("hunts.respawn")} value={hunt.respawn} last={!hunt.difficulty && !heroLevel} />
+                  <InfoRow icon="shield-outline" label={t("hunts.difficulty")} value={hunt.difficulty ? formatDifficultyLabel(hunt.difficulty) : null} last={!heroLevel} />
+                  <InfoRow icon="trending-up-outline" label={t("hunts.level")} value={heroLevel} last />
                 </View>
               ) : null}
 
@@ -202,7 +205,7 @@ export default function HuntDetailScreen() {
 
               {vocations.length ? (
                 <>
-                  <Text style={styles.section}>{t("hunts.vocations")}</Text>
+                  <SectionTitle mark="⚔">{t("hunts.vocations")}</SectionTitle>
                   {vocations.map((entry, index) => {
                     const levelLabel = formatLevelRange(entry.levelMin, entry.levelMax);
                     const xpLabel = formatRate(entry.xpPerHour);
@@ -234,7 +237,7 @@ export default function HuntDetailScreen() {
 
               {spawn.length ? (
                 <>
-                  <Text style={styles.section}>{t("hunts.creatures")}</Text>
+                  <SectionTitle mark="⚔">{t("hunts.creatures")}</SectionTitle>
                   {spawn.map((creature) => {
                     const hpLabel = formatCount(creature.hp);
                     const xpLabel = formatCount(creature.xp);
@@ -244,11 +247,13 @@ export default function HuntDetailScreen() {
                       <Pressable
                         key={creature.id || creature.name}
                         onPress={() => router.push("/(tabs)/bestiary")}
-                        style={({ pressed }) => [styles.creatureRow, pressed && styles.pressed]}
+                        style={({ pressed }) => [styles.creatureCard, pressed && styles.pressed]}
                       >
                         <View style={styles.creatureLine}>
                           {creature.image ? (
-                            <Image source={creature.image} style={styles.creatureImg} resizeMode="contain" />
+                            <View style={styles.creatureImgWrap}>
+                              <Image source={creature.image} style={styles.creatureImg} resizeMode="contain" />
+                            </View>
                           ) : null}
                           <View style={styles.creatureInfo}>
                             <Text style={styles.creatureName} numberOfLines={2}>
@@ -257,19 +262,22 @@ export default function HuntDetailScreen() {
                             </Text>
                             <View style={styles.creatureMeta}>
                               {hpLabel ? (
-                                <Text style={styles.metaChip}>
-                                  {t("hunts.hp")} {hpLabel}
-                                </Text>
+                                <View style={styles.metaChipWrap}>
+                                  <Text style={styles.metaChipLabel}>{t("hunts.hp")}</Text>
+                                  <Text style={styles.metaChip}>{hpLabel}</Text>
+                                </View>
                               ) : null}
                               {xpLabel ? (
-                                <Text style={styles.metaChip}>
-                                  {t("hunts.xp")} {xpLabel}
-                                </Text>
+                                <View style={styles.metaChipWrap}>
+                                  <Text style={styles.metaChipLabel}>{t("hunts.xp")}</Text>
+                                  <Text style={styles.metaChip}>{xpLabel}</Text>
+                                </View>
                               ) : null}
                               {creature.quantity != null ? (
-                                <Text style={styles.metaChip}>
-                                  {t("hunts.quantity")} {creature.quantity}
-                                </Text>
+                                <View style={styles.metaChipWrap}>
+                                  <Text style={styles.metaChipLabel}>{t("hunts.quantity")}</Text>
+                                  <Text style={styles.metaChip}>{creature.quantity}</Text>
+                                </View>
                               ) : null}
                             </View>
                           </View>
@@ -319,7 +327,7 @@ export default function HuntDetailScreen() {
 
               {elements.length ? (
                 <>
-                  <Text style={styles.section}>{t("hunts.elements")}</Text>
+                  <SectionTitle mark="▤">{t("hunts.elements")}</SectionTitle>
                   <View style={styles.dmgRow}>
                     {elements.map((type) => {
                       const icon = damageIcon(type);
@@ -340,21 +348,28 @@ export default function HuntDetailScreen() {
 
               {loot.length ? (
                 <>
-                  <Text style={styles.section}>{t("hunts.mainLoot")}</Text>
+                  <SectionTitle mark="▣">{t("hunts.mainLoot")}</SectionTitle>
                   {loot.map((item) => {
                     const valueLabel = hasNumericValue(item.estimatedValue)
                       ? formatRate(item.estimatedValue)
                       : null;
                     return (
-                      <View key={item.id || item.itemName} style={styles.lootRow}>
+                      <View key={item.id || item.itemName} style={styles.lootCard}>
                         {item.image ? (
-                          <Image source={item.image} style={styles.lootImg} resizeMode="contain" />
+                          <View style={styles.lootImgWrap}>
+                            <Image source={item.image} style={styles.lootImg} resizeMode="contain" />
+                          </View>
                         ) : null}
                         <View style={styles.lootInfo}>
-                          <Text style={styles.blockText} numberOfLines={2}>
+                          <Text style={styles.lootName} numberOfLines={2}>
                             {item.itemName}
                           </Text>
-                          {valueLabel ? <Text style={styles.metaChip}>{valueLabel}</Text> : null}
+                          {valueLabel ? (
+                            <View style={styles.lootValueRow}>
+                              <Ionicons name="cash-outline" size={12} color={COLORS.goldLight} />
+                              <Text style={styles.lootValue}>{valueLabel}</Text>
+                            </View>
+                          ) : null}
                           {item.importance ? (
                             <Text style={styles.metaChip}>{item.importance}</Text>
                           ) : null}
@@ -365,10 +380,36 @@ export default function HuntDetailScreen() {
                 </>
               ) : null}
 
+              {videos.length > 1 ? (
+                <>
+                  <SectionTitle mark="▶">{t("hunts.videos")}</SectionTitle>
+                  {videos.map((video) => (
+                    <Pressable
+                      key={video.id}
+                      onPress={() => openUrl(video.url)}
+                      style={({ pressed }) => [styles.videoCard, pressed && styles.pressed]}
+                    >
+                      <View style={styles.videoCardIcon}>
+                        <Ionicons name="play-circle-outline" size={26} color="#ff7474" />
+                      </View>
+                      <View style={styles.videoCardInfo}>
+                        {video.title ? (
+                          <Text style={styles.videoTitle} numberOfLines={2}>{video.title}</Text>
+                        ) : null}
+                        {video.channel ? (
+                          <Text style={styles.videoChannel}>{video.channel}</Text>
+                        ) : null}
+                      </View>
+                      <Text style={styles.watchLabel}>{t("hunts.watchVideo")}</Text>
+                    </Pressable>
+                  ))}
+                </>
+              ) : null}
+
               <View style={styles.community}>
                 <View style={styles.communityHead}>
                   <View style={styles.communityTitleCopy}>
-                    <Text style={styles.section}>{t("hunts.community")}</Text>
+                    <SectionTitle mark="●">{t("hunts.community")}</SectionTitle>
                     <Text style={styles.communityHint}>{t("hunts.communityUnavailable")}</Text>
                   </View>
                   <Pressable disabled style={styles.likeButton}>
@@ -414,71 +455,126 @@ export default function HuntDetailScreen() {
   );
 }
 
-function HeroStat({ label, value, accent }) {
+function HeroStat({ label, value, accent, iconLabel }) {
   if (!value) return null;
   return (
     <View style={styles.heroStat}>
-      <Text style={styles.heroStatLabel}>{label}</Text>
-      <Text style={[styles.heroStatValue, accent && styles.heroStatAccent]}>{value}</Text>
+      {iconLabel ? (
+        <View style={[styles.kpiIconBox, accent && styles.kpiIconBoxAccent]}>
+          <Text style={[styles.kpiIconText, accent && styles.kpiIconTextAccent]}>{iconLabel}</Text>
+        </View>
+      ) : null}
+      <View style={styles.kpiTextBlock}>
+        <Text style={styles.heroStatLabel}>{label}</Text>
+        <Text style={[styles.heroStatValue, accent && styles.heroStatAccent]}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
+function SectionTitle({ children, mark = "◆" }) {
+  return (
+    <View style={styles.sectionRow}>
+      <Text style={styles.sectionMark}>{mark}</Text>
+      <Text style={styles.section}>{children}</Text>
+    </View>
+  );
+}
+
+function InfoRow({ icon, label, value, last }) {
+  if (!value) return null;
+  return (
+    <View style={[styles.infoRowItem, last && styles.infoRowLast]}>
+      <View style={styles.infoLabelWrap}>
+        <Ionicons name={icon} size={13} color={COLORS.textMuted} />
+        <Text style={styles.infoLabel}>{label}</Text>
+      </View>
+      <Text style={styles.infoValue}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bg: { flex: 1, backgroundColor: COLORS.bg },
+  bg: { flex: 1, backgroundColor: "#020811" },
   content: { paddingBottom: 120 },
   hero: {
     width: "100%",
-    minHeight: 475,
+    minHeight: 490,
     justifyContent: "flex-end",
     overflow: "hidden",
-    backgroundColor: COLORS.bg,
+    backgroundColor: "#020811",
   },
   heroArt: { ...StyleSheet.absoluteFillObject },
   backBtn: {
     position: "absolute",
     top: 14,
     left: 10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(7,11,20,0.48)",
+    backgroundColor: "rgba(3,12,22,0.84)",
+    borderWidth: 1,
+    borderColor: "rgba(242,183,47,0.42)",
   },
-  heroContent: { paddingHorizontal: 18, paddingBottom: 22, paddingTop: 76, gap: 8 },
+  heroContent: { paddingHorizontal: 18, paddingBottom: 24, paddingTop: 76, gap: 10 },
   eyebrow: {
     color: COLORS.goldLight,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 1.6,
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 2,
     textTransform: "uppercase",
   },
-  name: { color: COLORS.text, fontSize: 29, lineHeight: 34, fontWeight: "900" },
-  location: { color: "#d6deea", fontSize: 13, fontWeight: "600" },
+  name: { color: COLORS.text, fontSize: 30, lineHeight: 34, fontWeight: "900" },
+  location: { color: "#a9c8f4", fontSize: 13, fontWeight: "600" },
   badges: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 2 },
   badge: {
-    color: COLORS.textSecondary,
+    color: "#b8d0ef",
     fontSize: 11,
     fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     paddingVertical: 5,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     borderRadius: 999,
-    backgroundColor: "rgba(7,11,20,0.58)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(240,199,94,0.30)",
+    backgroundColor: "rgba(5,19,32,0.82)",
+    borderWidth: 1,
+    borderColor: "rgba(24,55,80,0.9)",
   },
   heroStats: {
     flexDirection: "row",
-    marginTop: 7,
-    paddingVertical: 11,
+    marginTop: 9,
+    paddingVertical: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(248,250,252,0.16)",
+    borderColor: "rgba(248,250,252,0.14)",
+    gap: 2,
   },
-  heroStat: { flex: 1, minWidth: 0 },
+  heroStat: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 },
+  kpiIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(7,137,214,0.22)",
+    borderWidth: 1,
+    borderColor: "rgba(7,137,214,0.38)",
+  },
+  kpiIconBoxAccent: {
+    backgroundColor: "rgba(139,221,170,0.16)",
+    borderColor: "rgba(139,221,170,0.32)",
+  },
+  kpiIconText: {
+    color: "#79aef0",
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  kpiIconTextAccent: { color: "#8bddaa" },
+  kpiTextBlock: { flex: 1, minWidth: 0 },
   heroStatLabel: {
     color: COLORS.textMuted,
     fontSize: 9,
@@ -486,92 +582,187 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: "uppercase",
   },
-  heroStatValue: { color: COLORS.text, fontSize: 18, fontWeight: "900", marginTop: 3 },
+  heroStatValue: { color: COLORS.text, fontSize: 16, fontWeight: "900", marginTop: 2 },
   heroStatAccent: { color: "#8bddaa" },
-  heroActions: { flexDirection: "row", gap: 9, marginTop: 5 },
+  heroActions: { flexDirection: "row", gap: 9, marginTop: 6 },
   primaryAction: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 46,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    borderRadius: 12,
-    backgroundColor: COLORS.gold,
+    borderRadius: 14,
+    backgroundColor: "#c92222",
+    borderWidth: 1,
+    borderColor: "#e33b3b",
   },
-  primaryActionText: { color: COLORS.bg, fontSize: 12, fontWeight: "900" },
+  primaryActionText: { color: "#fff", fontSize: 12, fontWeight: "900" },
   secondaryAction: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 46,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    borderRadius: 12,
-    backgroundColor: "rgba(7,11,20,0.64)",
+    borderRadius: 14,
+    backgroundColor: "rgba(5,19,32,0.9)",
     borderWidth: 1,
-    borderColor: "rgba(240,199,94,0.38)",
+    borderColor: "rgba(212,167,44,0.58)",
   },
   secondaryActionText: { color: COLORS.goldLight, fontSize: 12, fontWeight: "900" },
-  body: { paddingHorizontal: 18, paddingTop: 18, gap: 8 },
-  inlineFact: { flexDirection: "row", alignItems: "center", gap: 8 },
-  description: { color: COLORS.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 4 },
+  body: { paddingHorizontal: 16, paddingTop: 18, gap: 10 },
+  // Info panel (label → value rows)
+  infoPanel: {
+    borderRadius: 18,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(24,55,80,0.8)",
+    backgroundColor: "rgba(4,15,27,0.72)",
+    marginBottom: 4,
+  },
+  infoRowItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    minHeight: 50,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(24,55,80,0.56)",
+  },
+  infoRowLast: { borderBottomWidth: 0 },
+  infoLabelWrap: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
+  infoLabel: { color: "#9dbce2", fontSize: 13, fontWeight: "600" },
+  infoValue: { color: COLORS.text, fontSize: 13, fontWeight: "800", textAlign: "right", flexShrink: 1, marginLeft: 12 },
+  description: { color: "#9eb1c7", fontSize: 14, lineHeight: 22, marginVertical: 4 },
+  // Section titles with mark
+  sectionRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 20, marginBottom: 6 },
+  sectionMark: { color: COLORS.goldLight, fontSize: 10, fontWeight: "900" },
   section: {
     color: COLORS.goldLight,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "900",
-    letterSpacing: 0.8,
+    letterSpacing: 1,
     textTransform: "uppercase",
-    marginTop: 20,
-    marginBottom: 3,
   },
-  blockText: { color: COLORS.textSecondary, fontSize: 13, lineHeight: 18, flexShrink: 1 },
+  blockText: { color: "#9eb1c7", fontSize: 13, lineHeight: 18, flexShrink: 1 },
+  // Vocation rows
   vocationRow: {
-    gap: 5,
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(148,163,184,0.16)",
-  },
-  vocationName: { color: COLORS.text, fontSize: 16, fontWeight: "800" },
-  metaRow: { flexDirection: "row", alignItems: "center", gap: 8, minWidth: 0 },
-  creatureRow: {
-    gap: 7,
+    gap: 6,
     paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(148,163,184,0.16)",
+    paddingHorizontal: 14,
+    marginBottom: 8,
+    borderRadius: 14,
+    backgroundColor: "rgba(5,19,32,0.72)",
+    borderWidth: 1,
+    borderColor: "rgba(24,55,80,0.72)",
   },
-  creatureLine: { flexDirection: "row", alignItems: "center", gap: 10 },
-  creatureImg: { width: 48, height: 48 },
-  creatureInfo: { flex: 1, minWidth: 0, gap: 4 },
-  creatureName: { color: COLORS.text, fontSize: 15, fontWeight: "800" },
-  creatureMeta: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  bestiaryLink: { flexDirection: "row", alignItems: "center", gap: 1 },
+  vocationName: { color: COLORS.text, fontSize: 15, fontWeight: "800" },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 8, minWidth: 0 },
+  // Creature cards (panel style)
+  creatureCard: {
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    borderRadius: 18,
+    backgroundColor: "rgba(5,19,32,0.82)",
+    borderWidth: 1,
+    borderColor: "rgba(24,55,80,0.9)",
+  },
+  creatureLine: { flexDirection: "row", alignItems: "center", gap: 12 },
+  creatureImgWrap: {
+    width: 68,
+    height: 68,
+    borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,0.36)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(24,55,80,0.6)",
+  },
+  creatureImg: { width: 60, height: 60 },
+  creatureInfo: { flex: 1, minWidth: 0, gap: 5 },
+  creatureName: { color: COLORS.text, fontSize: 16, fontWeight: "800", lineHeight: 20 },
+  creatureMeta: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  metaChipWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: "rgba(24,55,80,0.56)",
+  },
+  metaChipLabel: { color: COLORS.textMuted, fontSize: 10, fontWeight: "700" },
+  metaChip: { color: "#b8d0ef", fontSize: 11, fontWeight: "800" },
+  bestiaryLink: { flexDirection: "row", alignItems: "center", gap: 2 },
   bestiaryText: { color: COLORS.goldLight, fontSize: 10, fontWeight: "800" },
-  metaChip: { color: COLORS.textSecondary, fontSize: 12, fontWeight: "700" },
   iconLabelRow: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 },
   dmgRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10 },
   dmgIcon: { width: 18, height: 18 },
   elementIcon: { width: 22, height: 22 },
-  lootRow: {
+  // Loot cards
+  lootCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(148,163,184,0.16)",
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 8,
+    borderRadius: 14,
+    backgroundColor: "rgba(5,19,32,0.72)",
+    borderWidth: 1,
+    borderColor: "rgba(24,55,80,0.72)",
   },
-  lootImg: { width: 32, height: 32 },
-  lootInfo: { flex: 1, minWidth: 0, gap: 2 },
+  lootImgWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: "rgba(0,0,0,0.36)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(24,55,80,0.5)",
+  },
+  lootImg: { width: 38, height: 38 },
+  lootInfo: { flex: 1, minWidth: 0, gap: 4 },
+  lootName: { color: COLORS.text, fontSize: 14, fontWeight: "700", lineHeight: 18 },
+  lootValueRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  lootValue: { color: COLORS.goldLight, fontSize: 12, fontWeight: "800" },
   ytIcon: { width: 22, height: 22 },
+  // Videos
+  videoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 8,
+    borderRadius: 14,
+    backgroundColor: "rgba(113,50,56,0.32)",
+    borderWidth: 1,
+    borderColor: "rgba(113,50,56,0.72)",
+  },
+  videoCardIcon: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  videoCardInfo: { flex: 1, minWidth: 0, gap: 3 },
+  videoTitle: { color: COLORS.text, fontSize: 14, fontWeight: "700", lineHeight: 18 },
+  videoChannel: { color: "#ff7474", fontSize: 11, fontWeight: "700" },
+  watchLabel: { color: "#ff7474", fontSize: 11, fontWeight: "900" },
+  // Community
   community: {
-    marginTop: 22,
-    paddingTop: 2,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(212,167,44,0.30)",
+    marginTop: 18,
+    paddingTop: 18,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(24,55,80,0.9)",
+    backgroundColor: "rgba(4,15,27,0.72)",
   },
   communityHead: { flexDirection: "row", alignItems: "center", gap: 12 },
   communityTitleCopy: { flex: 1, minWidth: 0 },
-  communityHint: { color: COLORS.textMuted, fontSize: 12, lineHeight: 17 },
+  communityHint: { color: COLORS.textMuted, fontSize: 12, lineHeight: 17, marginTop: 2 },
   likeButton: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8 },
   disabledText: { color: COLORS.textMuted, fontSize: 12, fontWeight: "800" },
   communityCounts: { flexDirection: "row", gap: 14, marginTop: 12 },
@@ -579,13 +770,16 @@ const styles = StyleSheet.create({
   composer: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 44,
-    marginTop: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(148,163,184,0.24)",
+    minHeight: 46,
+    marginTop: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(148,163,184,0.22)",
+    backgroundColor: "rgba(4,13,23,0.8)",
+    paddingHorizontal: 12,
   },
   commentInput: { flex: 1, color: COLORS.textMuted, paddingVertical: 9, fontSize: 13 },
-  sendButton: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  sendButton: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   emptyComments: { alignItems: "center", gap: 7, paddingVertical: 24 },
   replyHint: { color: COLORS.textMuted, fontSize: 10, fontWeight: "700" },
   pressed: { opacity: 0.72 },
