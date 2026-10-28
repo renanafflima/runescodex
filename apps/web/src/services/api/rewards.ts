@@ -12,19 +12,25 @@ export type RewardMission = {
   description: string;
   category: string;
   period: string;
+  imageKey?: string | null;
+  eventType?: string | null;
   current: number;
   target: number;
   rewardPoints: number;
   completed: boolean;
+  periodEnd?: string;
 };
 
 export type RewardCatalogItem = {
   id: string;
   name: string;
   description: string;
+  imageKey?: string | null;
   currency: "GOLD" | "DIAMOND" | string;
   price: number;
   priceConfigured: boolean;
+  premium?: boolean;
+  redemptionCount?: number | null;
 };
 
 export type RewardRedemption = {
@@ -35,6 +41,7 @@ export type RewardRedemption = {
   cost?: number;
   status: string;
   message?: string;
+  adminNote?: string | null;
   createdAt?: string;
 };
 
@@ -81,7 +88,7 @@ export function convertRewards(conversion: "POINTS_TO_GOLD" | "GOLD_TO_DIAMOND",
 }
 
 export function redeemReward(catalogItemId: string) {
-  return apiRequest<{ wallet: RewardWallet }>("/rewards/redeem", {
+  return apiRequest<{ wallet: RewardWallet; redemption?: { status?: string; message?: string } }>("/rewards/redeem", {
     method: "POST",
     json: { catalogItemId },
   });

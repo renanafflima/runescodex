@@ -6,6 +6,7 @@ import {
   ImageBackground,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,7 +14,7 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Colors } from "@/constants/theme";
 import AppScreen from "@/components/ui/AppScreen";
 import { useAuth } from "@/src/auth/AuthContext";
@@ -34,8 +35,11 @@ import {
   formatPoints,
   formatRenewal,
   mapDiamondOffers,
+  isPlayableRewardMission,
   mapGoldPackages,
+  missionActivityPath,
   missionProgressPercent,
+  periodWindow,
 } from "@/src/domain/rewards";
 
 const GOLD = "#d9ad3f";
@@ -80,73 +84,179 @@ const MISSION_CARD_BY_CATEGORY = {
   MUSIC: "music",
 };
 
-const CATEGORY_LABEL = {
-  BESTIARY: "BESTIÁRIO",
-  EXPLORATION: "EXPLORAÇÃO",
-  COMMUNITY: "COMUNIDADE",
-  HUNT: "HUNT",
-  RECRUITMENT: "RECRUTAMENTO",
-  PROMOTION: "DIVULGAÇÃO",
-  KNOWLEDGE: "CONHECIMENTO",
-  MUSIC: "MÚSICA",
-};
-
 const PERIOD_TABS = [
-  { id: "DAILY", label: "Diárias" },
-  { id: "WEEKLY", label: "Semanais" },
-  { id: "MONTHLY", label: "Mensais" },
+  { id: "DAILY", labelKey: "rewardsScreen.daily", oneKey: "rewardsScreen.dailyOne" },
+  { id: "WEEKLY", labelKey: "rewardsScreen.weekly", oneKey: "rewardsScreen.weeklyOne" },
+  { id: "MONTHLY", labelKey: "rewardsScreen.monthly", oneKey: "rewardsScreen.monthlyOne" },
 ];
 
-const PERIOD_SINGULAR = {
-  DAILY: "Diária",
-  WEEKLY: "Semanal",
-  MONTHLY: "Mensal",
+const PACKAGE_COPY = {
+  gold1: {
+    kicker: "rewardsScreen.standard",
+    title: "rewardsScreen.gold1Title",
+    hint: "rewardsScreen.gold1Hint",
+  },
+  gold5: {
+    kicker: "rewardsScreen.bonusPack",
+    title: "rewardsScreen.gold5Title",
+    hint: "rewardsScreen.gold5Hint",
+  },
+  diamond1: {
+    kicker: "rewardsScreen.permanentCoin",
+    title: "rewardsScreen.diamond1Title",
+    hint: "rewardsScreen.diamond1Hint",
+  },
+  diamond3: {
+    kicker: "rewardsScreen.pack",
+    title: "rewardsScreen.diamond3Title",
+    hint: "rewardsScreen.diamond3Hint",
+  },
 };
 
-const REDEMPTION_STATUS_LABEL = {
-  PENDING: "Resgate solicitado. Seu pedido está aguardando aprovação.",
-  APPROVED: "Resgate aprovado. A entrega será realizada em breve.",
-  DELIVERED: "Reward entregue.",
-  CANCELLED: "Resgate cancelado.",
+const REWARD_ERROR_KEYS = {
+  "Insufficient points": "rewardsScreen.insufficientPoints",
+  "Insufficient gold": "rewardsScreen.insufficientGold",
+  "Insufficient diamond": "rewardsScreen.insufficientDiamond",
+  "Gold to Diamond conversion is not configured": "rewardsScreen.diamondRateMissing",
+  "Reward price is not configured": "rewardsScreen.priceNotConfigured",
+  "Reward is inactive": "rewardsScreen.rewardInactive",
+  "Reward not found": "rewardsScreen.rewardNotFound",
+  "Invalid conversion amount. Allowed values: 1, 5": "rewardsScreen.invalidConversion",
+  "Premium required": "rewardsScreen.premiumRequired",
 };
+
+const IMAGE_ALIASES = {
+  mission_exploracao: "missionExploration",
+  missionexploration: "missionExploration",
+  exploracao: "exploration",
+  exploração: "exploration",
+  mission_bestiario: "missionBestiary",
+  missionbestiary: "missionBestiary",
+  bestiario: "bestiary",
+  mission_forum: "missionForum",
+  missionforum: "missionForum",
+  comunidade: "community",
+  mission_hunts: "missionHunts",
+  missionhunts: "missionHunts",
+  hunt: "hunt",
+  hunts: "hunt",
+  divulgacao: "promotion",
+  divulgação: "promotion",
+  conhecimento: "knowledge",
+  recrutamento: "recruitment",
+  musica: "music",
+  música: "music",
+  "1goldcoin": "gold1",
+  "5goldcoin": "gold5",
+  "1diamond": "diamond1",
+  "3diamonds": "diamond3",
+  "125tc": "tc125",
+  "250tc": "tc250",
+  "500rc": "rc500",
+  "1000rc": "rc1000",
+  ferumbrashat: "ferumbrasHat",
+  ferumbras_hat: "ferumbrasHat",
+};
+
+function canonicalImageKey(imageKey) {
+  if (!imageKey) return null;
+  if (REWARDS_ASSETS[imageKey]) return imageKey;
+  const normalized = String(imageKey)
+    .trim()
+    .toLowerCase()
+    .replace(/\.(png|webp|jpe?g|gif)$/i, "")
+    .replace(/[\s-]+/g, "_");
+  return IMAGE_ALIASES[normalized] || IMAGE_ALIASES[normalized.replace(/_/g, "")] || null;
+}
 
 function resolveAsset(imageKey) {
-  return imageKey ? REWARDS_ASSETS[imageKey] : null;
+  const key = canonicalImageKey(imageKey);
+  return key ? REWARDS_ASSETS[key] : null;
 }
 
 function missionImageKey(mission) {
-  return mission.imageKey || MISSION_CARD_BY_CATEGORY[mission.category];
+  return canonicalImageKey(mission?.imageKey) || MISSION_CARD_BY_CATEGORY[mission?.category] || null;
 }
 
-function missionActionLabel(mission) {
-  if (mission.completed) return "CONCLUÍDA";
-  if (mission.current > 0) return "CONTINUAR";
-  return "COMEÇAR";
+function translated(t, key, fallback) {
+  const value = t(key);
+  return value === key ? fallback : value;
+}
+
+function categoryLabel(category, t) {
+  if (!category) return "";
+  return translated(t, `rewardsScreen.categories.${category}`, category);
+}
+
+function statusText(status, t) {
+  if (!status) return "";
+  return translated(t, `rewardsScreen.status.${status}`, status);
 }
 
 function mapRewardsError(error, t) {
   if (error?.code === "NETWORK") return t("auth.networkError");
   if (error?.status === 401) return t("auth.sessionExpired");
-  if (error?.status === 400) return error.message || t("auth.invalidPayload");
-  if (error?.status === 503) return error.message || "Indisponível";
-  return error?.message || t("auth.genericError");
+  if (error?.status === 403) return t("rewardsScreen.premiumRequired");
+  const mapped = REWARD_ERROR_KEYS[error?.message];
+  if (mapped) return t(mapped);
+  if (error?.status === 503) return t("rewardsScreen.unavailableNow");
+  return t("auth.genericError");
 }
 
-function catalogTypeLabel(item) {
-  if (item.premium || item.currency === "DIAMOND") return "Diamond · Premium";
-  if (item.imageKey === "rc1000") return "Rubini OT · Premium";
-  if (item.imageKey === "rc500") return "Rubini OT";
-  return "Tibia Global";
+function catalogTypeLabel(item, t) {
+  if (item.premium || item.currency === "DIAMOND") return t("rewardsScreen.diamondPremium");
+  if (item.imageKey === "rc1000") return t("rewardsScreen.rubiniPremium");
+  if (item.imageKey === "rc500") return t("rewardsScreen.rubini");
+  if (item.imageKey === "tc125" || item.imageKey === "tc250") return t("rewardsScreen.tibiaGlobal");
+  if (item.currency === "GOLD") return t("rewardsScreen.goldReward");
+  return t("rewardsScreen.rewardFallback");
 }
 
-function catalogPriceLabel(item) {
+function catalogPriceLabel(item, t, locale) {
   if (!item?.priceConfigured || !item.price) {
-    return item.currency === "DIAMOND" ? "— Diamond" : "— Gold";
+    return item?.currency === "DIAMOND"
+      ? t("rewardsScreen.priceMissingDiamond")
+      : t("rewardsScreen.priceMissingGold");
   }
-  if (item.currency === "DIAMOND") {
-    return `${formatPoints(item.price)} Diamond`;
+  const amount = formatPoints(item.price, locale);
+  return item.currency === "DIAMOND"
+    ? t("rewardsScreen.diamondPrice", { amount })
+    : t("rewardsScreen.goldPrice", { amount });
+}
+
+function packageCopy(item, t) {
+  const copy = PACKAGE_COPY[item.id] || {};
+  return {
+    kicker: copy.kicker ? t(copy.kicker) : item.kicker,
+    title: copy.title ? t(copy.title) : item.title,
+    hint: copy.hint ? t(copy.hint) : item.hint,
+  };
+}
+
+function packagePrice(item, t, locale) {
+  if (item.goldCost != null) {
+    return t("rewardsScreen.goldPrice", { amount: formatPoints(item.goldCost, locale) });
   }
-  return `${formatPoints(item.price)} Gold`;
+  if (item.pointsCost != null) {
+    return t("rewardsScreen.pointsPrice", { amount: formatPoints(item.pointsCost, locale) });
+  }
+  return "—";
+}
+
+function isDiamondPack(item) {
+  return item?.id === "diamond1" || item?.id === "diamond3";
+}
+
+function currencyUnit(amount, kind, t, locale) {
+  const value = formatPoints(amount, locale);
+  if (kind === "diamond") {
+    return Number(amount) === 1
+      ? t("rewardsScreen.oneDiamond")
+      : t("rewardsScreen.manyDiamond", { amount: value });
+  }
+  return Number(amount) === 1
+    ? t("rewardsScreen.oneGold")
+    : t("rewardsScreen.manyGold", { amount: value });
 }
 
 function mapMission(row) {
@@ -168,41 +278,76 @@ function walletFrom(payload) {
   return null;
 }
 
+function formatWhen(value, locale) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  try {
+    return date.toLocaleString(locale);
+  } catch {
+    return "";
+  }
+}
+
+function missionActionLabel(mission, t) {
+  if (mission.completed) return t("rewardsScreen.completed");
+  if (mission.current > 0) return t("rewardsScreen.continue");
+  return t("rewardsScreen.start");
+}
+
 function BalancePill({ label, value, tone }) {
   return (
-    <View style={[styles.balancePill, tone === "diamond" && styles.balancePillDiamond]}>
-      <Text style={styles.balancePillText}>
+    <View style={[styles.balancePill, tone === "diamond" && styles.balancePillDiamond, tone === "gold" && styles.balancePillGold]}>
+      <Text style={styles.balancePillText} numberOfLines={1}>
         {label}:{" "}
-        <Text style={[styles.balanceValue, tone === "diamond" && styles.balanceValueDiamond]}>
-          {formatPoints(value)}
+        <Text style={[styles.balanceValue, tone === "diamond" && styles.balanceValueDiamond, tone === "gold" && styles.balanceValue]}>
+          {value}
         </Text>
       </Text>
     </View>
   );
 }
 
-function MissionCard({ mission, onPress }) {
+function SectionHead({ title, accent, hint, meta, wide }) {
+  return (
+    <View style={[styles.sectionHead, wide && styles.sectionHeadRow]}>
+      <View style={styles.sectionHeadCopy}>
+        <Text style={styles.sectionTitle}>
+          {title}
+          {accent ? <Text style={styles.sectionTitleGold}> {accent}</Text> : null}
+        </Text>
+        {hint ? <Text style={styles.sectionHint}>{hint}</Text> : null}
+      </View>
+      {meta ? <Text style={styles.sectionMeta}>{meta}</Text> : null}
+    </View>
+  );
+}
+
+function MissionCard({ mission, onPress, t, locale, compact }) {
   const source = resolveAsset(missionImageKey(mission));
   const pct = missionProgressPercent(mission.current, mission.target);
 
   return (
     <Pressable onPress={() => onPress(mission)} style={({ pressed }) => [styles.missionCard, pressed && styles.pressed]}>
-      {source ? (
-        <Image source={source} style={styles.missionImage} resizeMode="cover" />
-      ) : null}
+      {source ? <Image source={source} style={styles.missionImage} resizeMode="cover" /> : <View style={styles.missionImage} />}
       <LinearGradient
-        colors={["transparent", "rgba(2,7,14,0.72)", "rgba(2,7,14,0.98)"]}
+        colors={["transparent", "rgba(2,7,14,0.05)", "rgba(2,7,14,0.94)"]}
+        locations={[0, 0.38, 1]}
         style={styles.missionOverlay}
       />
       <View style={styles.missionBody}>
         <View style={styles.missionTop}>
-          <Text style={styles.missionCategory}>{CATEGORY_LABEL[mission.category] || mission.category}</Text>
-          <Text style={styles.missionReward}>+{formatPoints(mission.rewardPoints)} pts</Text>
+          <Text style={styles.missionCategory} numberOfLines={1}>
+            {categoryLabel(mission.category, t)}
+          </Text>
+          <Text style={styles.missionReward} numberOfLines={1}>
+            +{formatPoints(mission.rewardPoints, locale)} {t("rewardsScreen.pts")}
+          </Text>
         </View>
-        <Text style={styles.missionTitle} numberOfLines={2}>
+        <Text style={styles.missionTitle} numberOfLines={compact ? 1 : 2}>
           {mission.name}
         </Text>
-        <Text style={styles.missionDesc} numberOfLines={2}>
+        <Text style={styles.missionDesc} numberOfLines={compact ? 1 : 2}>
           {mission.description}
         </Text>
         <View style={styles.progressRow}>
@@ -214,18 +359,20 @@ function MissionCard({ mission, onPress }) {
           </Text>
         </View>
         <View style={styles.missionAction}>
-          <Text style={styles.missionActionHint}>Progresso</Text>
-          <Text style={styles.missionActionState}>{missionActionLabel(mission)}</Text>
+          <Text style={styles.missionActionHint}>{t("rewardsScreen.progress")}</Text>
+          <Text style={styles.missionActionState}>{missionActionLabel(mission, t)}</Text>
         </View>
       </View>
     </Pressable>
   );
 }
 
-function ConversionCard({ item, diamond, onPress, busy }) {
+function ConversionCard({ item, diamond, onPress, busy, t, locale }) {
   const source = resolveAsset(item.imageKey);
+  const copy = packageCopy(item, t);
   const unavailable = diamond && !item.enabled;
   const disabled = unavailable || busy || item.enabled === false;
+  const price = packagePrice(item, t, locale);
 
   return (
     <View style={[styles.conversionCard, diamond && styles.conversionCardDiamond]}>
@@ -233,36 +380,38 @@ function ConversionCard({ item, diamond, onPress, busy }) {
         {source ? <Image source={source} style={styles.conversionImage} resizeMode="cover" /> : null}
       </View>
       <View style={styles.conversionCopy}>
-        <Text style={styles.conversionKicker}>{item.kicker}</Text>
-        <Text style={styles.conversionTitle}>{item.title}</Text>
+        <Text style={styles.conversionKicker} numberOfLines={1}>
+          {copy.kicker}
+        </Text>
+        <Text style={styles.conversionTitle} numberOfLines={2}>
+          {copy.title}
+        </Text>
         {unavailable ? (
-          <Text style={styles.conversionSoon}>EM BREVE</Text>
+          <Text style={styles.conversionSoon}>{t("rewardsScreen.comingSoon")}</Text>
         ) : (
-          <Text style={[styles.conversionPrice, diamond && styles.conversionPriceDiamond]}>{item.price}</Text>
+          <Text style={[styles.conversionPrice, diamond && styles.conversionPriceDiamond]}>{price}</Text>
         )}
-        {item.savings > 0 ? (
-          <Text style={styles.conversionBonus}>Economize {formatPoints(item.savings)} pontos ao escolher o pacote.</Text>
-        ) : item.hint ? (
-          <Text style={styles.conversionHint}>{item.hint}</Text>
-        ) : null}
         {unavailable ? (
-          <Text style={styles.conversionHint}>A taxa Gold → Diamond ainda não foi publicada pela API.</Text>
+          <Text style={styles.conversionHint}>{t("rewardsScreen.diamondRateMissing")}</Text>
+        ) : item.savings > 0 ? (
+          <Text style={styles.conversionBonus}>
+            {t("rewardsScreen.savePoints", { amount: formatPoints(item.savings, locale) })}
+          </Text>
+        ) : copy.hint ? (
+          <Text style={styles.conversionHint}>{copy.hint}</Text>
         ) : null}
         <Pressable
           onPress={onPress}
           disabled={disabled}
           style={({ pressed }) => [
             styles.conversionBtn,
-            diamond && styles.conversionBtnOff,
+            diamond && styles.conversionBtnDiamond,
             disabled && styles.conversionBtnDisabled,
             pressed && !disabled && styles.pressed,
           ]}
         >
-          <Text
-            maxFontSizeMultiplier={1.15}
-            style={[styles.conversionBtnText, diamond && styles.conversionBtnTextDiamond]}
-          >
-            {unavailable ? "INDISPONÍVEL" : busy ? "..." : "Converter"}
+          <Text maxFontSizeMultiplier={1.15} numberOfLines={1} style={[styles.conversionBtnText, diamond && styles.conversionBtnTextDiamond]}>
+            {unavailable ? t("rewardsScreen.unavailable") : t("rewardsScreen.convert")}
           </Text>
         </Pressable>
       </View>
@@ -270,12 +419,13 @@ function ConversionCard({ item, diamond, onPress, busy }) {
   );
 }
 
-function RewardCard({ item, balance, onPress, busy }) {
+function RewardCard({ item, balance, onPress, busy, t, locale }) {
   const source = resolveAsset(item.imageKey);
   const premium = item.premium || item.currency === "DIAMOND";
   const progress = affordancePercent(balance, item.price, item.priceConfigured);
-  const redemptionCount = item.redemptionCount;
-  const hasRedemptionCount = Number.isFinite(redemptionCount) && redemptionCount >= 0;
+  const redemptionCount = Number(item.redemptionCount);
+  const hasRedemptionCount = Number.isFinite(redemptionCount) && redemptionCount >= 0 && item.redemptionCount != null;
+  const disabled = busy || !item.priceConfigured;
 
   return (
     <View style={[styles.storeItem, premium && styles.storeItemDiamond]}>
@@ -283,12 +433,18 @@ function RewardCard({ item, balance, onPress, busy }) {
         {source ? <Image source={source} style={styles.itemArtImage} resizeMode="cover" /> : null}
       </View>
       <View style={styles.storeInfo}>
-        <Text style={[styles.storeType, premium && styles.storeTypeDiamond]}>{catalogTypeLabel(item)}</Text>
-        <Text style={styles.storeName}>{item.name}</Text>
-        <Text style={styles.storeDesc}>{item.description}</Text>
-        <Text style={[styles.storeCost, premium && styles.storeCostDiamond]}>{catalogPriceLabel(item)}</Text>
+        <Text style={[styles.storeType, premium && styles.storeTypeDiamond]} numberOfLines={1}>
+          {catalogTypeLabel(item, t)}
+        </Text>
+        <Text style={styles.storeName} numberOfLines={2}>
+          {item.name}
+        </Text>
+        <Text style={styles.storeDesc} numberOfLines={3}>
+          {item.description}
+        </Text>
+        <Text style={[styles.storeCost, premium && styles.storeCostDiamond]}>{catalogPriceLabel(item, t, locale)}</Text>
         <View style={styles.storeMeta}>
-          <Text style={styles.storeMetaText}>Progresso</Text>
+          <Text style={styles.storeMetaText}>{t("rewardsScreen.progress")}</Text>
           <Text style={styles.storeMetaText}>{progress == null ? "—" : `${progress}%`}</Text>
         </View>
         <View style={[styles.storeProgress, premium && styles.storeProgressDiamond]}>
@@ -301,26 +457,24 @@ function RewardCard({ item, balance, onPress, busy }) {
           />
         </View>
         {hasRedemptionCount ? (
-          <View style={styles.storeMeta}>
-            <Text style={styles.storeMetaText}>Resgates</Text>
-            <Text style={styles.storeMetaText}>{formatPoints(redemptionCount)} jogadores</Text>
+          <View style={styles.storeMetaPlain}>
+            <Text style={styles.storeMetaText}>{t("rewardsScreen.redemptions")}</Text>
+            <Text style={styles.storeMetaText}>{t("rewardsScreen.players", { count: formatPoints(redemptionCount, locale) })}</Text>
           </View>
         ) : null}
         <Pressable
           onPress={onPress}
-          disabled={busy || !item.priceConfigured}
-          style={({ pressed }) => [
-            styles.storeBtn,
-            premium && styles.storeBtnDiamond,
-            (busy || !item.priceConfigured) && { opacity: 0.55 },
-            pressed && !busy && item.priceConfigured && styles.pressed,
-          ]}
+          disabled={disabled}
+          style={({ pressed }) => [styles.storeBtn, disabled && styles.disabled, pressed && !disabled && styles.pressed]}
         >
-          <Text
-            maxFontSizeMultiplier={1.15}
-            style={[styles.storeBtnText, premium && styles.storeBtnTextDiamond]}
-          >
-            {busy ? "..." : "Resgatar"}
+          <LinearGradient
+            colors={premium ? ["#b8eaff", "#3aaeff"] : ["#f0cd68", "#b78524"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <Text maxFontSizeMultiplier={1.15} numberOfLines={1} style={[styles.storeBtnText, premium && styles.storeBtnTextDiamond]}>
+            {t("rewardsScreen.redeem")}
           </Text>
         </Pressable>
       </View>
@@ -328,32 +482,68 @@ function RewardCard({ item, balance, onPress, busy }) {
   );
 }
 
+function Grid({ rows, columns, rowKey, renderItem }) {
+  return rows.map((row, index) => (
+    <View key={`${rowKey}-${index}`} style={styles.gridRow}>
+      {row.map((item) => (
+        <View key={item.id} style={styles.gridCol}>
+          {renderItem(item)}
+        </View>
+      ))}
+      {Array.from({ length: columns - row.length }).map((_, filler) => (
+        <View key={`${rowKey}-filler-${index}-${filler}`} style={styles.gridCol} />
+      ))}
+    </View>
+  ));
+}
+
 export default function ShopScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const router = useRouter();
   const { token, activeCharacter } = useAuth();
   const { width } = useWindowDimensions();
   const [period, setPeriod] = useState("DAILY");
   const [dataPeriod, setDataPeriod] = useState(null);
   const [selectedMission, setSelectedMission] = useState(null);
   const [wallet, setWallet] = useState({ points: 0, gold: 0, diamond: 0 });
-  const [missionSummary, setMissionSummary] = useState({});
   const [missions, setMissions] = useState([]);
   const [catalog, setCatalog] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
   const [goldPackages, setGoldPackages] = useState(() => mapGoldPackages(null));
   const [diamondOffers, setDiamondOffers] = useState(() => mapDiamondOffers(null));
   const [loading, setLoading] = useState(true);
+  const [missionsLoading, setMissionsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hasData, setHasData] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [promptOpen, setPromptOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const rewardRequests = useRef(createLatestRequest()).current;
   const periodRef = useRef(period);
+  const dataPeriodRef = useRef(null);
+  const hasDataRef = useRef(false);
+  const tokenRef = useRef(token);
   const actionGate = useRef(false);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (tokenRef.current === token) return;
+    tokenRef.current = token;
+    hasDataRef.current = false;
+    dataPeriodRef.current = null;
+    setHasData(false);
+    setDataPeriod(null);
+    setWallet({ points: 0, gold: 0, diamond: 0 });
+    setMissions([]);
+    setCatalog([]);
+    setRedemptions([]);
+    setSelectedMission(null);
+  }, [token]);
 
   const applyWallet = useCallback((next) => {
     if (!next) return;
@@ -365,16 +555,22 @@ export default function ShopScreen() {
   }, []);
 
   const loadAll = useCallback(
-    async (nextPeriod = periodRef.current) => {
+    async (nextPeriod = periodRef.current, mode = "initial") => {
       const current = rewardRequests.start();
       if (!token) {
         if (!current()) return;
         setError(t("auth.sessionExpired"));
         setLoading(false);
+        setMissionsLoading(false);
+        setRefreshing(false);
         return;
       }
-      setLoading(true);
-      setError("");
+
+      if (mode === "refresh") setRefreshing(true);
+      else if (mode === "period") setMissionsLoading(true);
+      else if (mode === "initial") setLoading(true);
+      if (mode !== "silent" && mode !== "refresh") setError("");
+
       try {
         const [me, missionList, catalogList, history] = await Promise.all([
           getRewardsMe(token),
@@ -382,34 +578,29 @@ export default function ShopScreen() {
           listRewardCatalog(token),
           listRewardRedemptions(token),
         ]);
-        if (!current()) return;
+        if (!current() || periodRef.current !== nextPeriod) return;
         applyWallet(me?.wallet);
-        setMissionSummary(me?.missions || {});
         setGoldPackages(mapGoldPackages(me?.conversions?.pointsToGold));
         setDiamondOffers(mapDiamondOffers(me?.conversions?.goldToDiamond));
         setCatalog(Array.isArray(catalogList) ? catalogList : []);
         setRedemptions(Array.isArray(history) ? history : []);
-        if (periodRef.current === nextPeriod) {
-          setMissions(Array.isArray(missionList) ? missionList.map(mapMission) : []);
-          setDataPeriod(nextPeriod);
-        }
+        setMissions(Array.isArray(missionList) ? missionList.map(mapMission) : []);
+        dataPeriodRef.current = nextPeriod;
+        hasDataRef.current = true;
+        setDataPeriod(nextPeriod);
+        setHasData(true);
+        setError("");
       } catch (err) {
         if (!current()) return;
         setError(mapRewardsError(err, t));
       } finally {
-        if (current()) setLoading(false);
+        if (!current()) return;
+        setLoading(false);
+        setMissionsLoading(false);
+        setRefreshing(false);
       }
     },
     [applyWallet, rewardRequests, t, token],
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      loadAll(period);
-      return () => {
-        rewardRequests.cancel();
-      };
-    }, [loadAll, period, rewardRequests]),
   );
 
   const refreshAfterAction = useCallback(
@@ -419,441 +610,503 @@ export default function ShopScreen() {
       const requested = periodRef.current;
       if (!token) return;
       try {
-        const [me, missionList, history] = await Promise.all([
+        const [me, missionList, catalogList, history] = await Promise.all([
           getRewardsMe(token),
           listRewardMissions(token, requested),
+          listRewardCatalog(token),
           listRewardRedemptions(token),
         ]);
         if (!current()) return;
         applyWallet(me?.wallet);
-        setMissionSummary(me?.missions || {});
         setGoldPackages(mapGoldPackages(me?.conversions?.pointsToGold));
         setDiamondOffers(mapDiamondOffers(me?.conversions?.goldToDiamond));
+        setCatalog(Array.isArray(catalogList) ? catalogList : []);
         setRedemptions(Array.isArray(history) ? history : []);
         if (periodRef.current !== requested) {
-          await loadAll(periodRef.current);
+          await loadAll(periodRef.current, "period");
           return;
         }
         setMissions(Array.isArray(missionList) ? missionList.map(mapMission) : []);
+        dataPeriodRef.current = requested;
+        hasDataRef.current = true;
         setDataPeriod(requested);
+        setHasData(true);
+        setError("");
       } catch (err) {
-        if (!current() || knownWallet) return;
-        setError(mapRewardsError(err, t));
+        if (!current()) return;
+        setError(knownWallet ? t("rewardsScreen.refreshFailed") : mapRewardsError(err, t));
       } finally {
-        if (current()) setLoading(false);
+        if (current()) {
+          setLoading(false);
+          setMissionsLoading(false);
+          setRefreshing(false);
+        }
       }
     },
     [applyWallet, loadAll, rewardRequests, t, token],
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      periodRef.current = period;
+      const mode = !hasDataRef.current ? "initial" : period !== dataPeriodRef.current ? "period" : "silent";
+      loadAll(period, mode);
+      return () => {
+        rewardRequests.cancel();
+      };
+    }, [loadAll, period, rewardRequests]),
+  );
+
+  const wide = width >= 620;
   const missionColumns = width >= 900 ? 3 : 2;
-  const storeColumns = width >= 1100 ? 4 : 2;
-  const visibleMissions = useMemo(
+  const storeColumns = width >= 900 ? 4 : 2;
+  const conversionColumns = wide ? 2 : 1;
+  const compactMissions = missionColumns > 1 && width < 780;
+  const loadedPeriodMissions = useMemo(
     () => (dataPeriod === period ? missions : []),
     [dataPeriod, missions, period],
   );
-  const missionRows = useMemo(
-    () => chunkRows(visibleMissions, missionColumns),
-    [missionColumns, visibleMissions],
+  const visibleMissions = useMemo(
+    () => loadedPeriodMissions.filter(isPlayableRewardMission),
+    [loadedPeriodMissions],
   );
+  const missionRows = useMemo(() => chunkRows(visibleMissions, missionColumns), [missionColumns, visibleMissions]);
   const catalogRows = useMemo(() => chunkRows(catalog, storeColumns), [catalog, storeColumns]);
-  const goldRows = goldPackages;
-  const diamondRows = diamondOffers;
+  const goldRows = useMemo(() => chunkRows(goldPackages, conversionColumns), [conversionColumns, goldPackages]);
+  const diamondRows = useMemo(() => chunkRows(diamondOffers, conversionColumns), [conversionColumns, diamondOffers]);
   const periodMeta = PERIOD_TABS.find((tab) => tab.id === period);
-  const renewalLabel = formatRenewal(visibleMissions[0]?.periodEnd, now) || "—";
-  const playerName = activeCharacter?.name || "Seu progresso no RuneCodex";
+  const renewalSource = loadedPeriodMissions[0]?.periodEnd || periodWindow(period, now)?.periodEnd;
+  const renewalLabel = hasData ? formatRenewal(renewalSource, now) || "—" : "—";
+  const playerName = activeCharacter?.name || t("rewardsScreen.progressTitle");
   const diamondConfigured = diamondOffers.some((offer) => offer.enabled);
-  const completedCount =
-    missionSummary?.[period]?.completed ?? visibleMissions.filter((m) => m.completed).length;
-  const totalCount = missionSummary?.[period]?.total ?? visibleMissions.length;
-
+  const completedCount = visibleMissions.filter((mission) => mission.completed).length;
+  const totalCount = visibleMissions.length;
+  const periodPending = hasData && dataPeriod !== period;
+  const actionsLocked = busy || promptOpen;
   const openMission =
     selectedMission && dataPeriod === period
       ? visibleMissions.find((mission) => mission.id === selectedMission.id) || null
       : null;
+  const activityPath = openMission ? missionActivityPath(openMission.eventType) : null;
 
   function changePeriod(next) {
+    if (next === periodRef.current) return;
     periodRef.current = next;
     setPeriod(next);
     setSelectedMission(null);
   }
 
+  function releasePrompt() {
+    if (actionGate.current === "running") return;
+    actionGate.current = false;
+    setPromptOpen(false);
+  }
+
   function confirmConvert(pack) {
-    if (actionGate.current || busy || pack.enabled === false) return;
-    const diamond = pack.imageKey === "diamond1" || pack.imageKey === "diamond3";
+    if (actionGate.current || actionsLocked || pack.enabled === false) return;
+    const diamond = isDiamondPack(pack);
     actionGate.current = true;
+    setPromptOpen(true);
+    const price = packagePrice(pack, t, locale);
     Alert.alert(
-      "Converter",
+      t("rewardsScreen.convertTitle"),
       diamond
-        ? `Converter ${pack.price} em ${pack.amount} Diamond? O custo é calculado no servidor.`
-        : `Converter ${pack.price} em ${pack.amount} Gold? O custo é calculado no servidor.`,
+        ? t("rewardsScreen.convertDiamondBody", { price, amount: pack.amount })
+        : t("rewardsScreen.convertGoldBody", { price, amount: pack.amount }),
       [
+        { text: t("common.cancel"), style: "cancel", onPress: releasePrompt },
         {
-          text: t("common.cancel"),
-          style: "cancel",
+          text: t("rewardsScreen.convert"),
           onPress: () => {
-            actionGate.current = false;
-          },
-        },
-        {
-          text: "Converter",
-          onPress: async () => {
-            if (!token) {
-              actionGate.current = false;
-              return;
-            }
+            actionGate.current = "running";
             setBusy(true);
-            try {
-              const nextWallet = await convertRewards(
-                token,
-                diamond ? "GOLD_TO_DIAMOND" : "POINTS_TO_GOLD",
-                pack.amount,
-              );
-              await refreshAfterAction(walletFrom(nextWallet));
-            } catch (err) {
-              Alert.alert("Rewards", mapRewardsError(err, t));
-            } finally {
-              actionGate.current = false;
-              setBusy(false);
-            }
+            void runConvert(pack, diamond);
           },
         },
       ],
-      { cancelable: false },
+      { cancelable: true, onDismiss: releasePrompt },
     );
   }
 
+  async function runConvert(pack, diamond) {
+    try {
+      if (!token) {
+        setError(t("auth.sessionExpired"));
+        return;
+      }
+      const nextWallet = await convertRewards(token, diamond ? "GOLD_TO_DIAMOND" : "POINTS_TO_GOLD", pack.amount);
+      const shown = walletFrom(nextWallet);
+      await refreshAfterAction(shown);
+      if (shown) {
+        Alert.alert(
+          t("rewardsScreen.convertTitle"),
+          t("rewardsScreen.convertDone", {
+            points: formatPoints(shown.points, locale),
+            gold: formatPoints(shown.gold, locale),
+            diamond: formatPoints(shown.diamond, locale),
+          }),
+        );
+      }
+    } catch (err) {
+      Alert.alert(t("rewardsScreen.convertTitle"), mapRewardsError(err, t));
+    } finally {
+      actionGate.current = false;
+      setPromptOpen(false);
+      setBusy(false);
+    }
+  }
+
   function confirmRedeem(item) {
-    if (actionGate.current || busy || !item?.priceConfigured || !item?.id) return;
+    if (actionGate.current || actionsLocked || !item?.priceConfigured || !item?.id) return;
     actionGate.current = true;
+    setPromptOpen(true);
     Alert.alert(
-      "Resgatar",
-      `Resgatar "${item.name}" por ${catalogPriceLabel(item)}? O débito é feito no servidor.`,
+      t("rewardsScreen.redeemTitle"),
+      t("rewardsScreen.redeemBody", { name: item.name, price: catalogPriceLabel(item, t, locale) }),
       [
+        { text: t("common.cancel"), style: "cancel", onPress: releasePrompt },
         {
-          text: t("common.cancel"),
-          style: "cancel",
+          text: t("rewardsScreen.redeem"),
           onPress: () => {
-            actionGate.current = false;
-          },
-        },
-        {
-          text: "Resgatar",
-          onPress: async () => {
-            if (!token) {
-              actionGate.current = false;
-              return;
-            }
+            actionGate.current = "running";
             setBusy(true);
-            try {
-              const result = await redeemReward(token, item.id);
-              await refreshAfterAction(walletFrom(result));
-            } catch (err) {
-              Alert.alert("Rewards", mapRewardsError(err, t));
-            } finally {
-              actionGate.current = false;
-              setBusy(false);
-            }
+            void runRedeem(item);
           },
         },
       ],
-      { cancelable: false },
+      { cancelable: true, onDismiss: releasePrompt },
     );
   }
+
+  async function runRedeem(item) {
+    try {
+      if (!token) {
+        setError(t("auth.sessionExpired"));
+        return;
+      }
+      const result = await redeemReward(token, item.id);
+      await refreshAfterAction(walletFrom(result));
+      const status = result?.redemption?.status;
+      Alert.alert(
+        t("rewardsScreen.redeemTitle"),
+        status ? statusText(status, t) : t("rewardsScreen.redeemDone"),
+      );
+    } catch (err) {
+      Alert.alert(t("rewardsScreen.redeemTitle"), mapRewardsError(err, t));
+    } finally {
+      actionGate.current = false;
+      setPromptOpen(false);
+      setBusy(false);
+    }
+  }
+
+  const pointsLabel = hasData ? formatPoints(wallet.points, locale) : "—";
+  const showMissionEmpty = hasData && !periodPending && !loading && visibleMissions.length === 0 && !error;
+  const showCatalogEmpty = hasData && !loading && catalog.length === 0 && !error;
 
   return (
     <AppScreen>
       <ImageBackground source={REWARDS_ASSETS.background} resizeMode="cover" style={styles.bg}>
-        <LinearGradient
-          colors={["rgba(2,7,15,0.40)", "rgba(2,7,15,0.55)", "rgba(2,7,15,0.94)"]}
-          style={StyleSheet.absoluteFill}
-        />
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        <LinearGradient colors={["rgba(2,7,15,0.22)", "rgba(2,7,15,0.38)", "rgba(2,7,15,0.82)"]} style={StyleSheet.absoluteFill} />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scroll}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadAll(periodRef.current, hasDataRef.current ? "refresh" : "initial")}
+              tintColor={GOLD2}
+              colors={[GOLD2]}
+            />
+          }
+        >
           <View style={styles.topbar}>
             <View style={styles.brand}>
-              <Image source={REWARDS_ASSETS.hero} style={styles.brandMark} resizeMode="cover" />
+              <Image source={REWARDS_ASSETS.hero} style={[styles.brandMark, wide && styles.brandMarkWide]} resizeMode="cover" />
               <View style={styles.brandCopy}>
-                <Text style={styles.brandTitle} numberOfLines={1}>RuneCodex</Text>
-                <Text style={styles.brandSub} numberOfLines={1}>Rewards · Missões · Conquistas</Text>
+                <Text style={[styles.brandTitle, wide && styles.brandTitleWide]} numberOfLines={1}>
+                  RuneCodex
+                </Text>
+                <Text style={styles.brandSub} numberOfLines={1}>
+                  {t("rewardsScreen.brandSub")}
+                </Text>
               </View>
             </View>
             <View style={styles.points}>
-              <View style={styles.coin}>
+              <LinearGradient colors={["#fff3ad", "#e9c45b", "#a7771d"]} style={styles.coin}>
                 <Text style={styles.coinText}>R</Text>
-              </View>
-              <View>
-                <Text style={styles.pointsLabel}>Seus pontos</Text>
-                <Text style={styles.pointsValue} numberOfLines={1}>{formatPoints(wallet.points)}</Text>
+              </LinearGradient>
+              <View style={styles.pointsCopy}>
+                <Text style={styles.pointsLabel} numberOfLines={1}>
+                  {t("rewardsScreen.yourPoints")}
+                </Text>
+                <Text style={styles.pointsValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                  {pointsLabel}
+                </Text>
               </View>
             </View>
           </View>
 
-          <View style={styles.hero}>
+          <View style={[styles.hero, wide && styles.heroWide]}>
             <Image source={REWARDS_ASSETS.hero} style={styles.heroImage} resizeMode="contain" />
             <LinearGradient
-              colors={["rgba(0,0,0,0.03)", "rgba(0,0,0,0.18)", "rgba(0,0,0,0.62)"]}
+              colors={["transparent", "rgba(0,0,0,0.02)", "rgba(0,0,0,0.78)"]}
+              locations={[0, 0.5, 1]}
               style={styles.heroOverlay}
             />
-            <View style={styles.heroCopy}>
-              <Text style={styles.heroKicker}>Sistema de recompensas</Text>
-              <Text style={styles.heroTitle}>REWARDS</Text>
-              <Text style={styles.heroSub}>Jogue · Explore · Conquiste · Evolua</Text>
+            <View style={[styles.heroCopy, wide && styles.heroCopyWide]}>
+              <Text style={styles.heroKicker}>{t("rewardsScreen.heroKicker")}</Text>
+              <Text style={[styles.heroTitle, wide && styles.heroTitleWide]}>{t("rewardsScreen.heroTitle")}</Text>
+              <Text style={styles.heroSub}>{t("rewardsScreen.heroSub")}</Text>
             </View>
           </View>
 
           {error ? (
-            <Pressable onPress={() => loadAll(period)} style={styles.historyEmpty}>
-              <Text style={styles.historyEmptyText}>{error}</Text>
-              <Text style={[styles.historyEmptyText, { color: GOLD2, marginTop: 8 }]}>Tentar novamente</Text>
+            <Pressable onPress={() => loadAll(periodRef.current, hasData ? "silent" : "initial")} style={styles.banner}>
+              <Text style={styles.bannerText}>{error}</Text>
+              <Text style={styles.bannerAction}>{t("rewardsScreen.retry")}</Text>
             </Pressable>
           ) : null}
 
-          {loading ? <ActivityIndicator color={GOLD2} style={{ marginTop: 16 }} /> : null}
+          {!hasData && loading ? <ActivityIndicator color={GOLD2} style={styles.loader} /> : null}
 
-          <View style={[styles.summary, width < 620 && styles.summaryCompact]}>
+          <View style={[styles.summary, !wide && styles.summaryCompact]}>
             <View style={styles.player}>
               <View style={styles.avatar}>
                 <Text style={styles.avatarMark}>⚔</Text>
               </View>
               <View style={styles.playerCopy}>
-                <Text style={styles.playerKicker}>Aventureiro</Text>
+                <Text style={styles.playerKicker}>{t("rewardsScreen.adventurer")}</Text>
                 <Text style={styles.playerName} numberOfLines={2}>
                   {playerName}
                 </Text>
               </View>
             </View>
-            <View style={[styles.reset, width < 620 && styles.resetCompact]}>
-              <Text style={styles.resetLabel}>Próxima renovação</Text>
+            <View style={[styles.reset, !wide && styles.resetCompact]}>
+              <Text style={styles.resetLabel}>{t("rewardsScreen.nextRenewal")}</Text>
               <Text style={styles.resetValue}>{renewalLabel}</Text>
             </View>
           </View>
 
-          <View style={styles.section}>
-            <View style={styles.sectionHead}>
-              <View style={styles.sectionHeadCopy}>
-                <Text style={styles.sectionTitle}>
-                  Missões <Text style={styles.sectionTitleGold}>{periodMeta?.label}</Text>
-                </Text>
-                <Text style={styles.sectionHint}>
-                  Escolha um período e complete as atividades para acumular pontos.
-                </Text>
-              </View>
-              <Text style={styles.sectionMeta}>
-                {completedCount} / {totalCount} concluídas
-              </Text>
-            </View>
+          {hasData ? (
+            <>
+              <View style={styles.section}>
+                <SectionHead
+                  wide={wide}
+                  title={t("rewardsScreen.missions")}
+                  accent={periodMeta ? t(periodMeta.labelKey) : ""}
+                  hint={t("rewardsScreen.missionsHint")}
+                  meta={periodPending ? "—" : t("rewardsScreen.completedCount", { done: completedCount, total: totalCount })}
+                />
 
-            <View style={styles.tabs}>
-              {PERIOD_TABS.map((tab) => {
-                const active = tab.id === period;
-                const count = missionSummary?.[tab.id]?.total;
-                return (
-                  <Pressable
-                    key={tab.id}
-                    onPress={() => changePeriod(tab.id)}
-                    style={[styles.tab, active && styles.tabActive]}
-                  >
-                    <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                      {tab.label.toUpperCase()}
-                      {count != null ? <Text style={styles.tabCount}> {count}</Text> : null}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {missionRows.map((row, index) => (
-              <View key={`mission-row-${index}`} style={styles.gridRow}>
-                {row.map((mission) => (
-                  <View key={mission.id} style={styles.gridCol}>
-                    <MissionCard mission={mission} onPress={setSelectedMission} />
-                  </View>
-                ))}
-                {Array.from({ length: missionColumns - row.length }).map((_, filler) => (
-                  <View key={`mission-filler-${index}-${filler}`} style={styles.gridCol} />
-                ))}
-              </View>
-            ))}
-            {!loading && visibleMissions.length === 0 ? (
-              <Text style={styles.note}>Nenhuma missão ativa neste período.</Text>
-            ) : null}
-            <Text style={styles.note}>
-              As abas organizam as missões por ciclo. O conteúdo exibido muda sem alterar o restante do layout.
-            </Text>
-          </View>
-
-          <View style={styles.section}>
-            <View style={styles.sectionHead}>
-              <View style={styles.sectionHeadCopy}>
-                <Text style={styles.sectionTitle}>
-                  Economia <Text style={styles.sectionTitleGold}>RuneCodex</Text>
-                </Text>
-                <Text style={styles.sectionHint}>
-                  Entenda rapidamente como seus pontos viram moedas permanentes.
-                </Text>
-              </View>
-              <Text style={styles.sectionMeta}>3 moedas</Text>
-            </View>
-
-            <View style={styles.economy}>
-              <View style={styles.economyIntro}>
-                <Text style={styles.economyTitle}>PONTOS → GOLD → DIAMOND</Text>
-                <Text style={styles.economySub}>
-                  Os pontos são conquistados nas missões. Gold e Diamond ficam com você entre as temporadas.
-                </Text>
-                <View style={styles.balanceRow}>
-                  <BalancePill label="Pontos" value={wallet.points} />
-                  <BalancePill label="Gold" value={wallet.gold} />
-                  <BalancePill label="Diamond" value={wallet.diamond} tone="diamond" />
-                </View>
-              </View>
-
-              <View style={styles.economyGroup}>
-                <View style={styles.groupTitleRow}>
-                  <Text style={styles.groupTitle}>Conversão para Gold</Text>
-                  <View style={styles.groupLine} />
-                </View>
-                <View style={styles.conversionList}>
-                  {goldRows.map((item) => (
-                    <ConversionCard
-                      key={item.id}
-                      item={item}
-                      busy={busy}
-                      onPress={() => confirmConvert(item)}
-                    />
-                  ))}
-                </View>
-              </View>
-
-              <View style={styles.economyGroup}>
-                <View style={styles.groupTitleRow}>
-                  <Text style={styles.groupTitle}>Conversão para Diamond</Text>
-                  <View style={styles.groupLine} />
-                </View>
-                <View style={styles.conversionList}>
-                  {diamondRows.map((item) => (
-                    <ConversionCard
-                      key={item.id}
-                      item={item}
-                      diamond
-                      busy={busy}
-                      onPress={() => confirmConvert(item)}
-                    />
-                  ))}
-                </View>
-              </View>
-
-              <View style={styles.economyRule}>
-                <Text style={styles.economyRuleText}>
-                  <Text style={styles.ruleStrong}>O caminho é direto: </Text>
-                  {goldRows.map((pack, index) => (
-                    <Text key={pack.id}>
-                      {index > 0 ? " · " : ""}
-                      <Text style={styles.ruleGold}>
-                        {pack.price} → {pack.amount} {pack.amount === 1 ? "Gold" : "Golds"}
-                      </Text>
-                    </Text>
-                  ))}
-                  {" · "}
-                  {diamondConfigured ? (
-                    diamondRows
-                      .filter((offer) => offer.enabled)
-                      .map((offer, index) => (
-                        <Text key={offer.id}>
-                          {index > 0 ? " · " : ""}
-                          <Text style={styles.ruleBlue}>
-                            {offer.price} → {offer.amount} Diamond
-                          </Text>
+                <View style={styles.tabs}>
+                  {PERIOD_TABS.map((tab) => {
+                    const active = tab.id === period;
+                    const count = active && !periodPending ? totalCount : null;
+                    return (
+                      <Pressable
+                        key={tab.id}
+                        onPress={() => changePeriod(tab.id)}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        style={[styles.tab, active && styles.tabActive]}
+                      >
+                        {active ? (
+                          <LinearGradient
+                            colors={["#f4d879", "#b78220"]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={StyleSheet.absoluteFill}
+                          />
+                        ) : null}
+                        <Text style={[styles.tabText, active && styles.tabTextActive]} numberOfLines={2}>
+                          {t(tab.labelKey).toUpperCase()}
+                          {count != null ? <Text style={styles.tabCount}> {count}</Text> : null}
                         </Text>
-                      ))
-                  ) : (
-                    <Text style={styles.ruleBlue}>Gold → Diamond ainda não configurado</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                {periodPending || missionsLoading ? <ActivityIndicator color={GOLD2} style={styles.loader} /> : null}
+
+                <Grid
+                  rows={missionRows}
+                  columns={missionColumns}
+                  rowKey="mission"
+                  renderItem={(mission) => (
+                    <MissionCard
+                      mission={mission}
+                      compact={compactMissions}
+                      t={t}
+                      locale={locale}
+                      onPress={setSelectedMission}
+                    />
                   )}
-                  .
-                </Text>
+                />
+                {showMissionEmpty ? <Text style={styles.note}>{t("rewardsScreen.emptyMissions")}</Text> : null}
+                <Text style={styles.note}>{t("rewardsScreen.missionsNote")}</Text>
               </View>
-            </View>
-          </View>
 
-          <View style={styles.section}>
-            <View style={styles.sectionHead}>
-              <View style={styles.sectionHeadCopy}>
-                <Text style={styles.sectionTitle}>
-                  Loja de <Text style={styles.sectionTitleGold}>Recompensas</Text>
-                </Text>
-                <Text style={styles.sectionHint}>
-                  Use seus Golds para resgatar recompensas e Diamonds para itens premium.
-                </Text>
+              <View style={styles.section}>
+                <SectionHead
+                  wide={wide}
+                  title={t("rewardsScreen.economy")}
+                  accent={t("rewardsScreen.economyBrand")}
+                  hint={t("rewardsScreen.economyHint")}
+                  meta={t("rewardsScreen.currencies")}
+                />
+
+                <View style={styles.economy}>
+                  <View style={styles.economyIntro}>
+                    <Text style={styles.economyTitle}>{t("rewardsScreen.economyFlow")}</Text>
+                    <Text style={styles.economySub}>{t("rewardsScreen.economyBody")}</Text>
+                    <View style={styles.balanceRow}>
+                      <BalancePill label={t("rewardsScreen.points")} value={formatPoints(wallet.points, locale)} />
+                      <BalancePill label={t("rewardsScreen.gold")} value={formatPoints(wallet.gold, locale)} tone="gold" />
+                      <BalancePill label={t("rewardsScreen.diamond")} value={formatPoints(wallet.diamond, locale)} tone="diamond" />
+                    </View>
+                  </View>
+
+                  <View style={styles.economyGroup}>
+                    <View style={styles.groupTitleRow}>
+                      <Text style={styles.groupTitle}>{t("rewardsScreen.toGold")}</Text>
+                      <View style={styles.groupLine} />
+                    </View>
+                    <Grid
+                      rows={goldRows}
+                      columns={conversionColumns}
+                      rowKey="gold"
+                      renderItem={(item) => (
+                        <ConversionCard
+                          item={item}
+                          busy={actionsLocked}
+                          t={t}
+                          locale={locale}
+                          onPress={() => confirmConvert(item)}
+                        />
+                      )}
+                    />
+                  </View>
+
+                  <View style={styles.economyGroup}>
+                    <View style={styles.groupTitleRow}>
+                      <Text style={styles.groupTitle}>{t("rewardsScreen.toDiamond")}</Text>
+                      <View style={styles.groupLine} />
+                    </View>
+                    <Grid
+                      rows={diamondRows}
+                      columns={conversionColumns}
+                      rowKey="diamond"
+                      renderItem={(item) => (
+                        <ConversionCard
+                          item={item}
+                          diamond
+                          busy={actionsLocked}
+                          t={t}
+                          locale={locale}
+                          onPress={() => confirmConvert(item)}
+                        />
+                      )}
+                    />
+                  </View>
+
+                  <View style={styles.economyRule}>
+                    <Text style={styles.economyRuleText}>
+                      <Text style={styles.ruleStrong}>{t("rewardsScreen.pathIntro")}</Text>
+                      {goldPackages
+                        .filter((pack) => pack.enabled !== false)
+                        .map((pack, index) => (
+                          <Text key={pack.id}>
+                            {index > 0 ? " · " : ""}
+                            <Text style={styles.ruleGold}>
+                              {packagePrice(pack, t, locale)} → {currencyUnit(pack.amount, "gold", t, locale)}
+                            </Text>
+                          </Text>
+                        ))}
+                      {" · "}
+                      {diamondConfigured ? (
+                        diamondOffers
+                          .filter((offer) => offer.enabled)
+                          .map((offer, index) => (
+                            <Text key={offer.id}>
+                              {index > 0 ? " · " : ""}
+                              <Text style={styles.ruleBlue}>
+                                {packagePrice(offer, t, locale)} → {currencyUnit(offer.amount, "diamond", t, locale)}
+                              </Text>
+                            </Text>
+                          ))
+                      ) : (
+                        <Text style={styles.ruleBlue}>{t("rewardsScreen.diamondUnconfigured")}</Text>
+                      )}
+                      .
+                    </Text>
+                  </View>
+                </View>
               </View>
-              <Text style={styles.sectionMeta}>
-                {catalog.length} {catalog.length === 1 ? "item" : "itens"}
-              </Text>
-            </View>
 
-            {catalogRows.map((row, index) => (
-              <View key={`store-row-${index}`} style={styles.gridRow}>
-                {row.map((item) => (
-                  <View key={item.id} style={styles.gridCol}>
+              <View style={styles.section}>
+                <SectionHead
+                  wide={wide}
+                  title={t("rewardsScreen.store")}
+                  accent={t("rewardsScreen.storeAccent")}
+                  hint={t("rewardsScreen.storeHint")}
+                  meta={
+                    catalog.length === 1
+                      ? t("rewardsScreen.itemCountOne", { count: catalog.length })
+                      : t("rewardsScreen.itemCount", { count: catalog.length })
+                  }
+                />
+
+                <Grid
+                  rows={catalogRows}
+                  columns={storeColumns}
+                  rowKey="store"
+                  renderItem={(item) => (
                     <RewardCard
                       item={item}
                       balance={item.currency === "DIAMOND" ? wallet.diamond : wallet.gold}
-                      busy={busy}
+                      busy={actionsLocked}
+                      t={t}
+                      locale={locale}
                       onPress={() => confirmRedeem(item)}
                     />
-                  </View>
-                ))}
-                {Array.from({ length: storeColumns - row.length }).map((_, filler) => (
-                  <View key={`store-filler-${index}-${filler}`} style={styles.gridCol} />
-                ))}
+                  )}
+                />
+                {showCatalogEmpty ? <Text style={styles.note}>{t("rewardsScreen.emptyCatalog")}</Text> : null}
+                {catalog.length > 0 ? <Text style={styles.note}>{t("rewardsScreen.catalogNote")}</Text> : null}
               </View>
-            ))}
-            {!loading && catalog.length === 0 ? (
-              <Text style={styles.note}>Nenhum item disponível no catálogo.</Text>
-            ) : (
-              <Text style={styles.note}>
-                O progresso compara o seu saldo com o preço do item. A contagem de resgates da comunidade aparece quando a API informar esse número.
-              </Text>
-            )}
-          </View>
 
-          <View style={styles.section}>
-            <View style={styles.sectionHead}>
-              <View style={styles.sectionHeadCopy}>
-                <Text style={styles.sectionTitle}>
-                  Histórico de <Text style={styles.sectionTitleGold}>resgates</Text>
-                </Text>
-                <Text style={styles.sectionHint}>
-                  Status: {Object.values(REDEMPTION_STATUS_LABEL).join(" · ")}
-                </Text>
-              </View>
-            </View>
-            {redemptions.length === 0 ? (
-              <View style={styles.historyEmpty}>
-                <Text style={styles.historyEmptyText}>Nenhum resgate ainda.</Text>
-              </View>
-            ) : (
-              redemptions.map((item) => (
-                <View key={item.id} style={styles.historyRow}>
-                  <Text style={styles.storeName}>{item.name || item.reward?.name}</Text>
-                  <Text style={styles.storeDesc}>
-                    {formatPoints(item.price ?? item.cost)} {item.currency === "DIAMOND" ? "Diamond" : "Gold"} ·{" "}
-                    {item.status}
-                  </Text>
-                  <Text style={styles.storeDesc}>
-                    {item.message || REDEMPTION_STATUS_LABEL[item.status] || item.status}
-                  </Text>
-                  {item.adminNote ? (
-                    <Text style={styles.storeDesc}>{item.adminNote}</Text>
-                  ) : null}
-                  <Text style={styles.storeDesc}>
-                    {item.createdAt ? new Date(item.createdAt).toLocaleString("pt-BR") : ""}
-                  </Text>
+              <View style={styles.section}>
+                <SectionHead
+                  wide={wide}
+                  title={t("rewardsScreen.history")}
+                  accent={t("rewardsScreen.historyAccent")}
+                  hint={t("rewardsScreen.historyHint")}
+                />
+                <View style={styles.historyPanel}>
+                  {redemptions.length === 0 ? (
+                    <Text style={styles.historyMessage}>{t("rewardsScreen.emptyHistory")}</Text>
+                  ) : (
+                    redemptions.map((item, index) => (
+                      <View key={item.id} style={[styles.historyRow, index > 0 && styles.historyDivider]}>
+                        <Text style={styles.historyName}>{item.name || item.reward?.name}</Text>
+                        <Text style={styles.historyMeta}>
+                          {formatPoints(item.price ?? item.cost, locale)}{" "}
+                          {item.currency === "DIAMOND" ? t("rewardsScreen.diamond") : t("rewardsScreen.gold")}
+                          {item.createdAt ? ` · ${formatWhen(item.createdAt, locale)}` : ""}
+                        </Text>
+                        <Text style={styles.historyMessage}>{item.message && locale === "pt-BR" ? item.message : statusText(item.status, t)}</Text>
+                        {item.adminNote ? <Text style={styles.historyNote}>{item.adminNote}</Text> : null}
+                      </View>
+                    ))
+                  )}
                 </View>
-              ))
-            )}
-          </View>
+              </View>
 
-          <Text style={styles.footer}>RuneCodex · Sistema de Rewards · TriTech</Text>
+              <Text style={styles.footer}>{t("rewardsScreen.footer")}</Text>
+            </>
+          ) : null}
         </ScrollView>
       </ImageBackground>
 
@@ -864,22 +1117,19 @@ export default function ShopScreen() {
               <>
                 <View style={styles.modalHead}>
                   <Text style={styles.modalTitle}>{openMission.name}</Text>
-                  <Pressable onPress={() => setSelectedMission(null)} hitSlop={12}>
+                  <Pressable onPress={() => setSelectedMission(null)} hitSlop={12} accessibilityRole="button">
                     <Text style={styles.modalClose}>×</Text>
                   </Pressable>
                 </View>
                 <Text style={styles.modalText}>
-                  {PERIOD_SINGULAR[openMission.period] || CATEGORY_LABEL[openMission.category]} ·{" "}
-                  {openMission.description}
+                  {periodMeta ? t(periodMeta.oneKey) : categoryLabel(openMission.category, t)} · {openMission.description}
                 </Text>
                 <View style={styles.progressRow}>
                   <View style={styles.progressTrack}>
                     <View
                       style={[
                         styles.progressFill,
-                        {
-                          width: `${missionProgressPercent(openMission.current, openMission.target)}%`,
-                        },
+                        { width: `${missionProgressPercent(openMission.current, openMission.target)}%` },
                       ]}
                     />
                   </View>
@@ -888,13 +1138,29 @@ export default function ShopScreen() {
                   </Text>
                 </View>
                 <Text style={styles.modalReward}>
-                  Recompensa: +{formatPoints(openMission.rewardPoints)} pontos
+                  {t("rewardsScreen.missionReward", { amount: formatPoints(openMission.rewardPoints, locale) })}
                 </Text>
-                <Text style={[styles.modalText, openMission.completed && { color: BLUE2 }]}>
+                <Text style={[styles.modalText, openMission.completed && styles.modalDone]}>
                   {openMission.completed
-                    ? "CONCLUÍDA"
-                    : "O progresso atualiza automaticamente quando você realiza a ação no app."}
+                    ? t("rewardsScreen.completed")
+                    : activityPath
+                      ? t("rewardsScreen.missionAuto")
+                      : t("rewardsScreen.missionUnavailable")}
                 </Text>
+                {activityPath ? (
+                  <Pressable
+                    style={styles.storeBtn}
+                    onPress={() => {
+                      setSelectedMission(null);
+                      router.push(activityPath);
+                    }}
+                  >
+                    <LinearGradient colors={["#f0cd68", "#b78524"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                    <Text style={styles.storeBtnText}>
+                      {activityPath === "/(tabs)/forum" ? t("rewardsScreen.goForum") : t("rewardsScreen.openActivity")}
+                    </Text>
+                  </Pressable>
+                ) : null}
               </>
             ) : null}
           </Pressable>
@@ -906,16 +1172,19 @@ export default function ShopScreen() {
 
 const styles = StyleSheet.create({
   bg: { flex: 1 },
-  scroll: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 14, paddingTop: 8, paddingBottom: 36 },
   pressed: { opacity: 0.94, transform: [{ scale: 0.99 }] },
+  disabled: { opacity: 0.55 },
+  loader: { marginTop: 18 },
 
   topbar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingBottom: 14,
+    gap: 8,
   },
-  brand: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1, minWidth: 0 },
+  brand: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1, minWidth: 0 },
   brandMark: {
     width: 44,
     height: 44,
@@ -923,15 +1192,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(217,173,63,0.28)",
   },
+  brandMarkWide: { width: 52, height: 52 },
   brandCopy: { flex: 1, minWidth: 0 },
   brandTitle: { color: Colors.text, fontSize: 20, fontWeight: "800", letterSpacing: 0.4 },
-  brandSub: { color: Colors.muted, fontSize: 12, marginTop: 3 },
+  brandTitleWide: { fontSize: 25 },
+  brandSub: { color: Colors.muted, fontSize: 11, marginTop: 2 },
   points: {
     flexDirection: "row",
     alignItems: "center",
     flexShrink: 1,
+    maxWidth: "46%",
     gap: 8,
-    marginLeft: 8,
     paddingVertical: 7,
     paddingHorizontal: 10,
     borderRadius: 13,
@@ -939,13 +1210,14 @@ const styles = StyleSheet.create({
     borderColor: "rgba(217,173,63,0.28)",
     backgroundColor: "rgba(4,12,25,0.76)",
   },
+  pointsCopy: { flexShrink: 1, minWidth: 0 },
   coin: {
     width: 30,
     height: 30,
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#e9c45b",
+    overflow: "hidden",
     borderWidth: 2,
     borderColor: "#f5db82",
   },
@@ -953,7 +1225,7 @@ const styles = StyleSheet.create({
   pointsLabel: {
     color: Colors.muted,
     fontSize: 10,
-    letterSpacing: 1,
+    letterSpacing: 0.6,
     textTransform: "uppercase",
   },
   pointsValue: { color: GOLD2, fontSize: 16, fontWeight: "700", marginTop: 1 },
@@ -961,80 +1233,88 @@ const styles = StyleSheet.create({
   hero: {
     width: "100%",
     aspectRatio: 3 / 2,
-    borderRadius: 15,
+    borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(217,173,63,0.48)",
     backgroundColor: "#050b15",
   },
+  heroWide: { borderRadius: 22 },
   heroImage: { width: "100%", height: "100%", backgroundColor: "#050b15" },
   heroOverlay: { ...StyleSheet.absoluteFillObject },
-  heroCopy: { position: "absolute", left: 18, right: 18, bottom: 17 },
+  heroCopy: { position: "absolute", left: 18, right: 18, bottom: 16 },
+  heroCopyWide: { left: 28, bottom: 24 },
   heroKicker: {
     color: GOLD2,
     fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 2,
+    letterSpacing: 1.6,
     textTransform: "uppercase",
     marginBottom: 6,
   },
-  heroTitle: { color: Colors.text, fontSize: 27, fontWeight: "800", letterSpacing: 0.6 },
-  heroSub: { color: "#d6dfeb", marginTop: 5, fontSize: 11 },
+  heroTitle: { color: Colors.text, fontSize: 26, fontWeight: "800", letterSpacing: 0.4 },
+  heroTitleWide: { fontSize: 40 },
+  heroSub: { color: "#d6dfeb", marginTop: 4, fontSize: 12 },
 
   summary: {
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 18,
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "rgba(217,173,63,0.28)",
-    backgroundColor: "rgba(5,15,29,0.91)",
+    backgroundColor: "rgba(5,15,29,0.72)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
-    flexWrap: "wrap",
   },
-  player: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1, minWidth: 180 },
+  summaryCompact: { flexDirection: "column", alignItems: "flex-start" },
+  player: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1, minWidth: 0 },
   avatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#17345b",
     borderWidth: 1,
     borderColor: GOLD,
   },
-  avatarMark: { color: GOLD2, fontSize: 22 },
+  avatarMark: { color: GOLD2, fontSize: 18 },
   playerCopy: { flex: 1, minWidth: 0 },
-  playerKicker: { color: Colors.muted, fontSize: 11 },
-  playerName: { color: GOLD2, fontSize: 16, fontWeight: "700", marginTop: 2 },
-  summaryCompact: { flexDirection: "column", alignItems: "flex-start" },
+  playerKicker: { color: Colors.muted, fontSize: 10 },
+  playerName: { color: GOLD2, fontSize: 15, fontWeight: "700", marginTop: 1 },
   reset: { alignItems: "flex-end" },
   resetCompact: { alignItems: "flex-start" },
   resetLabel: { color: Colors.muted, fontSize: 10, textTransform: "uppercase" },
   resetValue: { color: Colors.text, fontSize: 15, fontWeight: "700", marginTop: 2 },
-  balanceRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  balancePill: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: "rgba(0,0,0,0.28)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-  },
-  balancePillDiamond: { borderColor: "rgba(44,169,255,0.28)" },
-  balancePillText: { color: "#b8c6d6", fontSize: 10, fontWeight: "700" },
-  balanceValue: { color: GOLD2, fontWeight: "800" },
-  balanceValueDiamond: { color: BLUE2 },
 
-  section: { marginTop: 24 },
-  sectionHead: { marginBottom: 12, gap: 6 },
-  sectionHeadCopy: { minWidth: 0 },
-  sectionTitle: { color: Colors.text, fontSize: 22, fontWeight: "800" },
+  banner: {
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(217,173,63,0.34)",
+    backgroundColor: "rgba(4,12,24,0.88)",
+    gap: 6,
+  },
+  bannerText: { color: Colors.text, fontSize: 13, lineHeight: 18, fontWeight: "700" },
+  bannerAction: { color: GOLD2, fontSize: 12, fontWeight: "800" },
+
+  section: { marginTop: 18 },
+  sectionHead: { marginBottom: 8, gap: 4 },
+  sectionHeadRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    gap: 12,
+  },
+  sectionHeadCopy: { flex: 1, minWidth: 0 },
+  sectionTitle: { color: Colors.text, fontSize: 18, fontWeight: "800" },
   sectionTitleGold: { color: GOLD2 },
-  sectionHint: { color: Colors.muted, fontSize: 11, marginTop: 4, lineHeight: 16 },
-  sectionMeta: { color: Colors.muted, fontSize: 11 },
+  sectionHint: { color: Colors.muted, fontSize: 12, marginTop: 4, lineHeight: 17 },
+  sectionMeta: { color: Colors.muted, fontSize: 12 },
 
   tabs: {
     flexDirection: "row",
@@ -1049,21 +1329,20 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     minWidth: 0,
-    paddingVertical: 9,
+    minHeight: 38,
+    paddingVertical: 8,
     paddingHorizontal: 4,
     borderRadius: 10,
     alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
-  tabActive: {
-    backgroundColor: GOLD,
-    borderWidth: 1,
-    borderColor: "#f0ce6b",
-  },
+  tabActive: { borderWidth: 1, borderColor: "#f0ce6b" },
   tabText: {
     color: "#8796aa",
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: "800",
-    letterSpacing: 0.6,
+    letterSpacing: 0.4,
     textAlign: "center",
   },
   tabTextActive: { color: "#1a1307" },
@@ -1073,13 +1352,13 @@ const styles = StyleSheet.create({
   gridCol: { flex: 1, minWidth: 0 },
 
   missionCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(217,173,63,0.34)",
-    backgroundColor: "rgba(4,12,24,0.86)",
+    borderColor: "rgba(217,173,63,0.55)",
+    backgroundColor: "#07111d",
   },
-  missionImage: { width: "100%", aspectRatio: 300 / 332 },
+  missionImage: { width: "100%", aspectRatio: 300 / 332, backgroundColor: "#050b15" },
   missionOverlay: {
     position: "absolute",
     left: 0,
@@ -1087,12 +1366,12 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: "46%",
   },
-  missionBody: { position: "absolute", left: 10, right: 10, bottom: 10 },
+  missionBody: { position: "absolute", left: 8, right: 8, bottom: 8 },
   missionTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 6 },
-  missionCategory: { color: Colors.text, fontSize: 10, fontWeight: "800", flex: 1 },
+  missionCategory: { color: "#f7f8fb", fontSize: 9, fontWeight: "800", flex: 1, letterSpacing: 0.4 },
   missionReward: { color: GOLD2, fontWeight: "800", fontSize: 10 },
-  missionTitle: { color: Colors.text, fontWeight: "700", fontSize: 12, marginTop: 4 },
-  missionDesc: { color: "#b8c5d5", fontSize: 9, marginTop: 3, lineHeight: 12 },
+  missionTitle: { color: Colors.text, fontWeight: "700", fontSize: 12, marginTop: 2 },
+  missionDesc: { color: "#d5deea", fontSize: 9, marginTop: 2, lineHeight: 12 },
   progressRow: { marginTop: 8, flexDirection: "row", alignItems: "center", gap: 8 },
   progressTrack: {
     flex: 1,
@@ -1103,39 +1382,51 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#27405c",
   },
-  progressFill: {
-    height: "100%",
-    borderRadius: 99,
-    backgroundColor: BLUE,
-  },
-  progressCount: { color: "#d0d9e5", fontSize: 9, fontWeight: "700" },
+  progressFill: { height: "100%", borderRadius: 99, backgroundColor: BLUE },
+  progressCount: { color: "#d0d9e5", fontSize: 10, fontWeight: "700" },
   missionAction: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
-  missionActionHint: { color: "#8d9cb0", fontSize: 9 },
-  missionActionState: { color: BLUE2, fontWeight: "800", fontSize: 9 },
-  note: { color: "#7e8da2", fontSize: 10, marginTop: 2 },
+  missionActionHint: { color: "#8d9cb0", fontSize: 10 },
+  missionActionState: { color: BLUE2, fontWeight: "800", fontSize: 10 },
+  note: { color: "#7e8da2", fontSize: 11, marginTop: 4, lineHeight: 16 },
 
   economy: {
     borderRadius: 18,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(217,173,63,0.34)",
-    backgroundColor: "rgba(4,12,23,0.96)",
+    backgroundColor: "rgba(4,12,23,0.78)",
   },
   economyIntro: {
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingTop: 14,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.07)",
   },
-  economyTitle: { color: GOLD2, fontSize: 18, fontWeight: "800" },
-  economySub: { color: Colors.muted, fontSize: 10, lineHeight: 15, marginTop: 4, marginBottom: 10 },
+  economyTitle: { color: GOLD2, fontSize: 16, fontWeight: "800", letterSpacing: 0.3 },
+  economySub: { color: Colors.muted, fontSize: 11, lineHeight: 15, marginTop: 4, marginBottom: 10 },
+  balanceRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  balancePill: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: "rgba(0,0,0,0.28)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  balancePillGold: { borderColor: "rgba(217,173,63,0.4)" },
+  balancePillDiamond: { borderColor: "rgba(78,178,255,0.4)" },
+  balancePillText: { color: "#b8c6d6", fontSize: 11, fontWeight: "700" },
+  balanceValue: { color: GOLD2, fontWeight: "800" },
+  balanceValueDiamond: { color: BLUE2 },
   economyGroup: { paddingHorizontal: 12, paddingTop: 14 },
   groupTitleRow: { flexDirection: "row", alignItems: "center", gap: 9, marginBottom: 10 },
-  groupTitle: { color: "#f0d273", fontSize: 14, fontWeight: "800" },
+  groupTitle: { color: "#f0d273", fontSize: 15, fontWeight: "800" },
   groupLine: { flex: 1, height: 1, backgroundColor: "rgba(217,173,63,0.32)" },
 
-  conversionList: { gap: 10 },
   conversionCard: {
     width: "100%",
+    flexGrow: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
@@ -1147,83 +1438,85 @@ const styles = StyleSheet.create({
   },
   conversionCardDiamond: { borderColor: "rgba(78,178,255,0.28)" },
   conversionArt: {
-    width: 88,
-    height: 88,
-    borderRadius: 10,
+    width: 104,
+    height: 104,
+    borderRadius: 12,
     overflow: "hidden",
     backgroundColor: "#02050a",
+    borderWidth: 1,
+    borderColor: "rgba(217,173,63,0.28)",
   },
   conversionImage: { width: "100%", height: "100%" },
   conversionCopy: { flex: 1, minWidth: 0 },
   conversionKicker: {
     color: "#8494a8",
-    fontSize: 8,
-    letterSpacing: 1.1,
+    fontSize: 9,
+    letterSpacing: 0.8,
     textTransform: "uppercase",
     fontWeight: "700",
   },
   conversionTitle: { color: Colors.text, fontSize: 14, fontWeight: "800", marginTop: 3 },
-  conversionPrice: { color: GOLD2, fontSize: 12, fontWeight: "800", marginTop: 6 },
+  conversionPrice: { color: GOLD2, fontSize: 13, fontWeight: "800", marginTop: 6 },
   conversionPriceDiamond: { color: BLUE2 },
   conversionSoon: { color: BLUE2, fontSize: 12, fontWeight: "800", marginTop: 6 },
-  conversionBonus: { color: BLUE2, fontSize: 9, fontWeight: "800", marginTop: 4 },
-  conversionHint: { color: "#8e9db0", fontSize: 9, lineHeight: 13, marginTop: 4 },
+  conversionBonus: { color: BLUE2, fontSize: 11, fontWeight: "800", marginTop: 4, lineHeight: 15 },
+  conversionHint: { color: "#8e9db0", fontSize: 11, lineHeight: 15, marginTop: 4 },
   conversionBtn: {
-    alignSelf: "flex-start",
     marginTop: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    minHeight: 32,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
     borderRadius: 7,
     borderWidth: 1,
     borderColor: "rgba(217,173,63,0.48)",
     backgroundColor: "rgba(217,173,63,0.07)",
     alignItems: "center",
+    justifyContent: "center",
   },
-  conversionBtnOff: {
+  conversionBtnDiamond: {
     borderColor: "rgba(78,178,255,0.38)",
     backgroundColor: "rgba(44,169,255,0.06)",
   },
   conversionBtnDisabled: { opacity: 0.55 },
-  conversionBtnText: { color: GOLD2, fontSize: 9, fontWeight: "800" },
+  conversionBtnText: { color: GOLD2, fontSize: 11, fontWeight: "800" },
   conversionBtnTextDiamond: { color: BLUE2 },
 
   economyRule: {
     margin: 12,
-    padding: 10,
+    padding: 12,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(44,169,255,0.16)",
     backgroundColor: "rgba(3,12,24,0.65)",
   },
-  economyRuleText: { color: "#9eafc3", fontSize: 9, lineHeight: 14 },
+  economyRuleText: { color: "#9eafc3", fontSize: 11, lineHeight: 16 },
   ruleStrong: { color: "#e4ebf4", fontWeight: "800" },
   ruleGold: { color: GOLD2, fontWeight: "800" },
   ruleBlue: { color: BLUE2, fontWeight: "800" },
 
   storeItem: {
-    borderRadius: 12,
+    flexGrow: 1,
+    borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(217,173,63,0.28)",
-    backgroundColor: "rgba(8,19,35,0.96)",
+    borderColor: "rgba(217,173,63,0.34)",
+    backgroundColor: "rgba(8,19,35,0.82)",
   },
-  storeItemDiamond: {
-    borderColor: "rgba(78,178,255,0.52)",
-  },
+  storeItemDiamond: { borderColor: "rgba(78,178,255,0.52)" },
   itemArt: { width: "100%", aspectRatio: 1, backgroundColor: "#020509" },
   itemArtImage: { width: "100%", height: "100%" },
-  storeInfo: { padding: 10 },
+  storeInfo: { paddingHorizontal: 10, paddingTop: 10, paddingBottom: 12 },
   storeType: {
     color: GOLD2,
     fontSize: 9,
     fontWeight: "800",
-    letterSpacing: 1.2,
+    letterSpacing: 0.8,
     textTransform: "uppercase",
   },
   storeTypeDiamond: { color: BLUE2 },
-  storeName: { color: Colors.text, fontSize: 13, fontWeight: "700", marginTop: 4 },
-  storeDesc: { color: Colors.muted, fontSize: 9, marginTop: 5, minHeight: 26, lineHeight: 13 },
-  storeCost: { color: GOLD2, fontWeight: "800", fontSize: 12, marginTop: 4 },
+  storeName: { color: Colors.text, fontSize: 14, fontWeight: "700", marginTop: 4 },
+  storeDesc: { color: Colors.muted, fontSize: 11, marginTop: 4, lineHeight: 14 },
+  storeCost: { color: GOLD2, fontWeight: "800", fontSize: 13, marginTop: 6 },
   storeCostDiamond: { color: BLUE2 },
   storeMeta: {
     flexDirection: "row",
@@ -1232,8 +1525,15 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.07)",
+    gap: 8,
   },
-  storeMetaText: { color: "#8291a4", fontSize: 10 },
+  storeMetaPlain: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
+    gap: 8,
+  },
+  storeMetaText: { color: "#8291a4", fontSize: 10, flexShrink: 1 },
   storeProgress: {
     height: 5,
     marginTop: 6,
@@ -1247,42 +1547,33 @@ const styles = StyleSheet.create({
   storeProgressFill: { height: "100%", borderRadius: 99, backgroundColor: BLUE },
   storeProgressFillDiamond: { backgroundColor: BLUE2 },
   storeBtn: {
-    alignSelf: "flex-start",
-    marginTop: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    marginTop: 10,
+    minHeight: 40,
     borderRadius: 9,
+    overflow: "hidden",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: GOLD,
-    backgroundColor: GOLD,
+    justifyContent: "center",
+    paddingHorizontal: 8,
   },
-  storeBtnDiamond: {
-    borderColor: "rgba(78,178,255,0.65)",
-    backgroundColor: BLUE,
-  },
-  storeBtnText: { color: "#171106", fontWeight: "800", fontSize: 11 },
+  storeBtnText: { color: "#171106", fontWeight: "800", fontSize: 12 },
   storeBtnTextDiamond: { color: "#071421" },
 
-  historyEmpty: {
-    padding: 16,
-    borderRadius: 14,
+  historyPanel: {
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "rgba(217,173,63,0.22)",
-    backgroundColor: "rgba(4,12,24,0.8)",
+    backgroundColor: "rgba(4,12,24,0.72)",
+    paddingHorizontal: 12,
+    paddingVertical: 2,
   },
-  historyEmptyText: { color: Colors.muted, fontSize: 12, fontWeight: "700" },
-  historyRow: {
-    padding: 12,
-    marginBottom: 8,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(217,173,63,0.22)",
-    backgroundColor: "rgba(4,12,24,0.8)",
-    gap: 4,
-  },
+  historyRow: { paddingVertical: 12, gap: 4 },
+  historyDivider: { borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)" },
+  historyName: { color: Colors.text, fontSize: 15, fontWeight: "700" },
+  historyMeta: { color: "#8291a4", fontSize: 11 },
+  historyMessage: { color: Colors.muted, fontSize: 12, lineHeight: 17 },
+  historyNote: { color: "#d6dfeb", fontSize: 12, lineHeight: 17 },
 
-  footer: { textAlign: "center", color: "#7e8ca0", fontSize: 10, marginTop: 22 },
+  footer: { textAlign: "center", color: "#7e8ca0", fontSize: 11, marginTop: 22 },
 
   modalBackdrop: {
     flex: 1,
@@ -1300,6 +1591,7 @@ const styles = StyleSheet.create({
   modalHead: { flexDirection: "row", justifyContent: "space-between", gap: 12, alignItems: "flex-start" },
   modalTitle: { color: GOLD2, fontSize: 18, fontWeight: "700", flex: 1 },
   modalClose: { color: "#9aa9bc", fontSize: 22, lineHeight: 22 },
-  modalText: { color: Colors.muted, fontSize: 12, lineHeight: 19, marginTop: 12 },
+  modalText: { color: Colors.muted, fontSize: 13, lineHeight: 19, marginTop: 12 },
   modalReward: { color: GOLD2, fontWeight: "700", marginTop: 12 },
+  modalDone: { color: BLUE2 },
 });

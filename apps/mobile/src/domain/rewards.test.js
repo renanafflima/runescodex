@@ -6,7 +6,10 @@ import {
   formatRenewal,
   mapDiamondOffers,
   mapGoldPackages,
+  isPlayableRewardMission,
+  missionActivityPath,
   missionProgressPercent,
+  periodWindow,
 } from "./rewards.js";
 
 test("renewal countdown follows the mission period end", () => {
@@ -69,6 +72,45 @@ test("mission progress never divides by zero", () => {
   assert.equal(missionProgressPercent(4, 2), 100);
   assert.equal(missionProgressPercent(1, 0), 0);
   assert.equal(missionProgressPercent("nope", 2), 0);
+});
+
+test("period windows follow the API UTC boundaries", () => {
+  const now = "2026-10-09T09:38:00.000Z";
+  const daily = periodWindow("DAILY", now);
+  assert.equal(formatRenewal(daily.periodEnd, now), "14h 22m");
+
+  const weekly = periodWindow("WEEKLY", now);
+  assert.equal(new Date(weekly.periodStart).toISOString(), "2026-10-05T00:00:00.000Z");
+  assert.equal(new Date(weekly.periodEnd).toISOString(), "2026-10-12T00:00:00.000Z");
+
+  const monthly = periodWindow("MONTHLY", now);
+  assert.equal(new Date(monthly.periodEnd).toISOString(), "2026-11-01T00:00:00.000Z");
+  assert.equal(periodWindow("YEARLY", now), null);
+  assert.equal(periodWindow("DAILY", "not-a-date"), null);
+});
+
+test("only missions the server can record stay playable", () => {
+  assert.equal(isPlayableRewardMission({ eventType: "FORUM_TOPIC_CREATED", title: "Poste no Fórum" }), true);
+  assert.equal(isPlayableRewardMission({ eventType: "FORUM_COMMENT_CREATED", title: "Faça 3 comentários" }), true);
+  assert.equal(isPlayableRewardMission({ eventType: "HUNT_ACTION", title: "Complete 3 Hunts" }), false);
+  assert.equal(isPlayableRewardMission({ eventType: "EXPLORATION_COMPLETED", title: "Explore 3 Novas Áreas" }), false);
+  assert.equal(isPlayableRewardMission({ eventType: null, title: "Poste no Fórum" }), false);
+  assert.equal(
+    isPlayableRewardMission({ eventType: "FORUM_TOPIC_CREATED", title: "Assista anúncios", description: "Ganhe pontos" }),
+    false,
+  );
+  assert.equal(
+    isPlayableRewardMission({ eventType: "AD_WATCHED", title: "Assistir anúncio", category: "ADS" }),
+    false,
+  );
+});
+
+test("only recorded reward events open an in-app activity", () => {
+  assert.equal(missionActivityPath("FORUM_TOPIC_CREATED"), "/(tabs)/forum");
+  assert.equal(missionActivityPath("FORUM_COMMENT_CREATED"), "/(tabs)/forum");
+  assert.equal(missionActivityPath("HUNT_ACTION"), null);
+  assert.equal(missionActivityPath("BESTIARY_ACTION"), null);
+  assert.equal(missionActivityPath(null), null);
 });
 
 test("grids follow the available width", () => {

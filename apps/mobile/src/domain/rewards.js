@@ -39,10 +39,14 @@ export const DIAMOND_OFFERS = [
   },
 ];
 
-export function formatPoints(value) {
+export function formatPoints(value, locale = "pt-BR") {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return "0";
-  return amount.toLocaleString("pt-BR");
+  try {
+    return amount.toLocaleString(locale);
+  } catch {
+    return amount.toLocaleString("pt-BR");
+  }
 }
 
 function toMillis(value) {
@@ -133,6 +137,62 @@ export function affordancePercent(balance, price, priceConfigured) {
   if (!priceConfigured || !Number.isFinite(cost) || cost <= 0) return null;
   if (!Number.isFinite(have) || have <= 0) return 0;
   return Math.min(100, Math.round((have / cost) * 100));
+}
+
+const DAY_MS = 86_400_000;
+
+/** Events the rewards API actually records. Future events have no in-app action. */
+export const MISSION_ACTIVITY_ROUTES = {
+  FORUM_TOPIC_CREATED: "/(tabs)/forum",
+  FORUM_COMMENT_CREATED: "/(tabs)/forum",
+};
+
+export function missionActivityPath(eventType) {
+  if (!eventType) return null;
+  return MISSION_ACTIVITY_ROUTES[eventType] || null;
+}
+
+const AD_MISSION_PATTERN = /an[uú]ncios?|advertis|rewarded|\bads?\b|propaganda/i;
+
+/** Missions the API can actually advance. Ads and future events stay out of the playable list. */
+export function isPlayableRewardMission(mission) {
+  const eventType = mission?.eventType;
+  if (!eventType || !MISSION_ACTIVITY_ROUTES[eventType]) return false;
+  const text = [mission.title, mission.name, mission.description, mission.category, eventType]
+    .filter(Boolean)
+    .join(" ");
+  return !AD_MISSION_PATTERN.test(text);
+}
+
+/** UTC windows used by the rewards API. Display-only; mission payloads remain the source of periodEnd. */
+export function periodWindow(period, now = Date.now()) {
+  const date = now instanceof Date ? now : new Date(now);
+  const time = date.getTime();
+  if (!Number.isFinite(time)) return null;
+
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
+  const utcMidnight = Date.UTC(year, month, day, 0, 0, 0, 0);
+
+  if (period === "DAILY") {
+    return { periodStart: utcMidnight, periodEnd: utcMidnight + DAY_MS };
+  }
+
+  if (period === "WEEKLY") {
+    const daysFromMonday = (new Date(utcMidnight).getUTCDay() + 6) % 7;
+    const periodStart = utcMidnight - daysFromMonday * DAY_MS;
+    return { periodStart, periodEnd: periodStart + 7 * DAY_MS };
+  }
+
+  if (period === "MONTHLY") {
+    return {
+      periodStart: Date.UTC(year, month, 1, 0, 0, 0, 0),
+      periodEnd: Date.UTC(year, month + 1, 1, 0, 0, 0, 0),
+    };
+  }
+
+  return null;
 }
 
 export function chunkRows(list, size) {
