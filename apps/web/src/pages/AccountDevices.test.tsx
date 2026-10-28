@@ -72,7 +72,7 @@ describe("AccountDevices", () => {
   it("shows an API error and asks for the password before removal", async () => {
     api.listAccountDevices.mockRejectedValueOnce(new ApiError("HTTP_ERROR", 500, "falhou", null));
     render(<AccountDevices />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("falhou");
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Erro tempor.rio no servidor/);
 
     cleanup();
     api.listAccountDevices.mockResolvedValue({

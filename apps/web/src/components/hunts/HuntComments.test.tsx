@@ -108,7 +108,7 @@ describe("HuntComments", () => {
   it("shows an API error instead of an empty list", async () => {
     api.listHuntComments.mockRejectedValue(new ApiError("HTTP_ERROR", 500, "Internal server error", null));
     renderComments();
-    expect(await screen.findByRole("alert")).toHaveTextContent("Internal server error");
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Erro tempor.rio no servidor/);
     expect(screen.queryByText("Nenhum comentário.")).not.toBeInTheDocument();
   });
 

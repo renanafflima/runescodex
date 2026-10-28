@@ -9,7 +9,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "prompt",
+      // There is no update prompt in the app. Letting a new worker wait kept
+      // clients on stale API code after a successful production deploy.
+      registerType: "autoUpdate",
       injectRegister: "script",
       scope: WEB_BASE_PATH,
       includeAssets: ["icons/*.svg"],
@@ -49,8 +51,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{html,js,css,svg,ico,woff2}"],
         cleanupOutdatedCaches: true,
-        clientsClaim: false,
-        skipWaiting: false,
+        clientsClaim: true,
+        skipWaiting: true,
         navigateFallback: `${WEB_BASE_PATH}index.html`,
         navigateFallbackAllowlist: [/^\/runescodex(?:\/.*)?$/],
         navigateFallbackDenylist: [/^\/runescodex\/api(?:\/|$)/],

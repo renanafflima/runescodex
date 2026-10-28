@@ -17,6 +17,7 @@ const manifest = JSON.parse(
   await readFile(resolve(distDirectory, "manifest.webmanifest"), "utf8"),
 );
 const indexHtml = await readFile(resolve(distDirectory, "index.html"), "utf8");
+const serviceWorker = await readFile(resolve(distDirectory, "sw.js"), "utf8");
 
 if (manifest.start_url !== "/runescodex/" || manifest.scope !== "/runescodex/") {
   throw new Error("Manifest sem start_url/scope corretos para /runescodex/.");
@@ -32,6 +33,15 @@ if (!indexHtml.includes("/runescodex/")) {
 
 if (indexHtml.includes("/runes/")) {
   throw new Error("Build ainda contém o caminho-base antigo /runes/.");
+}
+
+if (
+  !serviceWorker.includes("self.skipWaiting()") ||
+  !serviceWorker.includes("clientsClaim()")
+) {
+  throw new Error(
+    "Service worker não ativa nem assume clientes automaticamente; o frontend pode permanecer em bundle antigo.",
+  );
 }
 
 console.log("PWA válida: manifest, service worker e base path /runescodex/ encontrados.");
