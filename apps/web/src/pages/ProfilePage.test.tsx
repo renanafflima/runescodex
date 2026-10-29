@@ -149,8 +149,8 @@ describe("ProfilePage", () => {
 
     expect(screen.getAllByText("Arvandor").length).toBeGreaterThan(0);
     expect(screen.getByText("Nyxara")).toBeInTheDocument();
-    expect(screen.getByText("Ativo")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Ativar" }));
+    expect(screen.getByText("Principal")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Definir como principal" }));
     expect(auth.setActiveCharacter).toHaveBeenCalledWith("char-2");
     expect(await screen.findByText("Equipamentos vinculados: 2 de 2")).toBeInTheDocument();
   });

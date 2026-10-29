@@ -9,12 +9,13 @@ import { ButtonLink } from "../components/ui/Button";
 import { useLatestRequest } from "../hooks/useLatestRequest";
 import { formatEstimatedHours, mapBestiaryEntry, uniqueHuntCreatures } from "../domain/bestiary";
 import { formatCount } from "../domain/format";
-import { mapHuntListItem } from "../domain/hunts";
+import { mapHuntListItem, preferredHuntVocation } from "../domain/hunts";
 import { describeApiError } from "../services/api/errors";
 import { ReportProblem } from "../components/tickets/ReportProblem";
 import { recordContentView } from "../services/api/admin-portal";
 import { getBestiaryBySlug } from "../services/api/bestiary";
-import { listFilteredHunts } from "../services/api/hunts";
+import { listHuntsPage } from "../services/api/hunts";
+import { CATALOG_PAGE_SIZE } from "../services/api/page";
 import type { BestiaryEntry, HuntListItem } from "../services/api/types";
 
 export type BestiaryCreatureOutlet = {
@@ -30,18 +31,18 @@ export function useBestiaryCreature() {
 
 export function BestiaryCreaturePage() {
   const { slug = "" } = useParams();
-  const { isAuthenticated } = useAuth();
-  const requests = useLatestRequest();
+  const { activeCharacter, isAuthenticated } = useAuth();
+  const creatureRequests = useLatestRequest();
+  const huntRequests = useLatestRequest();
   const [entry, setEntry] = useState<BestiaryEntry | null>(null);
-  const [hunts, setHunts] = useState<HuntListItem[]>([]);
+  const [rawHunts, setRawHunts] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const loadCreature = useCallback(async () => {
-    const current = requests.start();
+    const current = creatureRequests.start();
     if (!slug) {
       setEntry(null);
-      setHunts([]);
       setError("Criatura não encontrada.");
       setLoading(false);
       return;
@@ -49,27 +50,51 @@ export function BestiaryCreaturePage() {
     setLoading(true);
     setError("");
     try {
-      const [creature, huntItems] = await Promise.all([
-        getBestiaryBySlug(slug, isAuthenticated),
-        listFilteredHunts({ creature: slug }),
-      ]);
+      const creature = await getBestiaryBySlug(slug, isAuthenticated);
       if (!current()) return;
       setEntry(mapBestiaryEntry(creature));
-      setHunts(huntItems.map((item) => mapHuntListItem(item)));
     } catch (err) {
       if (!current()) return;
       setEntry(null);
-      setHunts([]);
       setError(describeApiError(err));
     } finally {
       if (current()) setLoading(false);
     }
-  }, [isAuthenticated, requests, slug]);
+  }, [creatureRequests, isAuthenticated, slug]);
+
+  const loadHunts = useCallback(async () => {
+    const current = huntRequests.start();
+    if (!slug) {
+      setRawHunts([]);
+      return;
+    }
+    try {
+      const result = await listHuntsPage({
+        creature: slug,
+        page: 1,
+        limit: CATALOG_PAGE_SIZE,
+      });
+      if (!current()) return;
+      setRawHunts(result.items);
+    } catch {
+      if (!current()) return;
+      setRawHunts([]);
+    }
+  }, [huntRequests, slug]);
 
   useEffect(() => {
     void loadCreature();
   }, [loadCreature]);
 
+  useEffect(() => {
+    void loadHunts();
+  }, [loadHunts]);
+
+  const preferred = preferredHuntVocation("Any", activeCharacter);
+  const hunts = useMemo(
+    () => rawHunts.map((item) => mapHuntListItem(item, preferred)),
+    [preferred, rawHunts],
+  );
   const involved = useMemo(() => uniqueHuntCreatures(hunts).length, [hunts]);
 
   useEffect(() => {

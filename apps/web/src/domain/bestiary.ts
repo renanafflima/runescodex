@@ -1,5 +1,8 @@
 import type { BestiaryCompanion, BestiaryEntry, BestiaryProgress, HuntListItem } from "../services/api/types";
+import type { Character } from "../services/api/types";
+import { huntCompatibility } from "./hunts";
 import { formatCount, formatDifficultyLabel, hasNumericValue } from "./format";
+import { normalizeVocation } from "./vocation";
 import { resolveCreatureImage } from "./creature-image";
 import { publicLinkUrl } from "./media";
 
@@ -101,6 +104,35 @@ export function bestiaryApiDifficulty(filter: BestiaryDifficultyFilter) {
   return DIFFICULTY_VALUE[filter];
 }
 
+export function bestiaryListQueryFromFilters(options: {
+  difficulty: BestiaryDifficultyFilter;
+  search?: string;
+  character?: Character | null;
+  page?: number;
+  limit?: number;
+}) {
+  const query: {
+    difficulty?: string;
+    search?: string;
+    vocation?: string;
+    level?: number;
+    page?: number;
+    limit?: number;
+  } = {};
+  const difficulty = bestiaryApiDifficulty(options.difficulty);
+  if (difficulty) query.difficulty = difficulty;
+  const search = options.search?.trim();
+  if (search) query.search = search;
+  const vocation = normalizeVocation(options.character?.vocation);
+  if (vocation) query.vocation = vocation;
+  if (hasNumericValue(options.character?.level)) {
+    query.level = Number(options.character?.level);
+  }
+  if (options.page) query.page = options.page;
+  if (options.limit) query.limit = options.limit;
+  return query;
+}
+
 export function filterBestiary(entries: BestiaryEntry[], query: string, difficulty: BestiaryDifficultyFilter) {
   const search = query.trim().toLowerCase();
   return entries.filter((entry) => {
@@ -151,8 +183,14 @@ function huntLevel(hunt: HuntListItem) {
   return hasNumericValue(hunt.levelMin) ? Number(hunt.levelMin) : Number.POSITIVE_INFINITY;
 }
 
-export function sortBestiaryHunts(hunts: HuntListItem[], sort: BestiaryHuntSort) {
+export function sortBestiaryHunts(
+  hunts: HuntListItem[],
+  sort: BestiaryHuntSort,
+  character?: Character | null,
+) {
   return [...hunts].sort((left, right) => {
+    const byCharacter = huntCompatibility(right, character) - huntCompatibility(left, character);
+    if (byCharacter) return byCharacter;
     if (sort === "name") {
       return left.name.localeCompare(right.name, "pt-BR");
     }
@@ -162,9 +200,37 @@ export function sortBestiaryHunts(hunts: HuntListItem[], sort: BestiaryHuntSort)
   });
 }
 
-export function recommendedEvolutionHunts(hunts: HuntListItem[], creatureSlug: string) {
+export function relevantBestiarySlugs(hunts: HuntListItem[], character: Character | null | undefined) {
+  const slugs = new Set<string>();
+  if (!character) return slugs;
+  for (const hunt of hunts) {
+    if (huntCompatibility(hunt, character) < 2) continue;
+    for (const creature of hunt.spawn) {
+      if (creature.slug) slugs.add(creature.slug);
+    }
+  }
+  return slugs;
+}
+
+export function sortBestiaryEntries(
+  entries: BestiaryEntry[],
+  relevantSlugs: ReadonlySet<string>,
+) {
+  if (relevantSlugs.size === 0) return entries;
+  return [...entries].sort((left, right) => {
+    const leftRelevant = relevantSlugs.has(left.slug) ? 1 : 0;
+    const rightRelevant = relevantSlugs.has(right.slug) ? 1 : 0;
+    return rightRelevant - leftRelevant;
+  });
+}
+
+export function recommendedEvolutionHunts(
+  hunts: HuntListItem[],
+  creatureSlug: string,
+  character?: Character | null,
+) {
   const primary = hunts.filter((hunt) =>
     hunt.spawn.some((creature) => creature.slug === creatureSlug && creature.isPrimary),
   );
-  return sortBestiaryHunts(primary.length ? primary : hunts, "level");
+  return sortBestiaryHunts(primary.length ? primary : hunts, "level", character);
 }

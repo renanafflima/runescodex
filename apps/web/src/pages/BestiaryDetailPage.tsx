@@ -9,12 +9,14 @@ import { Toast } from "../components/ui/Toast";
 import { companionSlugSet, formatBestiaryKills, formatEstimatedHours, recommendedEvolutionHunts } from "../domain/bestiary";
 import { formatCharmLabel, formatCount } from "../domain/format";
 import { huntSummary } from "../domain/hunts";
+import { useAuth } from "../auth/AuthContext";
 import { describeApiError } from "../services/api/errors";
 import { updateBestiaryProgress } from "../services/api/bestiary";
 import { useBestiaryCreature } from "./BestiaryCreaturePage";
 
 export function BestiaryDetailPage() {
   const { entry, hunts, isAuthenticated, reload } = useBestiaryCreature();
+  const { activeCharacter } = useAuth();
   const [kills, setKills] = useState(entry.progress ? String(entry.progress.kills) : "");
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{
@@ -23,7 +25,7 @@ export function BestiaryDetailPage() {
     tone: "info" | "success" | "error";
   } | null>(null);
 
-  const route = recommendedEvolutionHunts(hunts, entry.slug);
+  const route = recommendedEvolutionHunts(hunts, entry.slug, activeCharacter);
   const together = companionSlugSet(entry);
 
   useEffect(() => {

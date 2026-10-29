@@ -12,7 +12,9 @@ const auth = vi.hoisted(() => ({
     premium?: { access: boolean; paymentStatus: string };
   } | null,
   refreshMe: vi.fn(),
+  characters: [],
   activeCharacter: null,
+  setActiveCharacter: vi.fn(),
 }));
 
 vi.mock("../auth/AuthContext", () => ({

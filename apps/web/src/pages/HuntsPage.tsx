@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { CharacterSwitcher } from "../components/characters/CharacterSwitcher";
 import { CatalogEmpty, CatalogError, CatalogLoading } from "../components/catalog/CatalogState";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Button } from "../components/ui/Button";
@@ -31,7 +32,8 @@ import {
 import { normalizeVocation } from "../domain/vocation";
 import { describeApiError } from "../services/api/errors";
 import { recordSearchMiss } from "../services/api/admin-portal";
-import { listFilteredHunts } from "../services/api/hunts";
+import { CATALOG_PAGE_SIZE } from "../services/api/page";
+import { listHuntsPage } from "../services/api/hunts";
 import type { HuntListItem } from "../services/api/types";
 
 function FilterPills<T extends string>({
@@ -66,54 +68,100 @@ function FilterPills<T extends string>({
   );
 }
 
+const SEARCH_DEBOUNCE_MS = 300;
+
 export function HuntsPage() {
   const { activeCharacter, isRosterReady } = useAuth();
   const requests = useLatestRequest();
-  const [vocationTouched, setVocationTouched] = useState(false);
+  const characterKey = activeCharacter?.id || "";
   const [vocationFilter, setVocationFilter] = useState<HuntVocationFilter>("Any");
+  const [vocationTouchedFor, setVocationTouchedFor] = useState("");
+  const vocationTouched = vocationTouchedFor === characterKey;
   const vocation: HuntVocationFilter = vocationTouched
     ? vocationFilter
     : normalizeVocation(activeCharacter?.vocation) || "Any";
   const [difficulty, setDifficulty] = useState<HuntDifficultyFilter>("Any");
   const [attackElement, setAttackElement] = useState<ElementFilter>("Any");
   const [defenseElement, setDefenseElement] = useState<ElementFilter>("Any");
-  const [query, setQuery] = useState("");
+  const [queryDraft, setQueryDraft] = useState("");
+  const [search, setSearch] = useState("");
   const [hunts, setHunts] = useState<HuntListItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearch(queryDraft.trim()), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [queryDraft]);
+
   const apiQuery = useMemo(
-    () => huntListQueryFromFilters({ vocation, difficulty, character: activeCharacter }),
-    [activeCharacter, difficulty, vocation],
+    () =>
+      huntListQueryFromFilters({
+        vocation,
+        difficulty,
+        character: activeCharacter,
+        search,
+      }),
+    [activeCharacter, difficulty, search, vocation],
   );
 
-  const loadHunts = useCallback(async () => {
-    const current = requests.start();
-    setLoading(true);
-    setError("");
-    try {
-      const items = await listFilteredHunts(apiQuery);
-      if (!current()) return;
-      const preferred = preferredHuntVocation(vocation, activeCharacter);
-      setHunts(items.map((hunt) => mapHuntListItem(hunt, preferred)));
-    } catch (err) {
-      if (!current()) return;
-      setHunts([]);
-      setError(describeApiError(err));
-    } finally {
-      if (current()) setLoading(false);
-    }
-  }, [activeCharacter, apiQuery, requests, vocation]);
+  const loadHunts = useCallback(
+    async (nextPage = 1) => {
+      const current = requests.start();
+      if (nextPage === 1) {
+        setLoading(true);
+        setError("");
+        setHunts([]);
+        setHasMore(false);
+        setTotal(0);
+      } else {
+        setLoadingMore(true);
+      }
+      try {
+        const result = await listHuntsPage({
+          ...apiQuery,
+          page: nextPage,
+          limit: CATALOG_PAGE_SIZE,
+        });
+        if (!current()) return;
+        const preferred = preferredHuntVocation(vocation, activeCharacter);
+        const mapped = result.items.map((hunt) => mapHuntListItem(hunt, preferred));
+        setHunts((currentHunts) => (nextPage === 1 ? mapped : [...currentHunts, ...mapped]));
+        setPage(result.page);
+        setTotal(result.total);
+        setHasMore(result.hasMore);
+        setError("");
+      } catch (err) {
+        if (!current()) return;
+        if (nextPage === 1) {
+          setHunts([]);
+          setTotal(0);
+          setHasMore(false);
+        }
+        setError(describeApiError(err));
+      } finally {
+        if (current()) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
+      }
+    },
+    [activeCharacter, apiQuery, requests, vocation],
+  );
 
   useEffect(() => {
     if (!isRosterReady) return;
-    void loadHunts();
+    void loadHunts(1);
   }, [isRosterReady, loadHunts]);
 
   const filtered = useMemo(
     () =>
       filterAndSortHunts(hunts, {
-        query,
+        query: "",
         vocation,
         attackElement,
         defenseElement,
@@ -123,16 +171,16 @@ export function HuntsPage() {
         sortBy: "Best XP",
         character: activeCharacter,
       }),
-    [activeCharacter, attackElement, defenseElement, hunts, query, vocation],
+    [activeCharacter, attackElement, defenseElement, hunts, vocation],
   );
 
   useEffect(() => {
-    const term = query.trim();
+    const term = search.trim();
     if (loading || term.length < 2 || filtered.length > 0) return;
     if (attackElement !== "Any" || defenseElement !== "Any") return;
     const timer = window.setTimeout(() => recordSearchMiss(term), 700);
     return () => window.clearTimeout(timer);
-  }, [attackElement, defenseElement, filtered.length, loading, query]);
+  }, [attackElement, defenseElement, filtered.length, loading, search]);
 
   return (
     <div className="hunts-list">
@@ -144,18 +192,19 @@ export function HuntsPage() {
             ? `Encontre uma hunt para ${activeCharacter.name} · ${activeCharacter.vocation} ${activeCharacter.level} — pelo que você quer ganhar, ou pelo elemento que consegue enfrentar.`
             : "Encontre uma Hunt pelo que você quer ganhar — ou pelo elemento que você consegue enfrentar."}
         </p>
+        <CharacterSwitcher className="character-switcher--page" />
 
         <div className="hunts-filters">
           <SearchInput
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => setQueryDraft(event.target.value)}
             placeholder="Buscar hunt, criatura ou local"
-            value={query}
+            value={queryDraft}
           />
           <div className="hunts-filter-row">
             <FilterPills
               label="Vocação"
               onChange={(value) => {
-                setVocationTouched(true);
+                setVocationTouchedFor(characterKey);
                 setVocationFilter(value);
               }}
               options={HUNT_VOCATION_FILTERS}
@@ -204,7 +253,9 @@ export function HuntsPage() {
 
         <div className="hunts-results-head">
           <strong>
-            {loading ? "Carregando hunts" : `${filtered.length} hunts encontradas`}
+            {loading
+              ? "Carregando hunts"
+              : `${filtered.length} hunts nesta página${total > filtered.length ? ` · ${total} no filtro` : ""}`}
           </strong>
           <span>
             {activeCharacter
@@ -216,13 +267,20 @@ export function HuntsPage() {
         {loading ? (
           <CatalogLoading label="Carregando hunts" />
         ) : error ? (
-          <CatalogError description={error} onRetry={() => void loadHunts()} />
+          <CatalogError description={error} onRetry={() => void loadHunts(1)} />
         ) : filtered.length === 0 ? (
+          <>
           <CatalogEmpty
             action={
-              <Button onClick={() => void loadHunts()} variant="secondary">
-                Recarregar
-              </Button>
+              hasMore ? (
+                <Button loading={loadingMore} onClick={() => void loadHunts(page + 1)} variant="secondary">
+                  Carregar mais
+                </Button>
+              ) : (
+                <Button onClick={() => void loadHunts(1)} variant="secondary">
+                  Recarregar
+                </Button>
+              )
             }
             description={
               hunts.length === 0
@@ -231,7 +289,9 @@ export function HuntsPage() {
             }
             title="Nenhuma hunt encontrada"
           />
+          </>
         ) : (
+          <>
           <div className="hunts-grid">
             {filtered.map((hunt) => {
               const summary = huntSummary(hunt);
@@ -318,6 +378,18 @@ export function HuntsPage() {
               );
             })}
           </div>
+          {hasMore ? (
+            <div className="catalog-more">
+              <Button
+                loading={loadingMore}
+                onClick={() => void loadHunts(page + 1)}
+                variant="secondary"
+              >
+                Carregar mais
+              </Button>
+            </div>
+          ) : null}
+          </>
         )}
       </PageContainer>
     </div>

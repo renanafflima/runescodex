@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { CharacterSwitcher } from "../components/characters/CharacterSwitcher";
 import { CatalogError, CatalogLoading } from "../components/catalog/CatalogState";
 import { ButtonLink } from "../components/ui/Button";
 import { ElementIcon } from "../components/ui/ElementIcon";
@@ -152,6 +153,7 @@ export function HuntDetailPage() {
           <span className="eyebrow">RuneCodex • Detalhes da Hunt</span>
           <h1>{hunt.name}</h1>
           {hunt.displayLocation ? <p className="hunt-detail__location">{hunt.displayLocation}</p> : null}
+          <CharacterSwitcher className="character-switcher--page" id="hunt-detail-character" />
           <div className="hunt-detail__kpis">
             <div className="hunt-detail__kpi">
               <span className="hunt-detail__kpi-icon hunt-detail__kpi-icon--xp">XP</span>

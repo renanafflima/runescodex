@@ -1,5 +1,5 @@
 import { apiRequest, withQuery } from "./client";
-import { loadEntireCatalog } from "./page";
+import { CATALOG_PAGE_SIZE, readPage, type PageResult } from "./page";
 
 export type HuntListQuery = {
   vocation?: string;
@@ -27,9 +27,13 @@ export function listHunts(query: HuntListQuery = {}) {
   );
 }
 
-export function listFilteredHunts(query: HuntListQuery = {}) {
-  return loadEntireCatalog((pageQuery) =>
-    listHunts({ ...query, ...(pageQuery || {}) }),
+export async function listHuntsPage(query: HuntListQuery = {}): Promise<PageResult<unknown>> {
+  return readPage(
+    await listHunts({
+      limit: CATALOG_PAGE_SIZE,
+      page: 1,
+      ...query,
+    }),
   );
 }
 

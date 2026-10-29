@@ -174,6 +174,38 @@
   gap: var(--space-2);
 }
 
+.character-switcher {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.character-switcher span {
+  color: var(--color-gold-light);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.character-switcher select {
+  max-width: 16rem;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid rgb(214 168 79 / 35%);
+  border-radius: 0.6rem;
+  background: rgb(7 14 24 / 88%);
+  color: var(--color-text);
+}
+
+.character-switcher--header span {
+  display: none;
+}
+
+.character-switcher--page {
+  margin: 0.75rem 0 0.2rem;
+}
+
 .site-header__menu {
   display: none;
 }
@@ -328,6 +360,10 @@
 
   .navigation__link {
     padding: var(--space-3);
+  }
+
+  .character-switcher--header {
+    display: none;
   }
 
   .navigation__link svg {

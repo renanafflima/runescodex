@@ -1,9 +1,11 @@
 import { apiRequest, withQuery } from "./client";
-import { loadEntireCatalog } from "./page";
+import { CATALOG_PAGE_SIZE, readPage, type PageResult } from "./page";
 
 export type BestiaryListQuery = {
   difficulty?: string;
   search?: string;
+  vocation?: string;
+  level?: number;
   page?: number;
   limit?: number;
 };
@@ -13,6 +15,8 @@ export function listBestiary(query: BestiaryListQuery = {}, withAuth = true) {
     withQuery("/bestiary", {
       difficulty: query.difficulty,
       search: query.search,
+      vocation: query.vocation,
+      level: query.level,
       page: query.page,
       limit: query.limit,
     }),
@@ -20,9 +24,19 @@ export function listBestiary(query: BestiaryListQuery = {}, withAuth = true) {
   );
 }
 
-export function listFilteredBestiary(query: BestiaryListQuery = {}, withAuth = true) {
-  return loadEntireCatalog((pageQuery) =>
-    listBestiary({ ...query, ...(pageQuery || {}) }, withAuth),
+export async function listBestiaryPage(
+  query: BestiaryListQuery = {},
+  withAuth = true,
+): Promise<PageResult<unknown>> {
+  return readPage(
+    await listBestiary(
+      {
+        limit: CATALOG_PAGE_SIZE,
+        page: 1,
+        ...query,
+      },
+      withAuth,
+    ),
   );
 }
 

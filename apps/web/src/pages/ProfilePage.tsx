@@ -131,8 +131,8 @@ export function ProfilePage() {
     try {
       await setActiveCharacter(id);
       setNotice({
-        title: "Personagem ativo",
-        message: "As Hunts passam a considerar esta vocação e este level.",
+        title: "Personagem principal",
+        message: "Hunts e Bestiário passam a considerar esta vocação e este level.",
         tone: "success",
       });
     } catch (error) {
@@ -236,7 +236,7 @@ export function ProfilePage() {
             </div>
           }
           className="profile-characters"
-          description="O personagem ativo define vocação e level usados nas Hunts."
+          description="O personagem principal persiste na conta e personaliza Hunts e Bestiário. Troque quando quiser, sem novo login."
           eyebrow="Companhia"
           title="Personagens"
         >
@@ -262,7 +262,7 @@ export function ProfilePage() {
                     <div>
                       <strong>
                         {character.name}
-                        {isActive ? <Badge tone="gold">Ativo</Badge> : null}
+                        {isActive ? <Badge tone="gold">Principal</Badge> : null}
                       </strong>
                       <span>
                         {character.vocation} · {character.level} · {character.world}
@@ -271,7 +271,7 @@ export function ProfilePage() {
                     <div className="character-slot__actions">
                       {isActive ? null : (
                         <Button onClick={() => void handleActivate(character.id)} size="sm" type="button" variant="secondary">
-                          Ativar
+                          Definir como principal
                         </Button>
                       )}
                       <Button onClick={() => openEdit(character)} size="sm" type="button" variant="ghost">

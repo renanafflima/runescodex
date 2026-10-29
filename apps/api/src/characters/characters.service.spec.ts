@@ -21,6 +21,10 @@ describe('CharactersService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    $transaction: jest.fn(
+      async (callback: (client: typeof prisma) => Promise<unknown>) =>
+        callback(prisma),
+    ),
   };
 
   beforeEach(async () => {
@@ -44,6 +48,8 @@ describe('CharactersService', () => {
       world: 'World',
     };
     prisma.character.create.mockResolvedValue(created);
+    prisma.user.findUnique.mockResolvedValue({ activeCharacterId: null });
+    prisma.user.update.mockResolvedValue({ id: 'user-a', activeCharacterId: 'char-1' });
 
     const result = await service.create('user-a', {
       name: '  Knight ',
@@ -69,7 +75,31 @@ describe('CharactersService', () => {
       },
     });
     expect(result).toEqual(created);
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'user-a' },
+      data: { activeCharacterId: 'char-1' },
+    });
     expect(JSON.stringify(result)).not.toContain('userId');
+  });
+
+  it('keeps the current principal when another character is created', async () => {
+    prisma.character.create.mockResolvedValue({
+      id: 'char-2',
+      name: 'Paladin',
+      vocation: 'RP',
+      level: 150,
+      world: 'World',
+    });
+    prisma.user.findUnique.mockResolvedValue({ activeCharacterId: 'char-1' });
+
+    await service.create('user-a', {
+      name: 'Paladin',
+      vocation: 'RP',
+      level: 150,
+      world: 'World',
+    });
+
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it('lists only characters for the authenticated user', async () => {
@@ -126,11 +156,61 @@ describe('CharactersService', () => {
     expect(prisma.character.delete).not.toHaveBeenCalled();
   });
 
-  it('returns no active character when none is selected', async () => {
+  it('returns no active character when the account has none', async () => {
     prisma.user.findUnique.mockResolvedValue({ activeCharacterId: null });
+    prisma.character.findFirst.mockResolvedValue(null);
 
     await expect(service.getActive('user-a')).rejects.toMatchObject({
       message: 'No active character',
+    });
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('adopts the oldest character when none is selected yet', async () => {
+    const first = {
+      id: 'char-1',
+      name: 'Knight',
+      vocation: 'EK',
+      level: 400,
+      world: 'World',
+    };
+    prisma.user.findUnique.mockResolvedValue({ activeCharacterId: null });
+    prisma.character.findFirst.mockResolvedValue(first);
+    prisma.user.update.mockResolvedValue({
+      id: 'user-a',
+      activeCharacterId: 'char-1',
+    });
+
+    await expect(service.getActive('user-a')).resolves.toEqual(first);
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'user-a' },
+      data: { activeCharacterId: 'char-1' },
+    });
+  });
+
+  it('moves the principal to the remaining character after a deletion', async () => {
+    prisma.character.findFirst
+      .mockResolvedValueOnce({
+        id: 'char-1',
+        name: 'Knight',
+        vocation: 'EK',
+        level: 400,
+        world: 'World',
+      })
+      .mockResolvedValueOnce({ id: 'char-2' });
+    prisma.user.findUnique.mockResolvedValue({ activeCharacterId: 'char-1' });
+    prisma.character.delete.mockResolvedValue({});
+    prisma.user.update.mockResolvedValue({
+      id: 'user-a',
+      activeCharacterId: 'char-2',
+    });
+
+    await service.remove('user-a', 'char-1');
+
+    expect(prisma.character.delete).toHaveBeenCalledWith({ where: { id: 'char-1' } });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'user-a' },
+      data: { activeCharacterId: 'char-2' },
     });
   });
 

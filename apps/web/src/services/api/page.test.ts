@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { collectPages, loadEntireCatalog, readPage } from "./page";
+import { CATALOG_PAGE_SIZE, collectPages, loadEntireCatalog, readPage } from "./page";
 
 describe("pagination helpers", () => {
   it("reads a page envelope", () => {
@@ -26,6 +26,10 @@ describe("pagination helpers", () => {
     }));
     expect(result.items).toEqual([{ id: 1 }, { id: 2 }]);
     expect(result.total).toBe(2);
+  });
+
+  it("uses the API page size cap for catalog requests", () => {
+    expect(CATALOG_PAGE_SIZE).toBe(50);
   });
 
   it("loads the entire catalog when the first page is complete", async () => {

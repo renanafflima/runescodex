@@ -15,16 +15,29 @@ const CHARACTER_SELECT = {
 export class CharactersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(userId: string, dto: CreateCharacterDto) {
-    return this.prisma.character.create({
-      data: {
-        userId,
-        name: dto.name.trim(),
-        vocation: dto.vocation.trim(),
-        level: dto.level,
-        world: dto.world.trim(),
-      },
-      select: CHARACTER_SELECT,
+  async create(userId: string, dto: CreateCharacterDto) {
+    return this.prisma.$transaction(async (tx) => {
+      const character = await tx.character.create({
+        data: {
+          userId,
+          name: dto.name.trim(),
+          vocation: dto.vocation.trim(),
+          level: dto.level,
+          world: dto.world.trim(),
+        },
+        select: CHARACTER_SELECT,
+      });
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { activeCharacterId: true },
+      });
+      if (!user?.activeCharacterId) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { activeCharacterId: character.id },
+        });
+      }
+      return character;
     });
   }
 
@@ -59,28 +72,30 @@ export class CharactersService {
 
   async remove(userId: string, id: string) {
     await this.findOwnedOrFail(userId, id);
-    await this.prisma.character.delete({ where: { id } });
+    await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { activeCharacterId: true },
+      });
+      await tx.character.delete({ where: { id } });
+      if (user?.activeCharacterId !== id) return;
+      const next = await tx.character.findFirst({
+        where: { userId },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      await tx.user.update({
+        where: { id: userId },
+        data: { activeCharacterId: next?.id ?? null },
+      });
+    });
   }
 
   async getActive(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { activeCharacterId: true },
-    });
-
-    if (!user?.activeCharacterId) {
-      throw new NotFoundException('No active character');
-    }
-
-    const character = await this.prisma.character.findFirst({
-      where: { id: user.activeCharacterId, userId },
-      select: CHARACTER_SELECT,
-    });
-
+    const character = await this.ensureActive(userId);
     if (!character) {
       throw new NotFoundException('No active character');
     }
-
     return character;
   }
 
@@ -93,6 +108,33 @@ export class CharactersService {
     });
 
     return character;
+  }
+
+  /// One persistent selection per account. It is both the principal character
+  /// and the active character used by Hunts and Bestiary.
+  private async ensureActive(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { activeCharacterId: true },
+    });
+    if (user?.activeCharacterId) {
+      const current = await this.prisma.character.findFirst({
+        where: { id: user.activeCharacterId, userId },
+        select: CHARACTER_SELECT,
+      });
+      if (current) return current;
+    }
+    const first = await this.prisma.character.findFirst({
+      where: { userId },
+      select: CHARACTER_SELECT,
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!first) return null;
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { activeCharacterId: first.id },
+    });
+    return first;
   }
 
   private async findOwnedOrFail(userId: string, id: string) {

@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   bestiaryApiDifficulty,
+  bestiaryListQueryFromFilters,
   filterBestiary,
   formatEstimatedHours,
   mapBestiaryEntry,
   recommendedEvolutionHunts,
+  relevantBestiarySlugs,
+  sortBestiaryEntries,
   sortBestiaryHunts,
   uniqueHuntCreatures,
 } from "./bestiary";
@@ -102,6 +105,25 @@ describe("bestiary mapping", () => {
     expect(bestiaryApiDifficulty("Very Hard")).toBe("VERY_HARD");
   });
 
+  it("sends search, difficulty and character filters to the bestiary API", () => {
+    expect(
+      bestiaryListQueryFromFilters({
+        difficulty: "Hard",
+        search: "  torturer ",
+        page: 2,
+        limit: 50,
+        character: { id: "c1", name: "Nyxara", vocation: "RP", level: 150, world: "Honbra" },
+      }),
+    ).toEqual({
+      difficulty: "HARD",
+      search: "torturer",
+      vocation: "RP",
+      level: 150,
+      page: 2,
+      limit: 50,
+    });
+  });
+
   it("filters by search and keeps empty results empty", () => {
     const entries = [
       mapBestiaryEntry({ name: "Cyclops", slug: "cyclops", difficulty: "EASY", locations: [], together: [], elements: [] }),
@@ -178,6 +200,35 @@ describe("bestiary hunt routes", () => {
       "halls",
       "roshamuul-prison",
     ]);
+  });
+
+  it("prioritizes hunts that match the active character", () => {
+    const ekHunt = huntItem({
+      ...prison,
+      vocations: [{ vocation: "EK", isRecommended: true, levelMin: 400, levelMax: 500, xpPerHour: 1, profitPerHour: 1, difficulty: null, notes: null }],
+    });
+    const rpHunt = huntItem({
+      ...halls,
+      vocations: [{ vocation: "RP", isRecommended: true, levelMin: 100, levelMax: 200, xpPerHour: 1, profitPerHour: 1, difficulty: null, notes: null }],
+    });
+    const paladin = { id: "c1", name: "Nyxara", vocation: "RP", level: 150, world: "Honbra" };
+    expect(sortBestiaryHunts([ekHunt, rpHunt], "level", paladin).map((item) => item.slug)).toEqual([
+      "halls",
+      "roshamuul-prison",
+    ]);
+    expect([...relevantBestiarySlugs([ekHunt, rpHunt], paladin)]).toEqual(["dark-torturer"]);
+    expect(
+      sortBestiaryEntries(
+        [
+          mapBestiaryEntry({ name: "Hellhound", slug: "hellhound", locations: [], together: [], elements: [] }),
+          mapBestiaryEntry({ name: "Dark Torturer", slug: "dark-torturer", locations: [], together: [], elements: [] }),
+        ],
+        relevantBestiarySlugs([ekHunt, rpHunt], paladin),
+      ).map((item) => item.slug),
+    ).toEqual(["dark-torturer", "hellhound"]);
+  });
+
+  it("sorts hunts by name when requested", () => {
     expect(sortBestiaryHunts([prison, halls], "name").map((item) => item.slug)).toEqual([
       "halls",
       "roshamuul-prison",

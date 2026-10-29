@@ -1,3 +1,5 @@
+export const CATALOG_PAGE_SIZE = 50;
+
 export type PageResult<T> = {
   items: T[];
   page: number;
@@ -61,7 +63,7 @@ export async function loadEntireCatalog<T>(
   const parsed = readPage<T>(first);
   if (!parsed.hasMore) return parsed.items;
   const collected = await collectPages<T>((page) =>
-    fetchPage({ page, limit: 50 }),
+    fetchPage({ page, limit: CATALOG_PAGE_SIZE }),
   );
   return collected.items;
 }

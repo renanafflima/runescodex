@@ -87,6 +87,19 @@ describe("hunt mapping and active character", () => {
     ).toEqual({ vocation: "EK", level: 400 });
   });
 
+  it("sends the search term to the hunts API", () => {
+    expect(
+      huntListQueryFromFilters({
+        vocation: "EK",
+        difficulty: "Any",
+        search: "  prison  ",
+        page: 2,
+        limit: 50,
+        character: { id: "c1", name: "Knight", vocation: "EK", level: 400, world: "Antica" },
+      }),
+    ).toEqual({ vocation: "EK", level: 400, search: "prison", page: 2, limit: 50 });
+  });
+
   it("keeps level from the active character when vocation is Any", () => {
     expect(
       huntListQueryFromFilters({

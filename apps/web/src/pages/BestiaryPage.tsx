@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { CharacterSwitcher } from "../components/characters/CharacterSwitcher";
 import { CatalogImage } from "../components/catalog/CatalogImage";
 import { CatalogEmpty, CatalogError, CatalogLoading } from "../components/catalog/CatalogState";
 import { PageContainer } from "../components/layout/PageContainer";
@@ -11,55 +12,86 @@ import { SearchInput } from "../components/ui/FormControls";
 import { useLatestRequest } from "../hooks/useLatestRequest";
 import {
   BESTIARY_DIFFICULTIES,
-  bestiaryApiDifficulty,
-  filterBestiary,
+  bestiaryListQueryFromFilters,
   formatBestiaryKills,
   mapBestiaryEntry,
   type BestiaryDifficultyFilter,
 } from "../domain/bestiary";
 import { formatCount } from "../domain/format";
 import { describeApiError } from "../services/api/errors";
-import { listFilteredBestiary } from "../services/api/bestiary";
+import { listBestiaryPage } from "../services/api/bestiary";
+import { CATALOG_PAGE_SIZE } from "../services/api/page";
 import type { BestiaryEntry } from "../services/api/types";
 
+const SEARCH_DEBOUNCE_MS = 300;
+
 export function BestiaryPage() {
-  const { isAuthenticated, isReady } = useAuth();
+  const { activeCharacter, isAuthenticated, isRosterReady } = useAuth();
   const requests = useLatestRequest();
-  const [query, setQuery] = useState("");
+  const [queryDraft, setQueryDraft] = useState("");
+  const [search, setSearch] = useState("");
   const [difficulty, setDifficulty] = useState<BestiaryDifficultyFilter>("All");
   const [entries, setEntries] = useState<BestiaryEntry[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
-  const loadEntries = useCallback(async () => {
-    const current = requests.start();
-    setLoading(true);
-    setError("");
-    try {
-      const items = await listFilteredBestiary(
-        { difficulty: bestiaryApiDifficulty(difficulty) },
-        isAuthenticated,
-      );
-      if (!current()) return;
-      setEntries(items.map(mapBestiaryEntry));
-    } catch (err) {
-      if (!current()) return;
-      setEntries([]);
-      setError(describeApiError(err));
-    } finally {
-      if (current()) setLoading(false);
-    }
-  }, [difficulty, isAuthenticated, requests]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearch(queryDraft.trim()), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [queryDraft]);
+
+  const loadEntries = useCallback(
+    async (nextPage = 1) => {
+      const current = requests.start();
+      if (nextPage === 1) {
+        setLoading(true);
+        setError("");
+        setEntries([]);
+        setHasMore(false);
+      } else {
+        setLoadingMore(true);
+      }
+      try {
+        const result = await listBestiaryPage(
+          bestiaryListQueryFromFilters({
+            difficulty,
+            search,
+            character: activeCharacter,
+            page: nextPage,
+            limit: CATALOG_PAGE_SIZE,
+          }),
+          isAuthenticated,
+        );
+        if (!current()) return;
+        const mapped = result.items.map(mapBestiaryEntry);
+        setEntries((currentEntries) => (nextPage === 1 ? mapped : [...currentEntries, ...mapped]));
+        setPage(result.page);
+        setHasMore(result.hasMore);
+        setError("");
+      } catch (err) {
+        if (!current()) return;
+        if (nextPage === 1) {
+          setEntries([]);
+          setHasMore(false);
+        }
+        setError(describeApiError(err));
+      } finally {
+        if (current()) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
+      }
+    },
+    [activeCharacter, difficulty, isAuthenticated, requests, search],
+  );
 
   useEffect(() => {
-    if (!isReady) return;
-    void loadEntries();
-  }, [isReady, loadEntries]);
-
-  const filtered = useMemo(
-    () => filterBestiary(entries, query, "All"),
-    [entries, query],
-  );
+    if (!isRosterReady) return;
+    void loadEntries(1);
+  }, [isRosterReady, loadEntries]);
 
   return (
     <div className="catalog-page catalog-page--bestiary">
@@ -69,19 +101,22 @@ export function BestiaryPage() {
           <h1 id="bestiary-title">Bestiário</h1>
           <p>
             Explore criaturas e planeje sua evolução de charms.
-            {isAuthenticated
-              ? " O progresso de kills vem da sua conta quando a API o envia."
-              : " Entre na conta para ver o progresso do bestiário."}
+            {activeCharacter
+              ? ` Criaturas das hunts de ${activeCharacter.name} · ${activeCharacter.vocation} ${activeCharacter.level} aparecem primeiro.`
+              : isAuthenticated
+                ? " O progresso de kills vem da sua conta quando a API o envia."
+                : " Entre na conta para ver o progresso do bestiário."}
           </p>
+          <CharacterSwitcher className="character-switcher--page" />
         </PageContainer>
       </section>
 
       <PageContainer className="catalog-body" size="wide">
         <div className="catalog-filters">
           <SearchInput
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => setQueryDraft(event.target.value)}
             placeholder="Buscar criatura, local ou grupo"
-            value={query}
+            value={queryDraft}
           />
           <div className="chip-row" aria-label="Dificuldade">
             {BESTIARY_DIFFICULTIES.map((item) => (
@@ -99,24 +134,25 @@ export function BestiaryPage() {
         {loading ? (
           <CatalogLoading label="Carregando bestiário" />
         ) : error ? (
-          <CatalogError description={error} onRetry={() => void loadEntries()} />
-        ) : filtered.length === 0 ? (
+          <CatalogError description={error} onRetry={() => void loadEntries(1)} />
+        ) : entries.length === 0 ? (
           <CatalogEmpty
             action={
-              <Button onClick={() => void loadEntries()} variant="secondary">
+              <Button onClick={() => void loadEntries(1)} variant="secondary">
                 Recarregar
               </Button>
             }
             description={
-              entries.length === 0
-                ? "Não há criaturas para este filtro."
-                : "Nenhuma criatura corresponde à busca."
+              search
+                ? "Nenhuma criatura corresponde à busca."
+                : "Não há criaturas para este filtro."
             }
             title="Nenhuma criatura encontrada"
           />
         ) : (
+          <>
           <div className="catalog-grid catalog-grid--bestiary">
-            {filtered.map((entry) => (
+            {entries.map((entry) => (
               <Link className="catalog-card" key={entry.id || entry.slug} to={`/bestiary/${entry.slug}`}>
                 <CatalogImage alt="" className="catalog-card__art" name={entry.name} src={entry.image} />
                 <div className="catalog-card__body">
@@ -151,6 +187,18 @@ export function BestiaryPage() {
               </Link>
             ))}
           </div>
+          {hasMore ? (
+            <div className="catalog-more">
+              <Button
+                loading={loadingMore}
+                onClick={() => void loadEntries(page + 1)}
+                variant="secondary"
+              >
+                Carregar mais
+              </Button>
+            </div>
+          ) : null}
+          </>
         )}
       </PageContainer>
     </div>

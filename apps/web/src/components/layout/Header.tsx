@@ -6,6 +6,7 @@ import { initialsFrom } from "../../domain/format";
 import { ButtonLink } from "../ui/Button";
 import { Icon } from "../ui/Icon";
 import { IconButton } from "../ui/IconButton";
+import { CharacterSwitcher } from "../characters/CharacterSwitcher";
 import { Navigation } from "./Navigation";
 import { PageContainer } from "./PageContainer";
 
@@ -72,6 +73,9 @@ export function Header() {
               <Icon name="download" size={17} />
               <span>Instalar</span>
             </button>
+          ) : null}
+          {isAuthenticated ? (
+            <CharacterSwitcher className="character-switcher--header" id="header-character" />
           ) : null}
           {isAuthenticated ? (
             <ButtonLink

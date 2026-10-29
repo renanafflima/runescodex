@@ -51,19 +51,26 @@ export class BestiaryService {
   async findAll(query: ListBestiaryQueryDto, userId?: string) {
     const where = this.creatureWhere(query);
     const { page, limit, skip } = resolvePage(query);
+    const relevantIds = await this.relevantCreatureIds(query);
+    if (relevantIds.length > 0) {
+      const { creatures, total } = await this.listPrioritized(
+        where,
+        relevantIds,
+        skip,
+        limit,
+        userId,
+      );
+      return pageResult(
+        creatures.map((creature) => this.mapCreature(creature, userId)),
+        total,
+        page,
+        limit,
+      );
+    }
+
     const [total, creatures] = await Promise.all([
       this.prisma.creature.count({ where }),
-      this.prisma.creature.findMany({
-        where,
-        select: {
-          ...CREATURE_LIST_SELECT,
-          bestiaryEntry: { select: BESTIARY_ENTRY_SELECT },
-          userProgress: this.progressSelect(userId),
-        },
-        orderBy: [{ name: 'asc' }, { id: 'asc' }],
-        skip,
-        take: limit,
-      }),
+      this.listCreatures(where, skip, limit, userId),
     ]);
 
     return pageResult(
@@ -176,6 +183,106 @@ export class BestiaryService {
         ...this.mapProgress(progress, entry.killsRequired, userId),
       };
     });
+  }
+
+  private creatureListSelect(userId?: string) {
+    return {
+      ...CREATURE_LIST_SELECT,
+      bestiaryEntry: { select: BESTIARY_ENTRY_SELECT },
+      userProgress: this.progressSelect(userId),
+    };
+  }
+
+  private listCreatures(
+    where: Prisma.CreatureWhereInput,
+    skip: number,
+    take: number,
+    userId?: string,
+  ) {
+    return this.prisma.creature.findMany({
+      where,
+      select: this.creatureListSelect(userId),
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+      skip,
+      take,
+    });
+  }
+
+  private huntVocationWhere(
+    query: ListBestiaryQueryDto,
+  ): Prisma.HuntVocationWhereInput | null {
+    if (!query.vocation && query.level == null) return null;
+    const vocationWhere: Prisma.HuntVocationWhereInput = {};
+    if (query.vocation) vocationWhere.vocation = query.vocation;
+    if (query.level != null) {
+      vocationWhere.levelMin = { lte: query.level };
+      vocationWhere.OR = [
+        { levelMax: null },
+        { levelMax: { gte: query.level } },
+      ];
+    }
+    return vocationWhere;
+  }
+
+  private async relevantCreatureIds(query: ListBestiaryQueryDto) {
+    const vocationWhere = this.huntVocationWhere(query);
+    if (!vocationWhere) return [];
+    const rows = await this.prisma.huntCreature.findMany({
+      where: {
+        hunt: {
+          isActive: true,
+          vocations: { some: vocationWhere },
+        },
+        creature: { isActive: true },
+      },
+      select: { creatureId: true },
+      distinct: ['creatureId'],
+    });
+    return rows.map((row) => row.creatureId);
+  }
+
+  private async listPrioritized(
+    where: Prisma.CreatureWhereInput,
+    relevantIds: string[],
+    skip: number,
+    take: number,
+    userId?: string,
+  ) {
+    const relevantWhere: Prisma.CreatureWhereInput = {
+      AND: [where, { id: { in: relevantIds } }],
+    };
+    const otherWhere: Prisma.CreatureWhereInput = {
+      AND: [where, { id: { notIn: relevantIds } }],
+    };
+    const [relevantTotal, otherTotal] = await Promise.all([
+      this.prisma.creature.count({ where: relevantWhere }),
+      this.prisma.creature.count({ where: otherWhere }),
+    ]);
+    const total = relevantTotal + otherTotal;
+    if (take <= 0 || skip >= total) {
+      return { creatures: [], total };
+    }
+
+    if (skip < relevantTotal) {
+      const relevant = await this.listCreatures(
+        relevantWhere,
+        skip,
+        Math.min(take, relevantTotal - skip),
+        userId,
+      );
+      const remaining = take - relevant.length;
+      if (remaining <= 0) return { creatures: relevant, total };
+      const others = await this.listCreatures(otherWhere, 0, remaining, userId);
+      return { creatures: [...relevant, ...others], total };
+    }
+
+    const others = await this.listCreatures(
+      otherWhere,
+      skip - relevantTotal,
+      take,
+      userId,
+    );
+    return { creatures: others, total };
   }
 
   private creatureWhere(

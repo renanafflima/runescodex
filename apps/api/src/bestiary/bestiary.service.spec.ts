@@ -53,6 +53,9 @@ describe('BestiaryService', () => {
       findMany: jest.fn(),
       findFirst: jest.fn(),
     },
+    huntCreature: {
+      findMany: jest.fn(),
+    },
     bestiaryEntry: {
       findFirst: jest.fn(),
     },
@@ -70,6 +73,7 @@ describe('BestiaryService', () => {
       (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
     );
     prisma.creature.count.mockResolvedValue(1);
+    prisma.huntCreature.findMany.mockResolvedValue([]);
     const moduleRef = await Test.createTestingModule({
       providers: [
         BestiaryService,
@@ -131,6 +135,30 @@ describe('BestiaryService', () => {
         progress: null,
       }),
     );
+  });
+
+  it('lists relevant hunt creatures first without hiding the rest of the catalog', async () => {
+    const hellhound = {
+      ...cyclops,
+      id: 'c2',
+      name: 'Hellhound',
+      slug: 'hellhound',
+      userProgress: undefined,
+    };
+    prisma.huntCreature.findMany.mockResolvedValue([{ creatureId: 'c2' }]);
+    prisma.creature.count
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1);
+    prisma.creature.findMany
+      .mockResolvedValueOnce([hellhound])
+      .mockResolvedValueOnce([{ ...cyclops, userProgress: undefined }]);
+
+    const result = await service.findAll({ vocation: 'RP', level: 150 });
+
+    expect(prisma.huntCreature.findMany).toHaveBeenCalled();
+    expect(result.items.map((item) => item.slug)).toEqual(['hellhound', 'cyclops']);
+    expect(result.total).toBe(2);
+    expect(result.hasMore).toBe(false);
   });
 
   it('filters by difficulty and search on the creature catalog', async () => {
@@ -284,6 +312,8 @@ describe('bestiary query validation', () => {
       page: '2',
       limit: '20',
       search: 'demon',
+      vocation: 'RP',
+      level: '150',
     });
     const invalid = plainToInstance(ListBestiaryQueryDto, {
       difficulty: 'easy',
@@ -291,6 +321,8 @@ describe('bestiary query validation', () => {
 
     expect(await validate(valid)).toHaveLength(0);
     expect(valid.page).toBe(2);
+    expect(valid.vocation).toBe('RP');
+    expect(valid.level).toBe(150);
     expect(await validate(invalid)).not.toHaveLength(0);
   });
 });

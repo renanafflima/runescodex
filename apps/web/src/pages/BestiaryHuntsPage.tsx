@@ -10,6 +10,8 @@ import {
   type BestiaryHuntSort,
 } from "../domain/bestiary";
 import { huntSummary } from "../domain/hunts";
+import { useAuth } from "../auth/AuthContext";
+import { CharacterSwitcher } from "../components/characters/CharacterSwitcher";
 import { useBestiaryCreature } from "./BestiaryCreaturePage";
 
 const SORT_OPTIONS = [
@@ -20,9 +22,13 @@ const SORT_OPTIONS = [
 
 export function BestiaryHuntsPage() {
   const { entry, hunts } = useBestiaryCreature();
+  const { activeCharacter } = useAuth();
   const [sort, setSort] = useState<BestiaryHuntSort>("level");
   const together = companionSlugSet(entry);
-  const ordered = useMemo(() => sortBestiaryHunts(hunts, sort), [hunts, sort]);
+  const ordered = useMemo(
+    () => sortBestiaryHunts(hunts, sort, activeCharacter),
+    [activeCharacter, hunts, sort],
+  );
   const estimatedTime = formatEstimatedHours(entry.estimatedHours);
 
   return (
@@ -33,7 +39,11 @@ export function BestiaryHuntsPage() {
           <p>
             Locais cadastrados em que o {entry.name} aparece, com os dados disponíveis de nível, XP,
             lucro e criaturas da hunt.
+            {activeCharacter
+              ? ` Hunts de ${activeCharacter.vocation} ${activeCharacter.level} aparecem primeiro.`
+              : ""}
           </p>
+          <CharacterSwitcher className="character-switcher--page" id="bestiary-hunt-character" />
         </div>
         <Select
           aria-label="Ordenar hunts"

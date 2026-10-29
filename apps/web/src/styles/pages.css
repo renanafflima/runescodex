@@ -1866,6 +1866,12 @@
   font-size: var(--text-xs);
 }
 
+.catalog-more {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-4);
+}
+
 .hunts-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

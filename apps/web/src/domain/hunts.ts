@@ -203,6 +203,9 @@ export function huntListQueryFromFilters(options: {
   vocation: HuntVocationFilter;
   difficulty: HuntDifficultyFilter;
   character: Character | null | undefined;
+  search?: string;
+  page?: number;
+  limit?: number;
 }): HuntListQuery {
   const query: HuntListQuery = {};
   if (options.vocation !== "Any") {
@@ -214,6 +217,10 @@ export function huntListQueryFromFilters(options: {
   if (hasNumericValue(options.character?.level)) {
     query.level = Number(options.character?.level);
   }
+  const search = options.search?.trim();
+  if (search) query.search = search;
+  if (options.page) query.page = options.page;
+  if (options.limit) query.limit = options.limit;
   return query;
 }
 
