@@ -45,7 +45,7 @@ import {
   type TicketImageMime,
 } from './tickets.constants';
 import { UpdateTicketStatusDto } from './dto/update-ticket-status.dto';
-import { STATUS_TRANSITIONS } from './ticket-status';
+import { ACTIVE_TICKET_STATUSES, STATUS_TRANSITIONS } from './ticket-status';
 
 const HUNT_PROBLEM_TYPES = new Set<TicketProblemType>([
   'XP_PER_HOUR',
@@ -137,9 +137,17 @@ export class TicketsService {
   ) {}
 
   async create(userId: string, dto: CreateTicketDto) {
-    const description = dto.description.trim();
-    if (!description) {
+    const body = dto.description.trim();
+    const subject = dto.subject?.trim();
+    if (!body) {
       throw new BadRequestException('Description is required');
+    }
+    if (subject && /[\r\n]/.test(subject)) {
+      throw new BadRequestException('Subject must be a single line');
+    }
+    const description = subject ? `${subject}\n\n${body}` : body;
+    if (description.length > 5000) {
+      throw new BadRequestException('Description is too long');
     }
 
     const huntContext = this.huntContext(dto);
@@ -212,9 +220,13 @@ export class TicketsService {
 
   async findAll(userId: string, query: ListTicketsQueryDto) {
     const { page, limit, skip } = resolvePage(query);
+    const own = query.mine === 'true' || !(await this.isAdmin(userId));
     const where = {
-      ...((await this.isAdmin(userId)) ? {} : { authorId: userId }),
+      ...(own
+        ? { authorId: userId, referralReward: { is: null } }
+        : {}),
       ...(query.status ? { status: query.status } : {}),
+      ...(query.problemType ? { problemType: query.problemType } : {}),
     };
 
     const [tickets, total] = await Promise.all([
@@ -241,6 +253,7 @@ export class TicketsService {
       where: { id: ticketId },
       include: {
         ...TICKET_INCLUDE,
+        referralReward: { select: { id: true } },
         messages: {
           where: { visibility: 'PUBLIC' },
           select: {
@@ -262,10 +275,75 @@ export class TicketsService {
     if (!ticket) {
       throw new NotFoundException('Ticket not found');
     }
-    if (ticket.authorId !== userId && !(await this.isAdmin(userId))) {
+    const admin = await this.isAdmin(userId);
+    if (ticket.authorId !== userId && !admin) {
       throw new ForbiddenException('You can only view your own tickets');
     }
+    if (ticket.referralReward && !admin) {
+      throw new NotFoundException('Ticket not found');
+    }
     return this.serialize(ticket);
+  }
+
+  async reply(userId: string, ticketId: string, rawBody: string) {
+    const body = rawBody.trim();
+    if (!body) {
+      throw new BadRequestException('Escreva a mensagem.');
+    }
+    if (body.length > 5000) {
+      throw new BadRequestException('A mensagem é longa demais.');
+    }
+
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: {
+        id: true,
+        authorId: true,
+        status: true,
+        referralReward: { select: { id: true } },
+      },
+    });
+    if (!ticket) {
+      throw new NotFoundException('Ticket not found');
+    }
+    if (ticket.authorId !== userId) {
+      throw new ForbiddenException('You can only reply to your own tickets');
+    }
+    if (ticket.referralReward) {
+      throw new NotFoundException('Ticket not found');
+    }
+    if (!ACTIVE_TICKET_STATUSES.includes(ticket.status)) {
+      throw new BadRequestException('Este chamado não aceita novas mensagens.');
+    }
+
+    const since = new Date(Date.now() - 15_000);
+    await this.prisma.$transaction(async (tx) => {
+      const recent = await tx.ticketMessage.findFirst({
+        where: {
+          ticketId,
+          authorId: userId,
+          visibility: 'PUBLIC',
+          body,
+          createdAt: { gte: since },
+        },
+        select: { id: true },
+      });
+      if (recent) return;
+      await tx.ticketMessage.create({
+        data: {
+          ticketId,
+          authorId: userId,
+          visibility: 'PUBLIC',
+          body,
+        },
+      });
+      await tx.ticket.update({
+        where: { id: ticketId },
+        data: { updatedAt: new Date() },
+      });
+    });
+
+    return this.findById(userId, ticketId);
   }
 
   async addEvidence(

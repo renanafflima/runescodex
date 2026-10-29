@@ -80,6 +80,14 @@ describe('TicketsService', () => {
       create: jest.fn(),
       findFirst: jest.fn(),
     },
+    ticketMessage: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+    },
+    $transaction: jest.fn(
+      async (callback: (tx: typeof prisma) => Promise<unknown>) =>
+        callback(prisma),
+    ),
   };
   const storage = {
     put: jest.fn(),
@@ -337,7 +345,7 @@ describe('TicketsService', () => {
 
     expect(prisma.ticket.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { authorId: USER_ID },
+        where: { authorId: USER_ID, referralReward: { is: null } },
       }),
     );
     expect(result.items).toHaveLength(1);
@@ -702,5 +710,150 @@ describe('TicketsService', () => {
         source: 'CAMERA',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('stores a single-line subject in front of the description', async () => {
+    prisma.ticket.create.mockResolvedValue(ticketRow());
+
+    await service.create(USER_ID, {
+      problemType: 'OTHER',
+      impact: 'MEDIUM',
+      origin: 'GENERAL',
+      subject: 'Não consigo entrar',
+      description: 'A tela volta para o login.',
+    });
+
+    expect(prisma.ticket.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          authorId: USER_ID,
+          description: 'Não consigo entrar\n\nA tela volta para o login.',
+        }),
+      }),
+    );
+  });
+
+  it('keeps staff-wide listing and can restrict it to the caller', async () => {
+    prisma.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
+    prisma.ticket.findMany.mockResolvedValue([ticketRow()]);
+
+    await service.findAll(ADMIN_ID, { mine: 'true', problemType: 'OTHER' });
+
+    expect(prisma.ticket.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          authorId: ADMIN_ID,
+          referralReward: { is: null },
+          problemType: 'OTHER',
+        },
+      }),
+    );
+  });
+
+  it('hides an internal referral ticket from its author', async () => {
+    prisma.ticket.findUnique.mockResolvedValue(
+      ticketRow({ referralReward: { id: 'reward-1' } }),
+    );
+
+    await expect(service.findById(USER_ID, TICKET_ID)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('lets the author reply without changing status or priority', async () => {
+    prisma.ticket.findUnique
+      .mockResolvedValueOnce({
+        id: TICKET_ID,
+        authorId: USER_ID,
+        status: 'OPEN',
+        referralReward: null,
+      })
+      .mockResolvedValueOnce(
+        ticketRow({
+          messages: [
+            {
+              id: 'msg-1',
+              visibility: 'PUBLIC',
+              body: 'Segue o que aconteceu.',
+              createdAt: new Date('2026-10-02T00:00:00.000Z'),
+              author: { id: USER_ID, activeCharacter: null },
+            },
+          ],
+        }),
+      );
+    prisma.ticketMessage.findFirst.mockResolvedValue(null);
+    prisma.ticketMessage.create.mockResolvedValue({ id: 'msg-1' });
+    prisma.ticket.update.mockResolvedValue(ticketRow());
+
+    const result = await service.reply(USER_ID, TICKET_ID, '  Segue o que aconteceu. ');
+
+    expect(prisma.ticketMessage.create).toHaveBeenCalledWith({
+      data: {
+        ticketId: TICKET_ID,
+        authorId: USER_ID,
+        visibility: 'PUBLIC',
+        body: 'Segue o que aconteceu.',
+      },
+    });
+    expect(prisma.ticket.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: TICKET_ID },
+        data: { updatedAt: expect.any(Date) },
+      }),
+    );
+    expect(JSON.stringify(prisma.ticket.update.mock.calls)).not.toContain('RESOLVED');
+    expect(JSON.stringify(prisma.ticket.update.mock.calls)).not.toContain('priority');
+    expect(result.messages).toEqual([
+      expect.objectContaining({ body: 'Segue o que aconteceu.' }),
+    ]);
+  });
+
+  it('blocks a reply on someone else’s ticket, a closed ticket and a referral ticket', async () => {
+    prisma.ticket.findUnique.mockResolvedValueOnce({
+      id: TICKET_ID,
+      authorId: OTHER_ID,
+      status: 'OPEN',
+      referralReward: null,
+    });
+    await expect(service.reply(USER_ID, TICKET_ID, 'oi')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+
+    prisma.ticket.findUnique.mockResolvedValueOnce({
+      id: TICKET_ID,
+      authorId: USER_ID,
+      status: 'RESOLVED',
+      referralReward: null,
+    });
+    await expect(service.reply(USER_ID, TICKET_ID, 'oi')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+
+    prisma.ticket.findUnique.mockResolvedValueOnce({
+      id: TICKET_ID,
+      authorId: USER_ID,
+      status: 'OPEN',
+      referralReward: { id: 'reward-1' },
+    });
+    await expect(service.reply(USER_ID, TICKET_ID, 'oi')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(prisma.ticketMessage.create).not.toHaveBeenCalled();
+  });
+
+  it('does not create a second message for the same reply repeated immediately', async () => {
+    prisma.ticket.findUnique
+      .mockResolvedValueOnce({
+        id: TICKET_ID,
+        authorId: USER_ID,
+        status: 'WAITING_ON_USER',
+        referralReward: null,
+      })
+      .mockResolvedValueOnce(ticketRow());
+    prisma.ticketMessage.findFirst.mockResolvedValue({ id: 'msg-1' });
+
+    await service.reply(USER_ID, TICKET_ID, 'Já enviei isso.');
+
+    expect(prisma.ticketMessage.create).not.toHaveBeenCalled();
   });
 });

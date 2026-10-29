@@ -96,6 +96,11 @@ describe('TicketsController auth', () => {
       .post('/tickets/66666666-6666-4666-8666-666666666666/evidence')
       .expect(401);
 
+    await request(app.getHttpServer() as App)
+      .post('/tickets/66666666-6666-4666-8666-666666666666/messages')
+      .send({ body: 'Sem sessão' })
+      .expect(401);
+
     await app.close();
   });
 });

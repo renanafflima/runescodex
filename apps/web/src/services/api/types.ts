@@ -15,6 +15,7 @@ export type AuthUser = {
   email: string;
   role?: string;
   googleLinked?: boolean;
+  createdAt?: string;
   premium?: PremiumAccess;
 };
 

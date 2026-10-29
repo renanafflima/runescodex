@@ -90,6 +90,7 @@ export class AuthService {
           email: true,
           role: true,
           googleSub: true,
+          createdAt: true,
         },
       });
     } catch (error) {
@@ -171,6 +172,7 @@ export class AuthService {
           email: true,
           role: true,
           googleSub: true,
+          createdAt: true,
         },
       });
       this.logger.log('auth.google.stage=created_user');
@@ -226,6 +228,7 @@ export class AuthService {
           email: true,
           role: true,
           googleSub: true,
+          createdAt: true,
         },
       });
       return { user: await this.presentUser(updated) };
@@ -296,6 +299,7 @@ export class AuthService {
         email: true,
         role: true,
         googleSub: true,
+        createdAt: true,
       },
     });
 
@@ -327,6 +331,7 @@ export class AuthService {
     email: string;
     role: string;
     googleSub?: string | null;
+    createdAt?: Date | null;
   }) {
     const premium = await this.billing.getPremium(user.id);
     return {
@@ -334,6 +339,9 @@ export class AuthService {
       email: user.email,
       role: user.role,
       googleLinked: Boolean(user.googleSub),
+      ...(user.createdAt instanceof Date
+        ? { createdAt: user.createdAt.toISOString() }
+        : {}),
       premium,
     };
   }

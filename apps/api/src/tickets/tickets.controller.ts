@@ -21,6 +21,7 @@ import { RATE_LIMITS } from '../common/rate-limit.config';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { ListTicketsQueryDto } from './dto/list-tickets-query.dto';
+import { ReplyTicketDto } from './dto/reply-ticket.dto';
 import { UpdateTicketStatusDto } from './dto/update-ticket-status.dto';
 import { TicketEvidenceFileInterceptor } from './ticket-evidence-file.interceptor';
 import { TicketsService, type TicketEvidenceUpload } from './tickets.service';
@@ -79,6 +80,17 @@ export class TicketsController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.ticketsService.findById(user.userId, id);
+  }
+
+  @Post(':id/messages')
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ ...RATE_LIMITS.ticketWrite, scope: 'user' })
+  reply(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReplyTicketDto,
+  ) {
+    return this.ticketsService.reply(user.userId, id, dto.body);
   }
 
   @Patch(':id/status')

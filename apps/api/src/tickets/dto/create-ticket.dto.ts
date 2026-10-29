@@ -66,6 +66,13 @@ export class CreateTicketDto {
   @IsEnum(TicketOrigin)
   origin: TicketOrigin;
 
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @MaxLength(120)
+  @Matches(/^[^\r\n]+$/, { message: 'Subject must be a single line' })
+  subject?: string;
+
   @IsString()
   @MinLength(1)
   @MaxLength(5000)

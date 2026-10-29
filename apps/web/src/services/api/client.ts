@@ -20,6 +20,7 @@ export const apiConfiguration = {
 type ApiRequestOptions = {
   method?: string;
   json?: unknown;
+  form?: FormData;
   token?: string | null;
   auth?: boolean;
   signal?: AbortSignal;
@@ -59,8 +60,10 @@ export async function apiRequest<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  let body: string | undefined;
-  if (options.json !== undefined) {
+  let body: BodyInit | undefined;
+  if (options.form) {
+    body = options.form;
+  } else if (options.json !== undefined) {
     headers.set("Content-Type", "application/json");
     body = JSON.stringify(options.json);
   }

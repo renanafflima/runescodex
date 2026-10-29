@@ -2,21 +2,23 @@ import { useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { AccountDevices } from "./AccountDevices";
 import { AccountReferrals } from "./AccountReferrals";
+import { AccountTickets } from "./AccountTickets";
 import { GoogleSignInButton } from "../components/auth/GoogleSignInButton";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Section } from "../components/layout/Section";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import { Card, StatCard } from "../components/ui/Card";
 import { Input, Select } from "../components/ui/FormControls";
 import { Icon } from "../components/ui/Icon";
 import { Modal } from "../components/ui/Modal";
 import { Toast } from "../components/ui/Toast";
 import { CatalogEmpty, CatalogLoading } from "../components/catalog/CatalogState";
+import { EMBLEM_CRITERION, PROFILE_EMBLEMS, type ProfileEmblem } from "../domain/profile-emblems";
 import { initialsFrom } from "../domain/format";
 import { VOCATIONS } from "../domain/vocation";
+import { assetUrl } from "../lib/assets";
 import { describeApiError } from "../services/api/errors";
-import type { Character } from "../services/api/types";
+import type { PremiumAccess, Character } from "../services/api/types";
 import type { CharacterPayload } from "../services/api/characters";
 
 const emptyForm: CharacterPayload = {
@@ -25,6 +27,20 @@ const emptyForm: CharacterPayload = {
   level: 8,
   world: "",
 };
+
+function accessCopy(premium?: PremiumAccess) {
+  if (!premium?.access) return "Compra única ainda não liberada";
+  if (premium.channel === "staff") return "Acesso da equipe";
+  if (premium.term === "FIXED") return "Acesso com prazo definido";
+  return "Acesso de compra única";
+}
+
+function membershipDate(value?: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(date);
+}
 
 export function ProfilePage() {
   const {
@@ -43,7 +59,9 @@ export function ProfilePage() {
   const [form, setForm] = useState<CharacterPayload>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Character | null>(null);
+  const [emblem, setEmblem] = useState<ProfileEmblem | null>(null);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{
     message: string;
@@ -80,6 +98,7 @@ export function ProfilePage() {
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     if (!form.name.trim() || !form.world.trim() || form.level < 1) return;
     setSaving(true);
     try {
@@ -126,7 +145,7 @@ export function ProfilePage() {
   }
 
   async function handleDelete() {
-    if (!pendingDelete) return;
+    if (!pendingDelete || saving) return;
     setSaving(true);
     try {
       await deleteCharacter(pendingDelete.id);
@@ -147,208 +166,165 @@ export function ProfilePage() {
     }
   }
 
+  const memberSince = membershipDate(user?.createdAt);
+
   return (
     <div className="profile-page">
-      <section className="profile-hero" aria-labelledby="profile-title">
-        <PageContainer className="profile-hero__inner" size="wide">
-          <div className="profile-identity">
-            <div className="profile-identity__avatar" aria-hidden="true">
-              {initialsFrom(user?.email || "R")}
-            </div>
-            <div className="profile-identity__copy">
-              <Badge tone="gold">Perfil RuneCodex</Badge>
-              <h1 id="profile-title">{user?.email || "Sua jornada"}</h1>
-              <p>
-                Personagens, conta e progresso — a mesma identidade do
-                aplicativo, agora no Web.
-              </p>
-            </div>
-          </div>
-          <Button onClick={() => void logout()} variant="secondary">
-            Sair
-          </Button>
-        </PageContainer>
-      </section>
-
       <PageContainer className="profile-content" size="wide">
-        <div className="profile-stats" aria-label="Resumo do perfil">
-          <StatCard
-            detail="Na sua conta"
-            label="Personagens"
-            value={String(characters.length)}
+        <section className="profile-hero" aria-labelledby="profile-title">
+          <img
+            alt=""
+            className="profile-hero__scene"
+            src={assetUrl("images/profile/profile-hero.webp")}
           />
-          <StatCard
-            detail={activeCharacter ? `${activeCharacter.vocation} ${activeCharacter.level}` : "Nenhum escolhido"}
-            label="Personagem ativo"
-            value={activeCharacter?.name || "—"}
-          />
-          <StatCard
-            detail={
-              user?.premium?.channel === "staff"
-                ? "Acesso administrativo"
-                : user?.premium?.term === "FIXED" && user.premium.expiresAt
-                  ? "Com validade"
-                  : user?.premium?.access
-                    ? "Vitalícia"
-                    : "Plano gratuito"
-            }
-            label="Licença"
-            value={user?.premium?.access ? "Ativa" : "Inativa"}
-          />
-        </div>
+          <div className="profile-hero__shade" />
+          <div className="profile-hero__inner">
+            <div className="profile-identity">
+              <div className="profile-identity__avatar" aria-hidden="true">
+                {initialsFrom(user?.email || "R")}
+              </div>
+              <div className="profile-identity__copy">
+                <p className="eyebrow">Perfil do aventureiro</p>
+                <h1 id="profile-title">{user?.email || "Sua conta"}</h1>
+                {activeCharacter ? (
+                  <p className="profile-identity__character">
+                    Personagem em uso: {activeCharacter.name} · {activeCharacter.vocation} {activeCharacter.level}
+                  </p>
+                ) : (
+                  <p className="profile-identity__character">Nenhum personagem ativo</p>
+                )}
+                <p>
+                  {memberSince ? `Cadastro em ${memberSince}. ` : ""}
+                  {accessCopy(user?.premium)}
+                </p>
+              </div>
+            </div>
+            <Button onClick={() => setSettingsOpen(true)} type="button" variant="secondary">
+              Configurações
+            </Button>
+          </div>
+        </section>
 
-        <AccountReferrals />
-        <AccountDevices />
-        <div className="profile-layout">
-          <Section
-            actions={
-              <Button onClick={openCreate} size="sm">
+        <section aria-label="Visão geral do jogador" className="profile-overview">
+          <div>
+            <strong>{characters.length}</strong>
+            <span>Personagens</span>
+          </div>
+          <div>
+            <strong>{activeCharacter?.name || "Nenhum"}</strong>
+            <span>Personagem ativo</span>
+          </div>
+          <div>
+            <strong>{user?.premium?.access ? "Liberado" : "Sem acesso"}</strong>
+            <span>{accessCopy(user?.premium)}</span>
+          </div>
+          <div>
+            <strong>{memberSince || "—"}</strong>
+            <span>Cadastro</span>
+          </div>
+        </section>
+
+        <Section
+          actions={
+            <div className="profile-section-actions">
+              <Button onClick={() => void reloadCharacters()} size="sm" type="button" variant="ghost">
+                Atualizar
+              </Button>
+              <Button onClick={openCreate} size="sm" type="button">
                 Novo personagem
               </Button>
-            }
-            className="profile-characters"
-            description="O personagem ativo define vocação e level usados nas Hunts."
-            eyebrow="Sua companhia"
-            title="Personagens"
-          >
-            {characters.length === 0 ? (
-              <CatalogEmpty
-                action={
-                  <Button onClick={openCreate} variant="secondary">
-                    Criar personagem
-                  </Button>
-                }
-                description="Você ainda não cadastrou personagens nesta conta."
-                title="Nenhum personagem"
-              />
-            ) : (
-              <div className="character-slots">
-                {characters.map((character) => {
-                  const isActive = activeCharacter?.id === character.id;
-                  return (
-                    <article className="character-slot" key={character.id}>
-                      <span className="character-slot__mark" aria-hidden="true">
-                        {character.vocation.slice(0, 2)}
-                      </span>
-                      <div>
-                        <strong>
-                          {character.name}
-                          {isActive ? <Badge tone="gold">Ativo</Badge> : null}
-                        </strong>
-                        <span>
-                          {character.vocation} · {character.level} · {character.world}
-                        </span>
-                      </div>
-                      <div className="character-slot__actions">
-                        {isActive ? null : (
-                          <Button onClick={() => void handleActivate(character.id)} size="sm" variant="secondary">
-                            Ativar
-                          </Button>
-                        )}
-                        <Button onClick={() => openEdit(character)} size="sm" variant="ghost">
-                          Editar
-                        </Button>
-                        <Button
-                          onClick={() => setPendingDelete(character)}
-                          size="sm"
-                          variant="danger"
-                        >
-                          Remover
-                        </Button>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </Section>
-
-          <aside className="account-rail" aria-label="Dados da conta">
-            <h2>Conta e acesso</h2>
-            <Card className="account-rail__content" tone="quiet">
-              <div className="account-row">
-                <span className="account-row__icon">
-                  <Icon name="user" size={19} />
-                </span>
-                <div>
-                  <strong>Email</strong>
-                  <span>{user?.email}</span>
-                </div>
-              </div>
-              <div className="account-row">
-                <span className="account-row__icon">
-                  <Icon name="user" size={19} />
-                </span>
-                <div>
-                  <strong>Google</strong>
-                  <span>
-                    {user?.googleLinked
-                      ? "Conta Google vinculada"
-                      : "Vincule a mesma conta de email para entrar com o Google"}
-                  </span>
-                </div>
-                {user?.googleLinked ? null : (
-                  <GoogleSignInButton
-                    fullWidth={false}
-                    label="Vincular Google"
-                    onCredential={async (credential) => {
-                      await linkGoogle(credential);
-                      setNotice({
-                        title: "Google vinculado",
-                        message: "Você já pode entrar com o Google.",
-                        tone: "success",
-                      });
-                    }}
-                    size="sm"
-                    onError={(message) =>
-                      setNotice({
-                        title: "Não foi possível vincular o Google",
-                        message,
-                        tone: "error",
-                      })
-                    }
-                    showUnavailable={false}
-                  />
-                )}
-              </div>
-              <div className="account-row">
-                <span className="account-row__icon">
-                  <Icon name="swords" size={19} />
-                </span>
-                <div>
-                  <strong>Personagem ativo</strong>
-                  <span>
-                    {activeCharacter
-                      ? `${activeCharacter.name} · ${activeCharacter.vocation} ${activeCharacter.level}`
-                      : "Selecione um personagem para personalizar as Hunts"}
-                  </span>
-                </div>
-              </div>
-              <div className="account-row">
-                <span className="account-row__icon">
-                  <Icon name="refresh" size={19} />
-                </span>
-                <div>
-                  <strong>Sincronizar</strong>
-                  <span>Recarregar personagens da API</span>
-                </div>
-                <Button onClick={() => void reloadCharacters()} size="sm" variant="ghost">
-                  Atualizar
+            </div>
+          }
+          className="profile-characters"
+          description="O personagem ativo define vocação e level usados nas Hunts."
+          eyebrow="Companhia"
+          title="Personagens"
+        >
+          {characters.length === 0 ? (
+            <CatalogEmpty
+              action={
+                <Button onClick={openCreate} type="button" variant="secondary">
+                  Criar personagem
                 </Button>
-              </div>
-            </Card>
-          </aside>
-        </div>
+              }
+              description="Cadastre o primeiro personagem para conectar as Hunts à sua conta."
+              title="Nenhum personagem"
+            />
+          ) : (
+            <div className="character-slots">
+              {characters.map((character) => {
+                const isActive = activeCharacter?.id === character.id;
+                return (
+                  <article className={isActive ? "character-slot character-slot--active" : "character-slot"} key={character.id}>
+                    <span className="character-slot__mark" aria-hidden="true">
+                      {character.vocation.slice(0, 2)}
+                    </span>
+                    <div>
+                      <strong>
+                        {character.name}
+                        {isActive ? <Badge tone="gold">Ativo</Badge> : null}
+                      </strong>
+                      <span>
+                        {character.vocation} · {character.level} · {character.world}
+                      </span>
+                    </div>
+                    <div className="character-slot__actions">
+                      {isActive ? null : (
+                        <Button onClick={() => void handleActivate(character.id)} size="sm" type="button" variant="secondary">
+                          Ativar
+                        </Button>
+                      )}
+                      <Button onClick={() => openEdit(character)} size="sm" type="button" variant="ghost">
+                        Editar
+                      </Button>
+                      <Button onClick={() => setPendingDelete(character)} size="sm" type="button" variant="danger">
+                        Remover
+                      </Button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </Section>
+
+        <Section
+          className="profile-emblems"
+          description="Os emblemas oficiais permanecem fechados até o servidor receber uma regra de desbloqueio aprovada."
+          eyebrow="Jornada"
+          title="Conquistas"
+        >
+          <p className="profile-emblems__count">0 / {PROFILE_EMBLEMS.length} conquistadas</p>
+          <div className="emblem-gallery">
+            {PROFILE_EMBLEMS.map((item) => (
+              <button
+                className="emblem emblem--locked"
+                key={item.id}
+                onClick={() => setEmblem(item)}
+                type="button"
+              >
+                <span className="emblem__art">
+                  <img alt="" src={item.image} />
+                </span>
+                <span className="emblem__name">{item.name}</span>
+              </button>
+            ))}
+          </div>
+        </Section>
+
+        <AccountDevices />
+        <AccountReferrals />
+        <AccountTickets />
       </PageContainer>
 
       <Modal
         description="Os dados são enviados para a API existente do RuneCodex."
         footer={
           <>
-            <Button onClick={() => setModalOpen(false)} variant="ghost">
+            <Button onClick={() => setModalOpen(false)} type="button" variant="ghost">
               Cancelar
             </Button>
-            <Button form="character-form" loading={saving} type="submit">
+            <Button disabled={saving} form="character-form" loading={saving} type="submit">
               Salvar
             </Button>
           </>
@@ -357,7 +333,7 @@ export function ProfilePage() {
         open={modalOpen}
         title={editingId ? "Editar personagem" : "Novo personagem"}
       >
-        <form className="auth-form" id="character-form" onSubmit={handleSave}>
+        <form className="auth-form" id="character-form" onSubmit={(event) => void handleSave(event)}>
           <Input
             label="Nome"
             maxLength={50}
@@ -393,13 +369,98 @@ export function ProfilePage() {
       </Modal>
 
       <Modal
+        description="Conta, acesso e sessão deste navegador."
+        footer={
+          <Button onClick={() => void logout()} type="button" variant="secondary">
+            Sair
+          </Button>
+        }
+        onClose={() => setSettingsOpen(false)}
+        open={settingsOpen}
+        title="Configurações"
+      >
+        <div className="account-rail__content">
+          <div className="account-row">
+            <span className="account-row__icon">
+              <Icon name="user" size={19} />
+            </span>
+            <div>
+              <strong>Email</strong>
+              <span>{user?.email}</span>
+            </div>
+          </div>
+          <div className="account-row">
+            <span className="account-row__icon">
+              <Icon name="user" size={19} />
+            </span>
+            <div>
+              <strong>Google</strong>
+              <span>
+                {user?.googleLinked
+                  ? "Conta Google vinculada"
+                  : "Vincule a mesma conta de email para entrar com o Google"}
+              </span>
+            </div>
+            {user?.googleLinked ? null : (
+              <GoogleSignInButton
+                fullWidth={false}
+                label="Vincular Google"
+                onCredential={async (credential) => {
+                  await linkGoogle(credential);
+                  setNotice({
+                    title: "Google vinculado",
+                    message: "Você já pode entrar com o Google.",
+                    tone: "success",
+                  });
+                }}
+                onError={(message) =>
+                  setNotice({
+                    title: "Não foi possível vincular o Google",
+                    message,
+                    tone: "error",
+                  })
+                }
+                showUnavailable={false}
+                size="sm"
+              />
+            )}
+          </div>
+          <div className="account-row">
+            <span className="account-row__icon">
+              <Icon name="crown" size={19} />
+            </span>
+            <div>
+              <strong>Acesso</strong>
+              <span>{accessCopy(user?.premium)}</span>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        description={emblem?.summary}
+        onClose={() => setEmblem(null)}
+        open={Boolean(emblem)}
+        title={emblem?.name || "Conquista"}
+      >
+        {emblem ? (
+          <div className="emblem-detail">
+            <img alt="" src={emblem.image} />
+            <p>Estado atual: não conquistada.</p>
+            <p>{EMBLEM_CRITERION}</p>
+            <p>Não há progresso nem data de conquista, porque nenhuma métrica foi aprovada.</p>
+          </div>
+        ) : null}
+      </Modal>
+
+      <Modal
         description="Esta ação remove o personagem da sua conta."
         footer={
           <>
-            <Button onClick={() => setPendingDelete(null)} variant="ghost">
+            <Button onClick={() => setPendingDelete(null)} type="button" variant="ghost">
               Cancelar
             </Button>
-            <Button loading={saving} onClick={() => void handleDelete()} variant="danger">
+            <Button disabled={saving} loading={saving} onClick={() => void handleDelete()} type="button" variant="danger">
               Remover
             </Button>
           </>
