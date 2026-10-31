@@ -27,6 +27,7 @@ import { VoucherService } from './voucher.service';
   exports: [
     BillingService,
     BillingCheckoutService,
+    MercadoPagoClient,
     PremiumGuard,
     PendingLicenseGrantService,
   ],
