@@ -43,6 +43,8 @@ services:
         sync: false
       - key: MERCADO_PAGO_BACK_URL_FAILURE
         sync: false
+      - key: ENABLE_MERCADO_PAGO_ADMIN_DIAGNOSTIC
+        sync: false
       - key: REVENUECAT_SECRET_API_KEY
         sync: false
       - key: REVENUECAT_WEBHOOK_AUTHORIZATION

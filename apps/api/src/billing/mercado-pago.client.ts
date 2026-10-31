@@ -31,6 +31,12 @@ type PaymentResponse = {
   transaction_amount?: number;
 };
 
+export type MercadoPagoPixMethodSummary = {
+  id: string;
+  payment_type_id: string;
+  status: string;
+};
+
 @Injectable()
 export class MercadoPagoClient {
   config(): MercadoPagoConfig | null {
@@ -108,6 +114,83 @@ export class MercadoPagoClient {
       { method: 'GET' },
     );
     return (payload.results ?? []).map((row) => this.toPayment(row));
+  }
+
+  /** Read-only helper for temporary admin diagnostics. Does not log responses. */
+  async getAuthenticatedCollectorId(): Promise<number> {
+    const config = this.requireConfig();
+    const payload = await this.request<{ id?: number | string }>(
+      config,
+      '/v1/users/me',
+      { method: 'GET' },
+    );
+    const id = Number(payload.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      throw new ServiceUnavailableException('Billing provider request failed');
+    }
+    return Math.trunc(id);
+  }
+
+  /** Read-only helper for temporary admin diagnostics. Returns Pix-related methods only. */
+  async listPixPaymentMethods(): Promise<MercadoPagoPixMethodSummary[]> {
+    const config = this.requireConfig();
+    const payload = await this.request<unknown>(
+      config,
+      '/v1/payment_methods',
+      { method: 'GET' },
+    );
+    if (!Array.isArray(payload)) {
+      throw new ServiceUnavailableException('Billing provider request failed');
+    }
+    const rows: MercadoPagoPixMethodSummary[] = [];
+    for (const entry of payload) {
+      if (!entry || typeof entry !== 'object') {
+        continue;
+      }
+      const row = entry as Record<string, unknown>;
+      const id = typeof row.id === 'string' ? row.id.trim() : '';
+      const paymentTypeId =
+        typeof row.payment_type_id === 'string'
+          ? row.payment_type_id.trim()
+          : typeof row.type === 'string'
+            ? row.type.trim()
+            : '';
+      const status = typeof row.status === 'string' ? row.status.trim() : '';
+      const isPix =
+        id.toLowerCase() === 'pix' ||
+        paymentTypeId.toLowerCase() === 'bank_transfer';
+      if (!isPix || !id) {
+        continue;
+      }
+      rows.push({
+        id,
+        payment_type_id: paymentTypeId || 'unknown',
+        status: status || 'unknown',
+      });
+    }
+    return rows;
+  }
+
+  /** Read-only helper for temporary admin diagnostics. */
+  async getPreferenceCollectorId(preferenceId: string): Promise<number | null> {
+    const trimmed = preferenceId.trim();
+    if (!/^[A-Za-z0-9-]+$/.test(trimmed)) {
+      throw new ServiceUnavailableException('Billing provider request failed');
+    }
+    const config = this.requireConfig();
+    const payload = await this.request<{ collector_id?: number | string }>(
+      config,
+      `/checkout/preferences/${encodeURIComponent(trimmed)}`,
+      { method: 'GET' },
+    );
+    if (payload.collector_id == null) {
+      return null;
+    }
+    const id = Number(payload.collector_id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return null;
+    }
+    return Math.trunc(id);
   }
 
   private requireConfig() {

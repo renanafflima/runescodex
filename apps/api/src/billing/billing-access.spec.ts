@@ -25,6 +25,7 @@ import { HuntsController } from '../hunts/hunts.controller';
 import { RewardsController } from '../rewards/rewards.controller';
 import { TicketsController } from '../tickets/tickets.controller';
 import { AdminGuard } from '../admin/admin.guard';
+import { AdminMercadoPagoDiagnosticController } from '../admin/billing/admin-mercado-pago-diagnostic.controller';
 import { BillingController } from './billing.controller';
 import { PremiumGuard, SKIP_PREMIUM_KEY } from './premium.guard';
 
@@ -134,6 +135,12 @@ describe('Premium access on API routes', () => {
       expect.arrayContaining([JwtAuthGuard, AdminGuard]),
     );
     expect(guardsOf(AdminLicensesController)).not.toContain(PremiumGuard);
+    expect(guardsOf(AdminMercadoPagoDiagnosticController)).toEqual(
+      expect.arrayContaining([JwtAuthGuard, AdminGuard]),
+    );
+    expect(guardsOf(AdminMercadoPagoDiagnosticController)).not.toContain(
+      PremiumGuard,
+    );
   });
 });
 

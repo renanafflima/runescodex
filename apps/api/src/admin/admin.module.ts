@@ -19,6 +19,8 @@ import { AdminLicensesController } from './licenses/admin-licenses.controller';
 import { AdminLicensesService } from './licenses/admin-licenses.service';
 import { AdminTicketsController } from './tickets/admin-tickets.controller';
 import { AdminTicketsService } from './tickets/admin-tickets.service';
+import { AdminMercadoPagoDiagnosticController } from './billing/admin-mercado-pago-diagnostic.controller';
+import { AdminMercadoPagoDiagnosticService } from './billing/admin-mercado-pago-diagnostic.service';
 
 @Module({
   imports: [AuthModule, TicketsModule, ReferralsModule],
@@ -32,6 +34,7 @@ import { AdminTicketsService } from './tickets/admin-tickets.service';
     AdminAuditController,
     AdminLicensesController,
     AdminReferralsController,
+    AdminMercadoPagoDiagnosticController,
   ],
   providers: [
     AdminGuard,
@@ -42,6 +45,7 @@ import { AdminTicketsService } from './tickets/admin-tickets.service';
     AdminSettingsService,
     AdminTicketsService,
     AdminLicensesService,
+    AdminMercadoPagoDiagnosticService,
   ],
 })
 export class AdminModule {}
