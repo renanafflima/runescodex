@@ -1,30 +1,30 @@
-import {
-  Injectable,
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   MERCADO_PAGO_PROVIDER,
   PREMIUM_PRODUCT_CODE,
 } from '../../billing/billing.constants';
-import { MercadoPagoClient } from '../../billing/mercado-pago.client';
+import {
+  MercadoPagoClient,
+  type MercadoPagoPixMethodSummary,
+} from '../../billing/mercado-pago.client';
+import type { MercadoPagoDiagnosticStep } from '../../billing/mercado-pago.diagnostic';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export type MercadoPagoAdminDiagnosticView = {
   temporary: true;
-  collectorId: number;
-  pixPaymentMethods: Array<{
-    id: string;
-    payment_type_id: string;
-    status: string;
-  }>;
+  configured: boolean;
+  productionCheckoutMode: boolean | null;
+  collectorId: number | null;
+  pixPaymentMethods: MercadoPagoPixMethodSummary[];
+  pixCatalogNote: string;
   latestPreference: {
     preferenceId: string;
     collectorId: number | null;
-    matchesAuthenticatedCollector: boolean;
+    matchesAuthenticatedCollector: boolean | null;
   } | null;
-  reusablePendingCheckouts: number;
-  productionCheckoutMode: boolean;
+  reusablePendingCheckouts: number | null;
+  failedSteps: string[];
+  steps: MercadoPagoDiagnosticStep[];
 };
 
 function diagnosticEnabled(env: NodeJS.ProcessEnv = process.env) {
@@ -47,43 +47,238 @@ export class AdminMercadoPagoDiagnosticService {
     if (!this.isEnabled()) {
       throw new NotFoundException();
     }
-    if (!this.mercadoPago.config()) {
-      throw new ServiceUnavailableException(
-        'Mercado Pago billing is not configured',
-      );
-    }
-
-    const [collectorId, pixPaymentMethods, latestPreferenceId, reusablePendingCheckouts] =
-      await Promise.all([
-        this.mercadoPago.getAuthenticatedCollectorId(),
-        this.mercadoPago.listPixPaymentMethods(),
-        this.findLatestPreferenceId(),
-        this.countReusablePendingCheckouts(),
-      ]);
-
-    let latestPreference: MercadoPagoAdminDiagnosticView['latestPreference'] =
-      null;
-    if (latestPreferenceId) {
-      const preferenceCollectorId =
-        await this.mercadoPago.getPreferenceCollectorId(latestPreferenceId);
-      latestPreference = {
-        preferenceId: latestPreferenceId,
-        collectorId: preferenceCollectorId,
-        matchesAuthenticatedCollector:
-          preferenceCollectorId != null &&
-          preferenceCollectorId === collectorId,
-      };
-    }
 
     const config = this.mercadoPago.config();
+    const configStep: MercadoPagoDiagnosticStep<{
+      productionCheckoutMode: boolean | null;
+    }> = {
+      id: 'config',
+      ok: Boolean(config),
+      httpStatus: null,
+      errorCode: config ? null : 'not_configured',
+      message: config
+        ? null
+        : 'Mercado Pago billing is not configured',
+      data: {
+        productionCheckoutMode: config ? !config.sandbox : null,
+      },
+    };
+
+    const [usersMe, paymentMethods, latestPreferenceId, reusable] =
+      await Promise.all([
+        this.safeUsersMe(),
+        this.safePaymentMethods(),
+        this.safeLatestPreferenceId(),
+        this.safeReusableCount(),
+      ]);
+
+    const preference = latestPreferenceId.ok
+      ? await this.safePreference(
+          latestPreferenceId.data,
+          usersMe.data?.collectorId ?? null,
+        )
+      : {
+          id: 'latest_preference' as const,
+          ok: false,
+          httpStatus: null,
+          errorCode: latestPreferenceId.errorCode,
+          message: latestPreferenceId.message,
+          data: null,
+        };
+
+    const steps = [
+      configStep,
+      usersMe,
+      paymentMethods,
+      preference,
+      reusable,
+    ];
+
     return {
       temporary: true,
-      collectorId,
-      pixPaymentMethods,
-      latestPreference,
-      reusablePendingCheckouts,
-      productionCheckoutMode: config ? !config.sandbox : false,
+      configured: Boolean(config),
+      productionCheckoutMode: config ? !config.sandbox : null,
+      collectorId: usersMe.data?.collectorId ?? null,
+      pixPaymentMethods: paymentMethods.data?.pixPaymentMethods ?? [],
+      pixCatalogNote:
+        'An empty Pix list here does not prove Checkout Pro cannot offer Pix. Confirm the Pix key and Checkout Pro payment types in the Mercado Pago account.',
+      latestPreference: preference.data,
+      reusablePendingCheckouts: reusable.data?.count ?? null,
+      failedSteps: steps.filter((step) => !step.ok).map((step) => step.id),
+      steps,
     };
+  }
+
+  private async safeUsersMe(): Promise<
+    MercadoPagoDiagnosticStep<{ collectorId: number }>
+  > {
+    try {
+      const result = await this.mercadoPago.inspectAuthenticatedCollector();
+      return {
+        id: 'users_me',
+        ok: result.ok,
+        httpStatus: result.httpStatus,
+        errorCode: result.errorCode,
+        message: result.message,
+        data: result.data,
+      };
+    } catch {
+      return {
+        id: 'users_me',
+        ok: false,
+        httpStatus: null,
+        errorCode: 'unexpected_error',
+        message: 'users/me failed unexpectedly',
+        data: null,
+      };
+    }
+  }
+
+  private async safePaymentMethods(): Promise<
+    MercadoPagoDiagnosticStep<{
+      pixPaymentMethods: MercadoPagoPixMethodSummary[];
+      paymentMethodCount: number;
+    }>
+  > {
+    try {
+      const result = await this.mercadoPago.inspectPixPaymentMethods();
+      return {
+        id: 'payment_methods',
+        ok: result.ok,
+        httpStatus: result.httpStatus,
+        errorCode: result.errorCode,
+        message: result.message,
+        data: result.data,
+      };
+    } catch {
+      return {
+        id: 'payment_methods',
+        ok: false,
+        httpStatus: null,
+        errorCode: 'unexpected_error',
+        message: 'payment_methods failed unexpectedly',
+        data: null,
+      };
+    }
+  }
+
+  private async safeLatestPreferenceId(): Promise<
+    MercadoPagoDiagnosticStep<string | null>
+  > {
+    try {
+      const preferenceId = await this.findLatestPreferenceId();
+      return {
+        id: 'latest_preference',
+        ok: true,
+        httpStatus: null,
+        errorCode: null,
+        message: preferenceId ? null : 'No Mercado Pago preference is stored',
+        data: preferenceId,
+      };
+    } catch {
+      return {
+        id: 'latest_preference',
+        ok: false,
+        httpStatus: null,
+        errorCode: 'database_error',
+        message: 'Could not read the latest stored preference',
+        data: null,
+      };
+    }
+  }
+
+  private async safeReusableCount(): Promise<
+    MercadoPagoDiagnosticStep<{ count: number }>
+  > {
+    try {
+      const count = await this.countReusablePendingCheckouts();
+      return {
+        id: 'reusable_pending_checkouts',
+        ok: true,
+        httpStatus: null,
+        errorCode: null,
+        message: null,
+        data: { count },
+      };
+    } catch {
+      return {
+        id: 'reusable_pending_checkouts',
+        ok: false,
+        httpStatus: null,
+        errorCode: 'database_error',
+        message: 'Could not count reusable pending checkouts',
+        data: null,
+      };
+    }
+  }
+
+  private async safePreference(
+    preferenceId: string | null,
+    collectorId: number | null,
+  ): Promise<
+    MercadoPagoDiagnosticStep<{
+      preferenceId: string;
+      collectorId: number | null;
+      matchesAuthenticatedCollector: boolean | null;
+    } | null>
+  > {
+    if (!preferenceId) {
+      return {
+        id: 'latest_preference',
+        ok: true,
+        httpStatus: null,
+        errorCode: null,
+        message: 'No Mercado Pago preference is stored',
+        data: null,
+      };
+    }
+    try {
+      const result =
+        await this.mercadoPago.inspectPreferenceCollector(preferenceId);
+      if (!result.ok) {
+        return {
+          id: 'latest_preference',
+          ok: false,
+          httpStatus: result.httpStatus,
+          errorCode: result.errorCode,
+          message: result.message,
+          data: {
+            preferenceId,
+            collectorId: null,
+            matchesAuthenticatedCollector: null,
+          },
+        };
+      }
+      const preferenceCollectorId = result.data?.collectorId ?? null;
+      return {
+        id: 'latest_preference',
+        ok: true,
+        httpStatus: result.httpStatus,
+        errorCode: null,
+        message: null,
+        data: {
+          preferenceId,
+          collectorId: preferenceCollectorId,
+          matchesAuthenticatedCollector:
+            preferenceCollectorId != null && collectorId != null
+              ? preferenceCollectorId === collectorId
+              : null,
+        },
+      };
+    } catch {
+      return {
+        id: 'latest_preference',
+        ok: false,
+        httpStatus: null,
+        errorCode: 'unexpected_error',
+        message: 'Preference lookup failed unexpectedly',
+        data: {
+          preferenceId,
+          collectorId: null,
+          matchesAuthenticatedCollector: null,
+        },
+      };
+    }
   }
 
   private async findLatestPreferenceId(): Promise<string | null> {
