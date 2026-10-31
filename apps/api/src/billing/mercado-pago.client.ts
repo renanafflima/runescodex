@@ -4,7 +4,18 @@ import {
   readMercadoPagoConfig,
   type MercadoPagoConfig,
 } from './mercado-pago.config';
-import { sanitizeMercadoPagoError } from './mercado-pago.diagnostic';
+import {
+  classifyPaymentMethodsCatalog,
+  classifyPaymentMethodsHttpFailure,
+  PREFERENCE_DIAGNOSTIC_TIMEOUT_MS,
+  sanitizeMercadoPagoError,
+  sanitizePaymentMethodSample,
+  sanitizePaymentMethodSampleList,
+  sanitizePreferenceDiagnosticBody,
+  type MercadoPagoPaymentMethodSample,
+  type MercadoPagoPaymentMethodsOutcome,
+  type MercadoPagoPreferenceDiagnosticView,
+} from './mercado-pago.diagnostic';
 import { decimalToMinorUnits, minorUnitsToDecimal } from './mercado-pago.money';
 
 const DIAGNOSTIC_TIMEOUT_MS = 12_000;
@@ -156,16 +167,31 @@ export class MercadoPagoClient {
     };
   }
 
-  /** Read-only helper for temporary admin diagnostics. Returns Pix-related methods only. */
+  /** Read-only helper for temporary admin diagnostics. */
   async inspectPixPaymentMethods(): Promise<
     MercadoPagoDiagnosticHttpResult<{
+      outcome: MercadoPagoPaymentMethodsOutcome;
       pixPaymentMethods: MercadoPagoPixMethodSummary[];
       paymentMethodCount: number;
+      sample: MercadoPagoPaymentMethodSample[];
+      sampleTruncated: boolean;
     }>
   > {
+    const empty = {
+      pixPaymentMethods: [] as MercadoPagoPixMethodSummary[],
+      paymentMethodCount: 0,
+      sample: [] as MercadoPagoPaymentMethodSample[],
+      sampleTruncated: false,
+    };
     const result = await this.diagnosticGet<unknown>('/v1/payment_methods');
     if (!result.ok) {
-      return { ...result, data: null };
+      return {
+        ...result,
+        data: {
+          ...empty,
+          outcome: classifyPaymentMethodsHttpFailure(result.errorCode),
+        },
+      };
     }
     if (!Array.isArray(result.data)) {
       return {
@@ -173,23 +199,35 @@ export class MercadoPagoClient {
         httpStatus: result.httpStatus,
         errorCode: 'unexpected_response',
         message: 'payment_methods did not return a list',
-        data: null,
+        data: {
+          ...empty,
+          outcome: 'unexpected_response',
+        },
       };
     }
+    const listed = sanitizePaymentMethodSampleList(result.data);
+    const pixPaymentMethods = this.toPixMethods(result.data);
     return {
       ...result,
       data: {
-        paymentMethodCount: result.data.length,
-        pixPaymentMethods: this.toPixMethods(result.data),
+        outcome: classifyPaymentMethodsCatalog(
+          listed.paymentMethodCount,
+          pixPaymentMethods.length,
+        ),
+        paymentMethodCount: listed.paymentMethodCount,
+        pixPaymentMethods,
+        sample: listed.sample,
+        sampleTruncated: listed.sampleTruncated,
       },
     };
   }
 
-  /** Read-only helper for temporary admin diagnostics. */
-  async inspectPreferenceCollector(
+  /** Read-only GET /checkout/preferences/{id} with an explicit field whitelist. */
+  async inspectPreferenceForDiagnostic(
     preferenceId: string,
+    timeoutMs = PREFERENCE_DIAGNOSTIC_TIMEOUT_MS,
   ): Promise<
-    MercadoPagoDiagnosticHttpResult<{ collectorId: number | null }>
+    MercadoPagoDiagnosticHttpResult<MercadoPagoPreferenceDiagnosticView>
   > {
     const trimmed = preferenceId.trim();
     if (!/^[A-Za-z0-9-]+$/.test(trimmed)) {
@@ -201,66 +239,57 @@ export class MercadoPagoClient {
         data: null,
       };
     }
-    const result = await this.diagnosticGet<{
-      collector_id?: number | string;
-    }>(`/checkout/preferences/${encodeURIComponent(trimmed)}`);
+    const result = await this.diagnosticGet<unknown>(
+      `/checkout/preferences/${encodeURIComponent(trimmed)}`,
+      timeoutMs,
+    );
     if (!result.ok) {
       return { ...result, data: null };
     }
-    if (result.data?.collector_id == null) {
-      return {
-        ...result,
-        data: { collectorId: null },
-      };
-    }
-    const id = Number(result.data.collector_id);
-    if (!Number.isFinite(id) || id <= 0) {
-      return {
-        ok: false,
-        httpStatus: result.httpStatus,
-        errorCode: 'incomplete_response',
-        message: 'Preference collector id was invalid',
-        data: null,
-      };
+    return {
+      ...result,
+      data: sanitizePreferenceDiagnosticBody(result.data),
+    };
+  }
+
+  /** Read-only helper for temporary admin diagnostics. */
+  async inspectPreferenceCollector(
+    preferenceId: string,
+  ): Promise<
+    MercadoPagoDiagnosticHttpResult<{ collectorId: number | null }>
+  > {
+    const result = await this.inspectPreferenceForDiagnostic(preferenceId);
+    if (!result.ok) {
+      return { ...result, data: null };
     }
     return {
       ...result,
-      data: { collectorId: Math.trunc(id) },
+      data: { collectorId: result.data?.collectorId ?? null },
     };
+  }
+
+  private isPixMethod(row: MercadoPagoPaymentMethodSample): boolean {
+    return (
+      row.id.toLowerCase() === 'pix' ||
+      row.payment_type_id.toLowerCase() === 'bank_transfer'
+    );
   }
 
   private toPixMethods(payload: unknown[]): MercadoPagoPixMethodSummary[] {
     const rows: MercadoPagoPixMethodSummary[] = [];
     for (const entry of payload) {
-      if (!entry || typeof entry !== 'object') {
+      const row = sanitizePaymentMethodSample(entry);
+      if (!row || !this.isPixMethod(row)) {
         continue;
       }
-      const row = entry as Record<string, unknown>;
-      const id = typeof row.id === 'string' ? row.id.trim() : '';
-      const paymentTypeId =
-        typeof row.payment_type_id === 'string'
-          ? row.payment_type_id.trim()
-          : typeof row.type === 'string'
-            ? row.type.trim()
-            : '';
-      const status = typeof row.status === 'string' ? row.status.trim() : '';
-      const isPix =
-        id.toLowerCase() === 'pix' ||
-        paymentTypeId.toLowerCase() === 'bank_transfer';
-      if (!isPix || !id) {
-        continue;
-      }
-      rows.push({
-        id,
-        payment_type_id: paymentTypeId || 'unknown',
-        status: status || 'unknown',
-      });
+      rows.push(row);
     }
     return rows;
   }
 
   private async diagnosticGet<T>(
     path: string,
+    timeoutMs = DIAGNOSTIC_TIMEOUT_MS,
   ): Promise<MercadoPagoDiagnosticHttpResult<T>> {
     const config = this.config();
     if (!config) {
@@ -274,7 +303,10 @@ export class MercadoPagoClient {
     }
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), DIAGNOSTIC_TIMEOUT_MS);
+    const timer = setTimeout(
+      () => controller.abort(),
+      Math.max(1, timeoutMs),
+    );
     try {
       const response = await fetch(`${API_BASE}${path}`, {
         method: 'GET',

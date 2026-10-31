@@ -59,8 +59,13 @@ describe('MercadoPagoClient diagnostics', () => {
 
     expect(result.ok).toBe(true);
     expect(result.data).toEqual({
+      outcome: 'valid_without_pix',
       paymentMethodCount: 1,
       pixPaymentMethods: [],
+      sample: [
+        { id: 'visa', payment_type_id: 'credit_card', status: 'active' },
+      ],
+      sampleTruncated: false,
     });
   });
 
@@ -76,9 +81,37 @@ describe('MercadoPagoClient diagnostics', () => {
 
     const result = await client.inspectPixPaymentMethods();
 
+    expect(result.data?.outcome).toBe('valid_with_pix');
     expect(result.data?.pixPaymentMethods).toEqual([
       { id: 'pix', payment_type_id: 'bank_transfer', status: 'active' },
     ]);
+  });
+
+  it('classifies an empty payment method list as a valid empty catalog', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [],
+    });
+
+    const result = await client.inspectPixPaymentMethods();
+
+    expect(result.ok).toBe(true);
+    expect(result.data?.outcome).toBe('valid_empty_catalog');
+  });
+
+  it('classifies a non-list payment_methods body as unexpected_response', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ error: 'not-a-list' }),
+    });
+
+    const result = await client.inspectPixPaymentMethods();
+
+    expect(result.ok).toBe(false);
+    expect(result.data?.outcome).toBe('unexpected_response');
+    expect(result.errorCode).toBe('unexpected_response');
   });
 
   it('sanitizes HTTP errors from Mercado Pago', async () => {
@@ -96,8 +129,34 @@ describe('MercadoPagoClient diagnostics', () => {
     expect(result.ok).toBe(false);
     expect(result.httpStatus).toBe(401);
     expect(result.errorCode).toBe('unauthorized');
-    expect(result.message).toBe('invalid access token [redacted]');
+    expect(result.message).toBe('invalid access token [redacted-secret]');
     expect(JSON.stringify(result)).not.toContain('APP_USR-abcdefghijkl');
+  });
+
+  it('marks payment_methods HTTP failures without treating them as an empty Pix catalog', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({ error: 'forbidden', message: 'denied' }),
+    });
+
+    const result = await client.inspectPixPaymentMethods();
+
+    expect(result.ok).toBe(false);
+    expect(result.data?.outcome).toBe('http_error');
+    expect(result.httpStatus).toBe(403);
+  });
+
+  it('classifies network errors from Mercado Pago', async () => {
+    (global.fetch as jest.Mock).mockRejectedValue(new Error('socket hang up'));
+
+    const result = await client.inspectPixPaymentMethods();
+
+    expect(result).toMatchObject({
+      ok: false,
+      errorCode: 'network_error',
+      data: { outcome: 'network_error' },
+    });
   });
 
   it('reports a timeout without leaking credentials', async () => {
@@ -112,6 +171,7 @@ describe('MercadoPagoClient diagnostics', () => {
       httpStatus: null,
       errorCode: 'timeout',
       message: 'Mercado Pago request timed out',
+      data: { outcome: 'timeout' },
     });
     expect(JSON.stringify(result)).not.toContain('APP_USR-not-a-real-token-value');
   });
@@ -144,6 +204,42 @@ describe('MercadoPagoClient diagnostics', () => {
     expect(global.fetch).toHaveBeenCalledWith(
       'https://api.mercadopago.com/checkout/preferences/pref-1',
       expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('returns a whitelisted preference diagnostic without payer, email, tokens or URLs', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        collector_id: 99,
+        date_created: '2026-10-01T00:00:00.000Z',
+        init_point: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=pref-1',
+        payer: { email: 'buyer@example.com' },
+        payment_methods: {
+          excluded_payment_types: [{ id: 'ticket' }],
+          extra: 'APP_USR-abcdefghijkl',
+        },
+      }),
+    });
+
+    const result = await client.inspectPreferenceForDiagnostic('pref-1');
+
+    expect(result.ok).toBe(true);
+    expect(result.data).toEqual({
+      collectorId: 99,
+      preferenceCreatedAt: '2026-10-01T00:00:00.000Z',
+      paymentMethods: {
+        excludedPaymentMethods: [],
+        excludedPaymentTypes: [{ id: 'ticket' }],
+        defaultPaymentMethodId: null,
+        installments: null,
+      },
+      excludedPaymentMethods: [],
+      excludedPaymentTypes: [{ id: 'ticket' }],
+    });
+    expect(JSON.stringify(result)).not.toMatch(
+      /buyer@|init_point|APP_USR-abcdefghijkl/,
     );
   });
 });
