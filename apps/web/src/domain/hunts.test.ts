@@ -4,6 +4,7 @@ import {
   huntAttackElements,
   huntCompatibility,
   huntListQueryFromFilters,
+  mapHuntAttention,
   mapHuntDetail,
   mapHuntListItem,
 } from "./hunts";
@@ -93,6 +94,24 @@ const msHunt = {
 };
 
 describe("hunt mapping and active character", () => {
+  it("maps hunt attention text from the API without trimming displayed content", () => {
+    expect(mapHuntAttention("  Cuidado com PK  ")).toBe("  Cuidado com PK  ");
+    expect(mapHuntAttention("   ")).toBeNull();
+    expect(mapHuntAttention(null)).toBeNull();
+  });
+
+  it("preserves attention on hunt detail mapping", () => {
+    const mapped = mapHuntDetail({
+      id: "1",
+      slug: "asura",
+      name: "Asura Palace",
+      vocations: [],
+      attention: "Evite stack de muitas criaturas.",
+      creatures: [],
+    });
+    expect(mapped.attention).toBe("Evite stack de muitas criaturas.");
+  });
+
   it("maps list items using the preferred vocation stats", () => {
     const mapped = mapHuntListItem(ekHunt, "EK");
     expect(mapped.slug).toBe("cyclops");

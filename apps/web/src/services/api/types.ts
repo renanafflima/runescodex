@@ -115,6 +115,8 @@ export type HuntListItem = {
   displayLocation: string;
   difficulty: string | null;
   respawn: string | null;
+  /** Hunt-specific warning text from the database (not combat element attention). */
+  attention: string | null;
   vocations: HuntVocation[];
   creature: string;
   creatureImage: string | null;

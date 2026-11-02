@@ -207,6 +207,18 @@ export function HuntDetailPage() {
           ) : null}
         </div>
 
+        {hunt.attention ? (
+          <aside className="hunt-detail__attention" role="note">
+            <span aria-hidden="true" className="hunt-detail__attention-icon">
+              ⚠
+            </span>
+            <div>
+              <strong className="hunt-detail__attention-title">Atenção</strong>
+              <p className="hunt-detail__attention-text">{hunt.attention}</p>
+            </div>
+          </aside>
+        ) : null}
+
         {spawn.length ? (
           <section>
             <h2 className="hunt-detail__section-title">

@@ -33,6 +33,12 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 
+export function mapHuntAttention(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  if (!value.trim()) return null;
+  return value;
+}
+
 function elementTypes(elements: unknown) {
   return (Array.isArray(elements) ? elements : [])
     .map((item) => (typeof item === "string" ? item : asRecord(item).element))
@@ -173,6 +179,7 @@ function mapHuntBase(hunt: unknown, preferredVocation?: string | null): HuntList
     displayLocation: formatHuntLocation(data.location, data.subLocation),
     difficulty: typeof data.difficulty === "string" ? data.difficulty : null,
     respawn: typeof data.respawn === "string" ? data.respawn : null,
+    attention: mapHuntAttention(data.attention),
     vocations,
     creature: primary?.name || "",
     creatureImage: primary?.image || null,

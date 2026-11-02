@@ -335,6 +335,8 @@ model Hunt {
   difficulty  Difficulty
   respawn     String?
   description String?
+  /// Hunt-specific safety or gameplay warnings shown on the detail page.
+  attention   String?
   /// Optional hunt-specific hero. Frontend may fall back to hunts_hero.webp when null.
   heroImage   String?
   /// Asset path relative to apps/mobile/assets/, e.g. maps/cyclops.png

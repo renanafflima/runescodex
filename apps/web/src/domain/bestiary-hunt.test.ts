@@ -16,6 +16,7 @@ const huntA: HuntListItem = {
   displayLocation: "A",
   difficulty: null,
   respawn: null,
+  attention: null,
   vocations: [],
   creature: "Dragon",
   creatureImage: null,

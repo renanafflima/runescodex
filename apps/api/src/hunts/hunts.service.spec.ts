@@ -43,6 +43,7 @@ describe('HuntsService', () => {
         subLocation: 'Cyclops Cave',
         difficulty: 'EASY',
         respawn: null,
+        attention: 'Cuidado com traps na entrada.',
         heroImage: null,
         mapImage: 'maps/cyclops.png',
         vocations: [
@@ -99,6 +100,7 @@ describe('HuntsService', () => {
     expect(result.items[0].creatureCount).toBe(1);
     expect(result.items[0].creatures[0].slug).toBe('cyclops');
     expect(result.items[0].creatures[0].killPerHour).toBe(200);
+    expect(result.items[0].attention).toBe('Cuidado com traps na entrada.');
     expect(result.items[0].creatures[0].bestiary.killsRequired).toBe(500);
     expect(result.items[0].creatures[0].bestiary.estimatedHours).toBe(3);
     expect(result.items[0].bestiarySummary.totalCharmPoints).toBe(10);
@@ -140,6 +142,7 @@ describe('HuntsService', () => {
       difficulty: 'VERY_HARD',
       respawn: null,
       description: null,
+      attention: 'Manter paralyze runa equipada.',
       heroImage: null,
       mapImage: 'maps/demon.png',
       vocations: [],
@@ -191,6 +194,7 @@ describe('HuntsService', () => {
 
     const result = await service.findBySlug('demon-hunt');
 
+    expect(result.attention).toBe('Manter paralyze runa equipada.');
     expect(result.creatures[0].recommendedCharm).toBe('FREEZE');
     expect(result.creatures[0].bestiary.hasEntry).toBe(false);
     expect(result.bestiarySummary.creaturesWithEntry).toBe(0);

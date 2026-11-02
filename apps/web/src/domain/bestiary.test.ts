@@ -167,6 +167,7 @@ function huntItem(partial: Partial<HuntListItem> & Pick<HuntListItem, "slug" | "
     displayLocation: "",
     difficulty: null,
     respawn: null,
+    attention: null,
     vocations: [],
     creature: "",
     creatureImage: null,
