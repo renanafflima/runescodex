@@ -367,15 +367,6 @@ export function HuntsPage() {
                         <span>{bestiary.charms} charm points</span>
                         <span aria-hidden="true">·</span>
                         <span>{bestiary.creatures}</span>
-                        {bestiary.hours ? (
-                          <>
-                            <span aria-hidden="true">·</span>
-                            <span>
-                              {bestiary.hours}
-                              {bestiary.partial ? " (parcial)" : ""}
-                            </span>
-                          </>
-                        ) : null}
                       </div>
                     ) : null}
                     <div className="hunt-card__creatures">

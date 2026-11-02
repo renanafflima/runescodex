@@ -18,7 +18,6 @@ import {
 } from "../domain/hunts";
 import {
   formatBestiaryDifficultyLabel,
-  formatHuntBestiaryHoursLabel,
   formatHuntCardBestiarySummary,
 } from "../domain/hunt-bestiary";
 import { HuntComments } from "../components/hunts/HuntComments";
@@ -251,12 +250,6 @@ export function HuntDetailPage() {
                           <dt>Charm points</dt>
                           <dd>{formatCount(creature.bestiary.charmPoints) || "—"}</dd>
                         </div>
-                        <div>
-                          <dt>Tempo estimado</dt>
-                          <dd>
-                            {formatHuntBestiaryHoursLabel(creature.bestiary) || "—"}
-                          </dd>
-                        </div>
                       </dl>
                     ) : (
                       <p className="hunt-creature__bestiary-missing">Bestiário não cadastrado</p>
@@ -308,13 +301,7 @@ export function HuntDetailPage() {
               <div className="hunt-info__row">
                 <span>Bestiário (hunt)</span>
                 <strong>
-                  {[
-                    `${bestiarySummary.charms} charm points`,
-                    bestiarySummary.creatures,
-                    bestiarySummary.hours
-                      ? `${bestiarySummary.hours}${bestiarySummary.partial ? " (parcial)" : ""}`
-                      : "Tempo não estimado",
-                  ].join(" · ")}
+                  {[`${bestiarySummary.charms} charm points`, bestiarySummary.creatures].join(" · ")}
                 </strong>
               </div>
             ) : null}

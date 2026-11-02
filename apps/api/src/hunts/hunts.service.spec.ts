@@ -61,6 +61,7 @@ describe('HuntsService', () => {
           {
             isPrimary: true,
             recommendedCharm: null,
+            killPerHour: 200,
             creatureId: 'c1',
           },
         ],
@@ -97,7 +98,9 @@ describe('HuntsService', () => {
     expect(result.items[0]).not.toHaveProperty('xpPerHour');
     expect(result.items[0].creatureCount).toBe(1);
     expect(result.items[0].creatures[0].slug).toBe('cyclops');
+    expect(result.items[0].creatures[0].killPerHour).toBe(200);
     expect(result.items[0].creatures[0].bestiary.killsRequired).toBe(500);
+    expect(result.items[0].creatures[0].bestiary.estimatedHours).toBe(3);
     expect(result.items[0].bestiarySummary.totalCharmPoints).toBe(10);
     expect(result.items[0].bestiarySummary.creaturesWithEntry).toBe(1);
     expect(result.items[0].bestAttack).toMatchObject({

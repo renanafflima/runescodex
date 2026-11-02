@@ -1,19 +1,17 @@
 import { CatalogImage } from "../catalog/CatalogImage";
-import { formatEstimatedHours } from "../../domain/bestiary";
+import { bestiarySpawnStatLines } from "../../domain/bestiary-hunt";
 import type { HuntListItem } from "../../services/api/types";
 
 type BestiaryHuntCreaturesProps = {
   hunt: HuntListItem;
   selectedSlug: string;
   togetherSlugs: Set<string>;
-  selectedHours?: number | null;
 };
 
 export function BestiaryHuntCreatures({
   hunt,
   selectedSlug,
   togetherSlugs,
-  selectedHours,
 }: BestiaryHuntCreaturesProps) {
   if (!hunt.spawn.length) {
     return <p className="bestiary-creatures__empty">Nenhuma criatura cadastrada nesta hunt.</p>;
@@ -24,20 +22,26 @@ export function BestiaryHuntCreatures({
       {hunt.spawn.map((creature) => {
         const selected = creature.slug === selectedSlug;
         const together = Boolean(creature.slug && togetherSlugs.has(creature.slug));
-        const time = selected ? formatEstimatedHours(selectedHours) : null;
+        const stats = bestiarySpawnStatLines(creature);
         return (
-          <div
-            className={`bestiary-mini${selected ? " is-selected" : ""}${together ? " is-together" : ""}`}
+          <article
+            className={`bestiary-spawn${selected ? " is-selected" : ""}${together ? " is-together" : ""}`}
             key={creature.slug || creature.name}
           >
-            <CatalogImage alt="" className="bestiary-mini__art" name={creature.name} src={creature.image} />
-            <span className="bestiary-mini__info">
-              <span className="bestiary-mini__name">{creature.name}</span>
-              {together && !selected ? <span className="bestiary-mini__tag">Junto</span> : null}
-              {selected ? <span className="bestiary-mini__tag">Alvo</span> : null}
-              {time ? <span className="bestiary-mini__time">{time}</span> : null}
-            </span>
-          </div>
+            <CatalogImage alt="" className="bestiary-spawn__art" name={creature.name} src={creature.image} />
+            <div className="bestiary-spawn__body">
+              <div className="bestiary-spawn__head">
+                <h4 className="bestiary-spawn__name">{creature.name}</h4>
+                {together && !selected ? <span className="bestiary-spawn__tag">Junto</span> : null}
+                {selected ? <span className="bestiary-spawn__tag">Alvo</span> : null}
+              </div>
+              <ul className="bestiary-spawn__stats">
+                {stats.map((line) => (
+                  <li key={line.key}>{line.text}</li>
+                ))}
+              </ul>
+            </div>
+          </article>
         );
       })}
     </div>

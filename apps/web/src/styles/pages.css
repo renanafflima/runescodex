@@ -1394,6 +1394,53 @@
   line-height: 1.45;
 }
 
+.bestiary-spawn {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  background: rgb(8 16 26 / 88%);
+}
+
+.bestiary-spawn.is-selected {
+  box-shadow: 0 0 0 1px rgb(212 167 44 / 42%);
+}
+
+.bestiary-spawn.is-together:not(.is-selected) {
+  box-shadow: 0 0 0 1px rgb(169 108 255 / 28%);
+}
+
+.bestiary-spawn__art {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.bestiary-spawn__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.bestiary-spawn__name {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: var(--text-sm);
+}
+
+.bestiary-spawn__stats {
+  margin: 0.35rem 0 0;
+  padding-left: 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.6875rem;
+  line-height: 1.45;
+}
+
+.bestiary-spawn__tag {
+  color: var(--color-gold-pale);
+  font-size: 0.625rem;
+}
+
 .bestiary-mini {
   display: flex;
   align-items: center;

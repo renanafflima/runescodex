@@ -64,6 +64,7 @@ const HUNT_LIST_INCLUDE = {
     select: {
       isPrimary: true,
       recommendedCharm: true,
+      killPerHour: true,
       creatureId: true,
     },
     orderBy: HUNT_CREATURE_ORDER,
@@ -160,7 +161,7 @@ export class HuntsService {
           }
           const bestiary = mapHuntCreatureBestiary(
             creature.bestiaryEntry,
-            null,
+            item.killPerHour,
           );
           return [
             {
@@ -170,6 +171,7 @@ export class HuntsService {
               image: creature.image,
               isPrimary: item.isPrimary,
               recommendedCharm: item.recommendedCharm,
+              killPerHour: item.killPerHour,
               bestiary,
             },
           ];

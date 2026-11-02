@@ -90,17 +90,8 @@ export function formatHuntCardBestiarySummary(summary: HuntBestiarySummary) {
   }
   const charms = formatCount(summary.totalCharmPoints) ?? "0";
   const creatures = `${summary.creaturesWithEntry}/${summary.creatureCount} bestiário`;
-  const hours =
-    summary.totalEstimatedHours != null && summary.estimatedHoursCreatureCount > 0
-      ? formatEstimatedHours(summary.totalEstimatedHours)
-      : null;
-  const partial =
-    summary.estimatedHoursCreatureCount > 0 &&
-    summary.estimatedHoursCreatureCount < summary.creaturesWithEntry;
   return {
     charms,
     creatures,
-    hours,
-    partial,
   };
 }

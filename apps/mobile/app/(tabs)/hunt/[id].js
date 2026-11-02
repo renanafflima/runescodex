@@ -330,12 +330,6 @@ export default function HuntDetailScreen() {
                             <Text style={styles.blockText}>
                               {t("hunts.bestiaryCharmPoints")}: {formatCount(creature.bestiary.charmPoints) || "—"}
                             </Text>
-                            <Text style={styles.blockText}>
-                              {t("hunts.bestiaryTime")}:{" "}
-                              {creature.bestiary.estimatedHours
-                                ? `≈ ${creature.bestiary.estimatedHours}h`
-                                : t("hunts.bestiaryTimeUnknown")}
-                            </Text>
                           </View>
                         ) : (
                           <Text style={styles.blockText}>{t("hunts.bestiaryMissing")}</Text>

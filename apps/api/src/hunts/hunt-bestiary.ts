@@ -30,7 +30,6 @@ export type HuntBestiarySummaryDto = {
 export function resolveHuntCreatureHours(
   killsRequired: number | null | undefined,
   huntKillPerHour: number | null | undefined,
-  bestiaryEstimatedKillsPerHour: number | null | undefined,
 ): {
   estimatedHours: number | null;
   hoursEstimateSource: HoursEstimateSource;
@@ -48,18 +47,6 @@ export function resolveHuntCreatureHours(
       estimatedHours: Math.ceil(killsRequired / huntKillPerHour),
       hoursEstimateSource: 'HUNT_CREATURE',
       killsPerHourUsed: huntKillPerHour,
-    };
-  }
-  if (
-    bestiaryEstimatedKillsPerHour != null &&
-    bestiaryEstimatedKillsPerHour > 0
-  ) {
-    return {
-      estimatedHours: Math.ceil(
-        killsRequired / bestiaryEstimatedKillsPerHour,
-      ),
-      hoursEstimateSource: 'BESTIARY_ENTRY',
-      killsPerHourUsed: bestiaryEstimatedKillsPerHour,
     };
   }
   return {
@@ -85,11 +72,7 @@ export function mapHuntCreatureBestiary(
       killsPerHourUsed: null,
     };
   }
-  const hours = resolveHuntCreatureHours(
-    entry.killsRequired,
-    huntKillPerHour,
-    entry.estimatedKillsPerHour,
-  );
+  const hours = resolveHuntCreatureHours(entry.killsRequired, huntKillPerHour);
   return {
     hasEntry: true,
     category: entry.category,

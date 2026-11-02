@@ -434,11 +434,7 @@ export function formatHuntBestiaryCardSummary(summary) {
   if (!summary?.creaturesWithEntry) return null;
   const charms = `${summary.totalCharmPoints} CP`;
   const creatures = `${summary.creaturesWithEntry}/${summary.creatureCount}`;
-  const hours =
-    summary.totalEstimatedHours != null && summary.estimatedHoursCreatureCount > 0
-      ? `≈ ${summary.totalEstimatedHours}h`
-      : null;
-  return [charms, creatures, hours].filter(Boolean).join(" · ");
+  return [charms, creatures].filter(Boolean).join(" · ");
 }
 
 export function getHuntHero(hunt) {

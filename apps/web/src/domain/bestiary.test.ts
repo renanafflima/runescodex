@@ -24,6 +24,7 @@ describe("bestiary mapping", () => {
       experience: 150,
       difficulty: "EASY",
       estimatedKillsPerHour: 250,
+      estimatedHours: 2,
       killsRequired: 500,
       youtubeUrl: "https://www.youtube.com/watch?v=abc",
       locations: [{ name: "Thais", region: "Tibia" }],
@@ -273,6 +274,54 @@ describe("bestiary hunt routes", () => {
       "halls",
       "roshamuul-prison",
     ]);
+  });
+
+  it("sorts hunts by estimated completion time for the selected creature", () => {
+    const fast = huntItem({
+      slug: "fast",
+      name: "Fast Hunt",
+      spawn: [
+        huntSpawnCreature({
+          id: "1",
+          slug: "dark-torturer",
+          name: "Dark Torturer",
+          bestiary: {
+            hasEntry: true,
+            category: "Hard",
+            killsRequired: 1000,
+            charmPoints: 25,
+            estimatedKillsPerHour: null,
+            estimatedHours: 5,
+            hoursEstimateSource: "HUNT_CREATURE",
+            killsPerHourUsed: 200,
+          },
+        }),
+      ],
+    });
+    const slow = huntItem({
+      slug: "slow",
+      name: "Slow Hunt",
+      spawn: [
+        huntSpawnCreature({
+          id: "1",
+          slug: "dark-torturer",
+          name: "Dark Torturer",
+          bestiary: {
+            hasEntry: true,
+            category: "Hard",
+            killsRequired: 1000,
+            charmPoints: 25,
+            estimatedKillsPerHour: null,
+            estimatedHours: 10,
+            hoursEstimateSource: "HUNT_CREATURE",
+            killsPerHourUsed: 100,
+          },
+        }),
+      ],
+    });
+    expect(
+      sortBestiaryHunts([slow, fast], "time", null, "dark-torturer").map((item) => item.slug),
+    ).toEqual(["fast", "slow"]);
   });
 
   it("counts unique creatures across hunts", () => {

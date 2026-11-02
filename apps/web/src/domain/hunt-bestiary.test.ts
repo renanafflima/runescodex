@@ -47,8 +47,6 @@ describe("hunt-bestiary domain", () => {
     });
     expect(card?.charms).toBe("40");
     expect(card?.creatures).toBe("2/3 bestiário");
-    expect(card?.hours).toBe("≈ 7h");
-    expect(card?.partial).toBe(true);
   });
 
   it("returns null card summary when no bestiary entries", () => {

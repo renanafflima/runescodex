@@ -7,7 +7,8 @@ import { PageContainer } from "../components/layout/PageContainer";
 import { Badge } from "../components/ui/Badge";
 import { ButtonLink } from "../components/ui/Button";
 import { useLatestRequest } from "../hooks/useLatestRequest";
-import { formatEstimatedHours, mapBestiaryEntry, uniqueHuntCreatures } from "../domain/bestiary";
+import { mapBestiaryEntry, uniqueHuntCreatures } from "../domain/bestiary";
+import { summarizeBestiaryHuntsForCreature } from "../domain/bestiary-hunt";
 import { formatCount } from "../domain/format";
 import { mapHuntListItem, preferredHuntVocation } from "../domain/hunts";
 import { describeApiError } from "../services/api/errors";
@@ -102,7 +103,10 @@ export function BestiaryCreaturePage() {
       recordContentView("CREATURE", entry.id);
     }
   }, [entry?.id]);
-  const estimatedTime = entry ? formatEstimatedHours(entry.estimatedHours) : null;
+  const huntTimeSummary = useMemo(
+    () => (entry ? summarizeBestiaryHuntsForCreature(hunts, entry.slug) : null),
+    [entry, hunts],
+  );
 
   if (loading) {
     return (
@@ -168,13 +172,15 @@ export function BestiaryCreaturePage() {
               </div>
               <div className="bestiary-hero__percent">{entry.progress.progressPercentage}%</div>
             </div>
-          ) : estimatedTime ? (
+          ) : huntTimeSummary?.huntsWithEstimatedTime ? (
             <div className="bestiary-hero__progress">
               <div className="bestiary-hero__progress-top">
-                <span>Tempo estimado</span>
-                <strong>{estimatedTime}</strong>
+                <span>Tempo por hunt</span>
+                <strong>
+                  {huntTimeSummary.huntsWithEstimatedTime}/{huntTimeSummary.huntCount}
+                </strong>
               </div>
-              <p>Referência do bestiário, sem progresso de conta.</p>
+              <p>Hunts com tempo calculável a partir do killPerHour da hunt.</p>
             </div>
           ) : null}
         </section>

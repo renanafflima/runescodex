@@ -50,12 +50,7 @@ export function mapBestiaryEntry(entry: unknown): BestiaryEntry {
     ? Number(data.estimatedKillsPerHour)
     : null;
   const killsRequired = hasNumericValue(data.killsRequired) ? Number(data.killsRequired) : null;
-  const estimatedHours =
-    hasNumericValue(data.estimatedHours)
-      ? Number(data.estimatedHours)
-      : killsPerHour && killsPerHour > 0 && killsRequired != null
-        ? Math.ceil(killsRequired / killsPerHour)
-        : null;
+  const estimatedHours = hasNumericValue(data.estimatedHours) ? Number(data.estimatedHours) : null;
   const companions = mapCompanions(data.together);
 
   return {
@@ -183,16 +178,28 @@ function huntLevel(hunt: HuntListItem) {
   return hasNumericValue(hunt.levelMin) ? Number(hunt.levelMin) : Number.POSITIVE_INFINITY;
 }
 
+function creatureEstimatedHours(hunt: HuntListItem, creatureSlug?: string) {
+  if (!creatureSlug) return Number.POSITIVE_INFINITY;
+  const creature = hunt.spawn.find((row) => row.slug === creatureSlug);
+  const hours = creature?.bestiary.estimatedHours;
+  return hasNumericValue(hours) && Number(hours) > 0 ? Number(hours) : Number.POSITIVE_INFINITY;
+}
+
 export function sortBestiaryHunts(
   hunts: HuntListItem[],
   sort: BestiaryHuntSort,
   character?: Character | null,
+  creatureSlug?: string,
 ) {
   return [...hunts].sort((left, right) => {
     const byCharacter = huntCompatibility(right, character) - huntCompatibility(left, character);
     if (byCharacter) return byCharacter;
     if (sort === "name") {
       return left.name.localeCompare(right.name, "pt-BR");
+    }
+    if (sort === "time" && creatureSlug) {
+      const byTime = creatureEstimatedHours(left, creatureSlug) - creatureEstimatedHours(right, creatureSlug);
+      if (byTime) return byTime;
     }
     const byLevel = huntLevel(left) - huntLevel(right);
     if (byLevel) return byLevel;

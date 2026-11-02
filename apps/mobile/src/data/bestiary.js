@@ -9,11 +9,7 @@ export function bestiaryCardFields(entry) {
   const location = Array.isArray(entry?.locations) ? entry.locations[0] : null;
   const killsPerHour = entry?.estimatedKillsPerHour ?? null;
   const bestiaryKills = entry?.killsRequired ?? null;
-  const estimatedHours =
-    entry?.estimatedHours ??
-    (killsPerHour > 0 && bestiaryKills != null
-      ? Math.ceil(bestiaryKills / killsPerHour)
-      : null);
+  const estimatedHours = entry?.estimatedHours ?? null;
 
   return {
     id: entry?.id || entry?.slug || entry?.name || "",

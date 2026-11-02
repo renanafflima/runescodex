@@ -6,7 +6,12 @@ import { Button, ButtonLink } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/FormControls";
 import { Toast } from "../components/ui/Toast";
-import { companionSlugSet, formatBestiaryKills, formatEstimatedHours, recommendedEvolutionHunts } from "../domain/bestiary";
+import { companionSlugSet, formatBestiaryKills, recommendedEvolutionHunts } from "../domain/bestiary";
+import {
+  formatBestiaryEstimatedDuration,
+  huntSpawnCreature,
+  summarizeBestiaryHuntsForCreature,
+} from "../domain/bestiary-hunt";
 import { formatCharmLabel, formatCount } from "../domain/format";
 import { huntSummary } from "../domain/hunts";
 import { useAuth } from "../auth/AuthContext";
@@ -27,6 +32,7 @@ export function BestiaryDetailPage() {
 
   const route = recommendedEvolutionHunts(hunts, entry.slug, activeCharacter);
   const together = companionSlugSet(entry);
+  const huntTimeSummary = summarizeBestiaryHuntsForCreature(hunts, entry.slug);
 
   useEffect(() => {
     setKills(entry.progress ? String(entry.progress.kills) : "");
@@ -73,6 +79,9 @@ export function BestiaryDetailPage() {
             {entry.killTogether.length
               ? ` Destaque para quem pode ser caçado junto: ${entry.killTogether.join(", ")}.`
               : ""}
+            {huntTimeSummary.huntsWithEstimatedTime
+              ? ` Tempo calculável em ${huntTimeSummary.huntsWithEstimatedTime}/${huntTimeSummary.huntCount} hunts.`
+              : ""}
           </p>
         </div>
       </div>
@@ -87,6 +96,10 @@ export function BestiaryDetailPage() {
           {route.map((hunt, index) => {
             const summary = huntSummary(hunt);
             const isPrimary = hunt.spawn.some((creature) => creature.slug === entry.slug && creature.isPrimary);
+            const selectedCreature = huntSpawnCreature(hunt, entry.slug);
+            const selectedTime = formatBestiaryEstimatedDuration(
+              selectedCreature?.bestiary.estimatedHours,
+            );
             return (
               <article className="bestiary-step" key={hunt.id || hunt.slug}>
                 <div className="bestiary-step__number">Etapa {index + 1}</div>
@@ -98,7 +111,6 @@ export function BestiaryDetailPage() {
                 </p>
                 <BestiaryHuntCreatures
                   hunt={hunt}
-                  selectedHours={entry.estimatedHours}
                   selectedSlug={entry.slug}
                   togetherSlugs={together}
                 />
@@ -108,9 +120,9 @@ export function BestiaryDetailPage() {
                   ) : (
                     <>O {entry.name} aparece nesta hunt junto com as criaturas listadas.</>
                   )}
-                  {formatEstimatedHours(entry.estimatedHours)
-                    ? ` Tempo de referência do bestiário: ${formatEstimatedHours(entry.estimatedHours)}.`
-                    : ""}
+                  {selectedCreature?.bestiary.hasEntry
+                    ? ` Tempo estimado nesta hunt: ${selectedTime}.`
+                    : " Bestiário não cadastrado para esta criatura."}
                 </div>
                 <ButtonLink to={`/hunts/${hunt.slug}`}>Ir para a hunt</ButtonLink>
               </article>
@@ -151,12 +163,6 @@ export function BestiaryDetailPage() {
               <div>
                 <dt>Kills</dt>
                 <dd>{formatBestiaryKills(entry)}</dd>
-              </div>
-            ) : null}
-            {formatEstimatedHours(entry.estimatedHours) ? (
-              <div>
-                <dt>Horas</dt>
-                <dd>{formatEstimatedHours(entry.estimatedHours)}</dd>
               </div>
             ) : null}
           </dl>

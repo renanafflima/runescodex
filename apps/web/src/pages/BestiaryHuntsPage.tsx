@@ -5,10 +5,15 @@ import { ButtonLink } from "../components/ui/Button";
 import { Select } from "../components/ui/FormControls";
 import {
   companionSlugSet,
-  formatEstimatedHours,
   sortBestiaryHunts,
   type BestiaryHuntSort,
 } from "../domain/bestiary";
+import {
+  formatBestiaryEstimatedDuration,
+  huntSpawnCreature,
+  summarizeBestiaryHuntSection,
+  summarizeBestiaryHuntsForCreature,
+} from "../domain/bestiary-hunt";
 import { huntSummary } from "../domain/hunts";
 import { useAuth } from "../auth/AuthContext";
 import { CharacterSwitcher } from "../components/characters/CharacterSwitcher";
@@ -26,10 +31,13 @@ export function BestiaryHuntsPage() {
   const [sort, setSort] = useState<BestiaryHuntSort>("level");
   const together = companionSlugSet(entry);
   const ordered = useMemo(
-    () => sortBestiaryHunts(hunts, sort, activeCharacter),
-    [activeCharacter, hunts, sort],
+    () => sortBestiaryHunts(hunts, sort, activeCharacter, entry.slug),
+    [activeCharacter, entry.slug, hunts, sort],
   );
-  const estimatedTime = formatEstimatedHours(entry.estimatedHours);
+  const huntTimeSummary = useMemo(
+    () => summarizeBestiaryHuntsForCreature(hunts, entry.slug),
+    [entry.slug, hunts],
+  );
 
   return (
     <>
@@ -37,10 +45,13 @@ export function BestiaryHuntsPage() {
         <div>
           <h2>Todas as hunts do {entry.name}</h2>
           <p>
-            Locais cadastrados em que o {entry.name} aparece, com os dados disponíveis de nível, XP,
-            lucro e criaturas da hunt.
+            Locais cadastrados em que o {entry.name} aparece, com kills, Charm Points, taxa da hunt e
+            tempo estimado por criatura.
             {activeCharacter
               ? ` Hunts de ${activeCharacter.vocation} ${activeCharacter.level} aparecem primeiro.`
+              : ""}
+            {huntTimeSummary.huntsWithEstimatedTime
+              ? ` Tempo calculável em ${huntTimeSummary.huntsWithEstimatedTime}/${huntTimeSummary.huntCount} hunts.`
               : ""}
           </p>
           <CharacterSwitcher className="character-switcher--page" id="bestiary-hunt-character" />
@@ -63,6 +74,11 @@ export function BestiaryHuntsPage() {
         <div className="bestiary-hunts">
           {ordered.map((hunt, index) => {
             const summary = huntSummary(hunt);
+            const selectedCreature = huntSpawnCreature(hunt, entry.slug);
+            const sectionSummary = summarizeBestiaryHuntSection(hunt);
+            const selectedTime = formatBestiaryEstimatedDuration(
+              selectedCreature?.bestiary.estimatedHours,
+            );
             return (
               <article className="bestiary-hunt" key={hunt.id || hunt.slug}>
                 <span className="bestiary-hunt__number">{index + 1}</span>
@@ -73,12 +89,22 @@ export function BestiaryHuntsPage() {
                     .join(" · ") || "Local não informado"}
                 </p>
                 <div className="bestiary-hunt__stats">
-                  {estimatedTime ? (
+                  {selectedCreature?.bestiary.hasEntry ? (
                     <div>
-                      <small>Tempo</small>
-                      <strong>{estimatedTime}</strong>
+                      <small>{entry.name}</small>
+                      <strong>{selectedTime}</strong>
                     </div>
                   ) : null}
+                  <div>
+                    <small>Charm Points (hunt)</small>
+                    <strong>{sectionSummary.totalCharmPoints}</strong>
+                  </div>
+                  <div>
+                    <small>Com tempo</small>
+                    <strong>
+                      {sectionSummary.creaturesWithEstimatedTime}/{sectionSummary.creaturesWithEntry}
+                    </strong>
+                  </div>
                   {summary.xp ? (
                     <div>
                       <small>XP/h</small>
@@ -97,7 +123,6 @@ export function BestiaryHuntsPage() {
                 </div>
                 <BestiaryHuntCreatures
                   hunt={hunt}
-                  selectedHours={entry.estimatedHours}
                   selectedSlug={entry.slug}
                   togetherSlugs={together}
                 />
@@ -113,9 +138,10 @@ export function BestiaryHuntsPage() {
       )}
 
       <p className="bestiary-foot">
-        <strong>Estimativa de Bestiário:</strong> o tempo exibido é o estimado da criatura
-        selecionada. Não há duração cadastrada por hunt; a ordenação por tempo usa o nível
-        recomendado enquanto esse campo não existir.
+        <strong>Estimativa de Bestiário:</strong> o tempo usa{" "}
+        <code>killsRequired ÷ killPerHour</code> da relação HuntCreature. Cada criatura na hunt
+        mostra sua própria estimativa; os tempos não são somados, pois várias criaturas são mortas
+        em paralelo.
       </p>
     </>
   );
