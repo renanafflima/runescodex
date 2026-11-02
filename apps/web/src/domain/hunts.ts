@@ -103,6 +103,8 @@ function mapHuntCreature(item: unknown): HuntCreature {
 function mapBestAttack(value: unknown): HuntListItem["bestAttack"] {
   if (!value || typeof value !== "object") return null;
   const data = asRecord(value);
+  const elements = uniqueElements(elementTypes(data.elements));
+  if (elements.length === 0) return null;
   const status =
     data.status === "COMPLETE" ||
     data.status === "PARTIAL" ||
@@ -110,7 +112,7 @@ function mapBestAttack(value: unknown): HuntListItem["bestAttack"] {
       ? data.status
       : "UNAVAILABLE";
   return {
-    elements: elementTypes(data.elements),
+    elements,
     status,
     creatureCount: hasNumericValue(data.creatureCount) ? Number(data.creatureCount) : 0,
     creaturesWithAnyData: hasNumericValue(data.creaturesWithAnyData)
@@ -276,8 +278,9 @@ export type HuntClientFilters = {
 };
 
 export function huntAttackElements(hunt: HuntListItem | HuntDetail) {
-  if (hunt.bestAttack) {
-    return uniqueElements(hunt.bestAttack.elements);
+  const fromBestAttack = uniqueElements(hunt.bestAttack?.elements ?? []);
+  if (fromBestAttack.length > 0) {
+    return fromBestAttack;
   }
   return uniqueElements(
     hunt.spawn.flatMap((creature) => [

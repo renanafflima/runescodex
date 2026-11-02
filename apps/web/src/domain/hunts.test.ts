@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   filterAndSortHunts,
+  huntAttackElements,
   huntCompatibility,
   huntListQueryFromFilters,
+  mapHuntDetail,
   mapHuntListItem,
 } from "./hunts";
 import type { HuntListItem } from "../services/api/types";
@@ -101,7 +103,75 @@ describe("hunt mapping and active character", () => {
     expect(mapped.displayLocation).toBe("Thais - Cyclops Cave");
     expect(mapped.spawn[0]?.bestiary.charmPoints).toBe(10);
     expect(mapped.bestiarySummary.totalCharmPoints).toBe(10);
-    expect(mapped.bestAttack?.elements).toEqual(["ENERGY"]);
+    expect(mapped.bestAttack?.elements).toEqual(["energy"]);
+    expect(huntAttackElements(mapped)).toEqual(["energy"]);
+  });
+
+  it("uses list API bestAttack on cards even without creature elements on spawn", () => {
+    const mapped = mapHuntListItem(
+      {
+        ...ekHunt,
+        bestAttack: {
+          elements: ["DEATH", "ICE"],
+          status: "PARTIAL",
+          creatureCount: 6,
+          creaturesWithAnyData: 6,
+          creaturesWithoutData: 0,
+        },
+        creatures: [{ name: "Soul-Broken Harbinger", slug: "soul-broken-harbinger", isPrimary: true }],
+      },
+      "EK",
+    );
+    expect(huntAttackElements(mapped)).toEqual(["death", "ice"]);
+  });
+
+  it("falls back to spawn elements when list payload has no bestAttack", () => {
+    const mapped = mapHuntDetail({
+      id: "h1",
+      slug: "court-of-winter",
+      name: "Court of Winter",
+      vocations: [],
+      creatures: [
+        {
+          isPrimary: true,
+          creature: {
+            name: "Thanatursus",
+            elements: [
+              { element: "DEATH", modifier: 110 },
+              { element: "ICE", modifier: 120 },
+            ],
+          },
+        },
+      ],
+    });
+    expect(mapped.bestAttack).toBeNull();
+    expect(huntAttackElements(mapped)).toEqual(["death", "ice"]);
+  });
+
+  it("does not treat an empty bestAttack payload as blocking fallback", () => {
+    const mapped = mapHuntListItem(
+      {
+        ...ekHunt,
+        bestAttack: {
+          elements: [],
+          status: "UNAVAILABLE",
+          creatureCount: 1,
+          creaturesWithAnyData: 0,
+          creaturesWithoutData: 1,
+        },
+        creatures: [
+          {
+            name: "Cyclops",
+            slug: "cyclops",
+            isPrimary: true,
+            recommendedCharm: "zap",
+          },
+        ],
+      },
+      "EK",
+    );
+    expect(mapped.bestAttack).toBeNull();
+    expect(huntAttackElements(mapped)).toEqual(["energy"]);
   });
 
   it("builds API filters from the active character", () => {
