@@ -78,6 +78,7 @@ describe('HuntsService', () => {
           estimatedKillsPerHour: null,
           charmPoints: 10,
         },
+        elements: [{ element: 'ICE', modifier: 120 }],
       },
     ]);
 
@@ -99,6 +100,10 @@ describe('HuntsService', () => {
     expect(result.items[0].creatures[0].bestiary.killsRequired).toBe(500);
     expect(result.items[0].bestiarySummary.totalCharmPoints).toBe(10);
     expect(result.items[0].bestiarySummary.creaturesWithEntry).toBe(1);
+    expect(result.items[0].bestAttack).toMatchObject({
+      elements: ['ICE'],
+      status: 'COMPLETE',
+    });
   });
 
   it('filters hunts by vocation and level on HuntVocation', async () => {
@@ -190,6 +195,10 @@ describe('HuntsService', () => {
     expect(result.creatures[0].creature.elements).toEqual([
       { element: 'HOLY', modifier: 150 },
     ]);
+    expect(result.bestAttack).toMatchObject({
+      elements: ['HOLY'],
+      status: 'COMPLETE',
+    });
     expect(result.loot).toEqual([]);
     expect(result.creatures[0].creature.youtubeUrl).toBeNull();
     expect(result.videos).toEqual([

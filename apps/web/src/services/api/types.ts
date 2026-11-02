@@ -63,6 +63,14 @@ export type HuntBestiarySummary = {
   estimatedHoursCreatureCount: number;
 };
 
+export type HuntBestAttack = {
+  elements: string[];
+  status: "COMPLETE" | "PARTIAL" | "UNAVAILABLE";
+  creatureCount: number;
+  creaturesWithAnyData: number;
+  creaturesWithoutData: number;
+};
+
 export type HuntCreature = {
   id: string | null;
   slug: string | null;
@@ -119,6 +127,7 @@ export type HuntListItem = {
   mapImage: string | null;
   youtubeUrl: string | null;
   bestiarySummary: HuntBestiarySummary;
+  bestAttack: HuntBestAttack | null;
 };
 
 export type HuntDetail = HuntListItem & {

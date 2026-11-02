@@ -63,6 +63,13 @@ const ekHunt = {
     totalEstimatedHours: null,
     estimatedHoursCreatureCount: 0,
   },
+  bestAttack: {
+    elements: ["ENERGY"],
+    status: "COMPLETE",
+    creatureCount: 1,
+    creaturesWithAnyData: 1,
+    creaturesWithoutData: 0,
+  },
 };
 
 const msHunt = {
@@ -94,6 +101,7 @@ describe("hunt mapping and active character", () => {
     expect(mapped.displayLocation).toBe("Thais - Cyclops Cave");
     expect(mapped.spawn[0]?.bestiary.charmPoints).toBe(10);
     expect(mapped.bestiarySummary.totalCharmPoints).toBe(10);
+    expect(mapped.bestAttack?.elements).toEqual(["ENERGY"]);
   });
 
   it("builds API filters from the active character", () => {

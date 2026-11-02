@@ -178,6 +178,7 @@ function huntItem(partial: Partial<HuntListItem> & Pick<HuntListItem, "slug" | "
     mapImage: null,
     youtubeUrl: null,
     bestiarySummary: emptyHuntBestiarySummary,
+    bestAttack: null,
     ...partial,
   };
 }

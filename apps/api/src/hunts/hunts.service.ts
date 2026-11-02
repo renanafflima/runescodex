@@ -9,6 +9,7 @@ import {
   mapHuntCreatureBestiary,
   summarizeHuntBestiary,
 } from './hunt-bestiary';
+import { calculateHuntBestAttack } from './hunt-best-attack';
 
 const VOCATION_SELECT = {
   vocation: true,
@@ -35,14 +36,18 @@ const BESTIARY_ENTRY_SELECT = {
   charmPoints: true,
 } as const;
 
-const LIST_CREATURE_SELECT = {
-  ...CREATURE_SUMMARY_SELECT,
-  bestiaryEntry: { select: BESTIARY_ENTRY_SELECT },
-} as const;
-
 const ELEMENT_SELECT = {
   element: true,
   modifier: true,
+} as const;
+
+const LIST_CREATURE_SELECT = {
+  ...CREATURE_SUMMARY_SELECT,
+  bestiaryEntry: { select: BESTIARY_ENTRY_SELECT },
+  elements: {
+    select: ELEMENT_SELECT,
+    orderBy: { modifier: 'desc' as const },
+  },
 } as const;
 
 const HUNT_CREATURE_ORDER = [
@@ -185,6 +190,12 @@ export class HuntsService {
           bestiarySummary: summarizeHuntBestiary(
             creatures.map((creature) => creature.bestiary),
           ),
+          bestAttack: calculateHuntBestAttack(
+            hunt.creatures.flatMap((item) => {
+              const creature = creaturesById.get(item.creatureId);
+              return creature ? [creature.elements ?? []] : [];
+            }),
+          ),
         };
       }),
       total,
@@ -276,6 +287,12 @@ export class HuntsService {
           return [
             mapHuntCreatureBestiary(creature.bestiaryEntry, item.killPerHour),
           ];
+        }),
+      ),
+      bestAttack: calculateHuntBestAttack(
+        hunt.creatures.flatMap((item) => {
+          const creature = creaturesById.get(item.creatureId);
+          return creature ? [creature.elements ?? []] : [];
         }),
       ),
       loot: hunt.loot,

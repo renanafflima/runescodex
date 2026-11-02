@@ -327,7 +327,12 @@ export function HuntDetailPage() {
             {attacks.length ? (
               <div className="hunt-info__row">
                 <span>Melhor ataque</span>
-                <strong>{attacks.map(elementLabel).join(" · ")}</strong>
+                <strong>
+                  {attacks.map(elementLabel).join(" + ")}
+                  {hunt.bestAttack?.status === "PARTIAL"
+                    ? ` · Dados parciais (${hunt.bestAttack.creaturesWithAnyData}/${hunt.bestAttack.creatureCount} criaturas com dados)`
+                    : ""}
+                </strong>
               </div>
             ) : null}
             {defenses.length ? (

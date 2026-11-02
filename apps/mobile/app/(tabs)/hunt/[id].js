@@ -127,6 +127,10 @@ export default function HuntDetailScreen() {
   const heroXp = hunt ? formatRate(hunt.xpH) : null;
   const heroProfit = hunt ? formatRate(hunt.profitH) : null;
   const huntBestiary = hunt ? formatHuntBestiaryCardSummary(hunt.bestiarySummary) : null;
+  const bestAttack = (hunt?.bestAttack?.elements || [])
+    .map(formatElementLabel)
+    .filter(Boolean)
+    .join(" + ");
 
   return (
     <AppScreen>
@@ -200,7 +204,15 @@ export default function HuntDetailScreen() {
                   <InfoRow icon="time-outline" label={t("hunts.respawn")} value={hunt.respawn} last={!hunt.difficulty && !heroLevel} />
                   <InfoRow icon="shield-outline" label={t("hunts.difficulty")} value={hunt.difficulty ? formatDifficultyLabel(hunt.difficulty) : null} last={!heroLevel && !huntBestiary} />
                   {huntBestiary ? (
-                    <InfoRow icon="book-outline" label="Bestiário" value={huntBestiary} last />
+                    <InfoRow icon="book-outline" label="Bestiário" value={huntBestiary} last={!bestAttack} />
+                  ) : null}
+                  {bestAttack ? (
+                    <InfoRow
+                      icon="flash-outline"
+                      label={t("hunts.bestAttack")}
+                      value={`${bestAttack}${hunt.bestAttack?.status === "PARTIAL" ? ` · ${t("hunts.partialData")}` : ""}`}
+                      last
+                    />
                   ) : null}
                   <InfoRow icon="trending-up-outline" label={t("hunts.level")} value={heroLevel} last />
                 </View>

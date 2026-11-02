@@ -20,11 +20,11 @@ import {
   filterAndSortHunts,
   HUNT_DIFFICULTIES,
   HUNT_VOCATION_FILTERS,
+  huntAttackElements,
   huntListQueryFromFilters,
   huntSummary,
   mapHuntListItem,
   preferredHuntVocation,
-  primaryAttackElement,
   primaryDefenseElement,
   type HuntDifficultyFilter,
   type HuntVocationFilter,
@@ -296,7 +296,7 @@ export function HuntsPage() {
           <div className="hunts-grid">
             {filtered.map((hunt) => {
               const summary = huntSummary(hunt);
-              const attack = primaryAttackElement(hunt);
+              const attacks = huntAttackElements(hunt);
               const defense = primaryDefenseElement(hunt);
               const bestiary = formatHuntCardBestiarySummary(hunt.bestiarySummary);
               const shown = hunt.spawn.slice(0, 3);
@@ -332,10 +332,19 @@ export function HuntsPage() {
                     <div className="hunt-card__combat">
                       <div className="hunt-card__combat-box">
                         <small>Melhor ataque</small>
-                        {attack ? (
-                          <span className="hunts-element-pill">
-                            <ElementIcon element={attack} />
-                            {elementLabel(attack)}
+                        {attacks.length ? (
+                          <span className="hunt-card__attack-elements">
+                            {attacks.map((attack, index) => (
+                              <span className="hunts-element-pill" key={attack}>
+                                <ElementIcon element={attack} />
+                                {index ? `+ ${elementLabel(attack)}` : elementLabel(attack)}
+                              </span>
+                            ))}
+                            {hunt.bestAttack?.status === "PARTIAL" ? (
+                              <small title="Nem todas as criaturas possuem modificadores para o elemento recomendado.">
+                                Dados parciais
+                              </small>
+                            ) : null}
                           </span>
                         ) : (
                           <span>Não informado</span>

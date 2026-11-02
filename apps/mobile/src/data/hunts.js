@@ -303,6 +303,21 @@ function mapHuntBestiarySummary(value) {
   };
 }
 
+function mapHuntBestAttack(value) {
+  if (!value || typeof value !== "object") return null;
+  return {
+    elements: Array.isArray(value.elements) ? value.elements.filter(Boolean) : [],
+    status: value.status || "UNAVAILABLE",
+    creatureCount: Number.isInteger(value.creatureCount) ? value.creatureCount : 0,
+    creaturesWithAnyData: Number.isInteger(value.creaturesWithAnyData)
+      ? value.creaturesWithAnyData
+      : 0,
+    creaturesWithoutData: Number.isInteger(value.creaturesWithoutData)
+      ? value.creaturesWithoutData
+      : 0,
+  };
+}
+
 function mapHuntCreature(item) {
   const nested = item?.creature && typeof item.creature === "object" ? item.creature : null;
   const source = nested || item || {};
@@ -376,6 +391,7 @@ export function mapHuntListItem(hunt, preferredVocation) {
     mapImage: hunt.mapImage || null,
     youtubeUrl: videos.find((item) => item.isRecommended)?.url || videos[0]?.url || null,
     bestiarySummary: mapHuntBestiarySummary(hunt?.bestiarySummary),
+    bestAttack: mapHuntBestAttack(hunt?.bestAttack),
   };
 }
 
@@ -410,6 +426,7 @@ export function mapHuntDetail(hunt, preferredVocation) {
     youtubeUrl: videos.find((item) => item.isRecommended)?.url || videos[0]?.url || null,
     loot: mapHuntLoot(hunt?.loot),
     bestiarySummary: mapHuntBestiarySummary(hunt?.bestiarySummary),
+    bestAttack: mapHuntBestAttack(hunt?.bestAttack),
   };
 }
 

@@ -102,6 +102,8 @@ export default {
     watchTutorial: "Assistir tutorial",
     openYoutube: "Abrir no YouTube",
     recDamage: "Dano recomendado",
+    bestAttack: "Melhor ataque",
+    partialData: "Dados parciais",
     bestiaryDifficulty: "Dificuldade",
     bestiaryKills: "Kills necessárias",
     bestiaryCharmPoints: "Charm points",

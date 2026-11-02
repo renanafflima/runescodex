@@ -102,6 +102,8 @@ export default {
     watchTutorial: "Obejrzyj poradnik",
     openYoutube: "Otwórz na YouTube",
     recDamage: "Zalecane obrażenia",
+    bestAttack: "Najlepszy atak",
+    partialData: "Dane częściowe",
     spawn: "Stworzenia na spawnie",
     lvlMin: "Min lvl",
     xpH: "XP/h",

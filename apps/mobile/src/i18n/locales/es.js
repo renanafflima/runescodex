@@ -102,6 +102,8 @@ export default {
     watchTutorial: "Ver tutorial",
     openYoutube: "Abrir en YouTube",
     recDamage: "Daño recomendado",
+    bestAttack: "Mejor ataque",
+    partialData: "Datos parciales",
     spawn: "Criaturas del spawn",
     lvlMin: "Lvl mín.",
     xpH: "XP/h",
