@@ -44,6 +44,25 @@ export type HuntVocation = {
   notes: string | null;
 };
 
+export type HuntCreatureBestiary = {
+  hasEntry: boolean;
+  category: string | null;
+  killsRequired: number | null;
+  charmPoints: number | null;
+  estimatedKillsPerHour: number | null;
+  estimatedHours: number | null;
+  hoursEstimateSource: "HUNT_CREATURE" | "BESTIARY_ENTRY" | null;
+  killsPerHourUsed: number | null;
+};
+
+export type HuntBestiarySummary = {
+  totalCharmPoints: number;
+  creaturesWithEntry: number;
+  creatureCount: number;
+  totalEstimatedHours: number | null;
+  estimatedHoursCreatureCount: number;
+};
+
 export type HuntCreature = {
   id: string | null;
   slug: string | null;
@@ -58,6 +77,9 @@ export type HuntCreature = {
   isPrimary: boolean;
   quantity: number | null;
   notes: string | null;
+  bestiary: HuntCreatureBestiary;
+  /** Creature catalog difficulty when provided by hunt detail API. */
+  catalogDifficulty: string | null;
 };
 
 export type HuntVideo = {
@@ -96,6 +118,7 @@ export type HuntListItem = {
   spawn: HuntCreature[];
   mapImage: string | null;
   youtubeUrl: string | null;
+  bestiarySummary: HuntBestiarySummary;
 };
 
 export type HuntDetail = HuntListItem & {

@@ -5,6 +5,10 @@ import { normalizeSearchTerm } from '../admin/insights/admin-text';
 import { publicHttpsUrl } from '../common/https-url';
 import { pageResult, resolvePage } from '../common/pagination';
 import { ListHuntsQueryDto } from './dto/list-hunts-query.dto';
+import {
+  mapHuntCreatureBestiary,
+  summarizeHuntBestiary,
+} from './hunt-bestiary';
 
 const VOCATION_SELECT = {
   vocation: true,
@@ -22,6 +26,18 @@ const CREATURE_SUMMARY_SELECT = {
   name: true,
   slug: true,
   image: true,
+} as const;
+
+const BESTIARY_ENTRY_SELECT = {
+  category: true,
+  killsRequired: true,
+  estimatedKillsPerHour: true,
+  charmPoints: true,
+} as const;
+
+const LIST_CREATURE_SELECT = {
+  ...CREATURE_SUMMARY_SELECT,
+  bestiaryEntry: { select: BESTIARY_ENTRY_SELECT },
 } as const;
 
 const ELEMENT_SELECT = {
@@ -137,6 +153,10 @@ export class HuntsService {
           if (!creature) {
             return [];
           }
+          const bestiary = mapHuntCreatureBestiary(
+            creature.bestiaryEntry,
+            null,
+          );
           return [
             {
               id: creature.id,
@@ -145,6 +165,7 @@ export class HuntsService {
               image: creature.image,
               isPrimary: item.isPrimary,
               recommendedCharm: item.recommendedCharm,
+              bestiary,
             },
           ];
         });
@@ -161,6 +182,9 @@ export class HuntsService {
           vocations: hunt.vocations,
           creatures,
           creatureCount: creatures.length,
+          bestiarySummary: summarizeHuntBestiary(
+            creatures.map((creature) => creature.bestiary),
+          ),
         };
       }),
       total,
@@ -215,6 +239,10 @@ export class HuntsService {
         if (!creature) {
           return [];
         }
+        const bestiary = mapHuntCreatureBestiary(
+          creature.bestiaryEntry,
+          item.killPerHour,
+        );
         return [
           {
             id: item.id,
@@ -224,6 +252,7 @@ export class HuntsService {
             damageType: item.damageType,
             killPerHour: item.killPerHour,
             notes: item.notes,
+            bestiary,
             creature: {
               id: creature.id,
               name: creature.name,
@@ -238,6 +267,17 @@ export class HuntsService {
           },
         ];
       }),
+      bestiarySummary: summarizeHuntBestiary(
+        hunt.creatures.flatMap((item) => {
+          const creature = creaturesById.get(item.creatureId);
+          if (!creature) {
+            return [];
+          }
+          return [
+            mapHuntCreatureBestiary(creature.bestiaryEntry, item.killPerHour),
+          ];
+        }),
+      ),
       loot: hunt.loot,
       videos: hunt.videos.flatMap((video) => {
         const url = publicHttpsUrl(video.url);
@@ -310,12 +350,12 @@ export class HuntsService {
     if (ids.length === 0) {
       return new Map<
         string,
-        Prisma.CreatureGetPayload<{ select: typeof CREATURE_SUMMARY_SELECT }>
+        Prisma.CreatureGetPayload<{ select: typeof LIST_CREATURE_SELECT }>
       >();
     }
     const creatures = await this.prisma.creature.findMany({
       where: { id: { in: ids } },
-      select: CREATURE_SUMMARY_SELECT,
+      select: LIST_CREATURE_SELECT,
     });
     return new Map(creatures.map((creature) => [creature.id, creature]));
   }
@@ -328,6 +368,7 @@ export class HuntsService {
       experience: true,
       difficulty: true,
       youtubeUrl: true,
+      bestiaryEntry: { select: BESTIARY_ENTRY_SELECT },
       elements: {
         select: ELEMENT_SELECT,
         orderBy: { modifier: 'desc' as const },

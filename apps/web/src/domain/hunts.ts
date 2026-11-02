@@ -16,6 +16,10 @@ import {
 } from "./elements";
 import { publicImageUrl, publicLinkUrl } from "./media";
 import { normalizeVocation, type VocationCode } from "./vocation";
+import {
+  mapHuntBestiarySummary,
+  mapHuntCreatureBestiary,
+} from "./hunt-bestiary";
 
 export const HUNT_VOCATION_FILTERS = ["Any", "EK", "RP", "ED", "MS", "EM"] as const;
 export const HUNT_DIFFICULTIES = ["Any", "EASY", "MEDIUM", "HARD", "VERY_HARD"] as const;
@@ -86,6 +90,13 @@ function mapHuntCreature(item: unknown): HuntCreature {
     isPrimary: Boolean(entry.isPrimary),
     quantity: hasNumericValue(entry.quantity) ? Number(entry.quantity) : null,
     notes: typeof entry.notes === "string" ? entry.notes : null,
+    bestiary: mapHuntCreatureBestiary(entry.bestiary ?? nested?.bestiary),
+    catalogDifficulty:
+      typeof nested?.difficulty === "string"
+        ? nested.difficulty
+        : typeof entry.difficulty === "string"
+          ? entry.difficulty
+          : null,
   };
 }
 
@@ -149,6 +160,7 @@ function mapHuntBase(hunt: unknown, preferredVocation?: string | null): HuntList
     spawn,
     mapImage: publicImageUrl(data.mapImage),
     youtubeUrl: videos.find((item) => item.isRecommended)?.url || videos[0]?.url || null,
+    bestiarySummary: mapHuntBestiarySummary(data.bestiarySummary),
   };
 }
 

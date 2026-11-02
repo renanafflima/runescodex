@@ -31,6 +31,7 @@ import {
   formatElementLabel,
   formatLevelRange,
   formatRate,
+  formatHuntBestiaryCardSummary,
   getHuntHero,
   hasNumericValue,
   huntsBackground,
@@ -125,6 +126,7 @@ export default function HuntDetailScreen() {
   const heroLevel = hunt ? formatLevelRange(hunt.levelMin, hunt.levelMax) : null;
   const heroXp = hunt ? formatRate(hunt.xpH) : null;
   const heroProfit = hunt ? formatRate(hunt.profitH) : null;
+  const huntBestiary = hunt ? formatHuntBestiaryCardSummary(hunt.bestiarySummary) : null;
 
   return (
     <AppScreen>
@@ -196,7 +198,10 @@ export default function HuntDetailScreen() {
                 <View style={styles.infoPanel}>
                   <InfoRow icon="location-outline" label={t("hunts.location")} value={hunt.displayLocation} last={!hunt.respawn && !hunt.difficulty && !heroLevel} />
                   <InfoRow icon="time-outline" label={t("hunts.respawn")} value={hunt.respawn} last={!hunt.difficulty && !heroLevel} />
-                  <InfoRow icon="shield-outline" label={t("hunts.difficulty")} value={hunt.difficulty ? formatDifficultyLabel(hunt.difficulty) : null} last={!heroLevel} />
+                  <InfoRow icon="shield-outline" label={t("hunts.difficulty")} value={hunt.difficulty ? formatDifficultyLabel(hunt.difficulty) : null} last={!heroLevel && !huntBestiary} />
+                  {huntBestiary ? (
+                    <InfoRow icon="book-outline" label="Bestiário" value={huntBestiary} last />
+                  ) : null}
                   <InfoRow icon="trending-up-outline" label={t("hunts.level")} value={heroLevel} last />
                 </View>
               ) : null}
@@ -301,6 +306,28 @@ export default function HuntDetailScreen() {
                             {t("hunts.recDamage")}: {formatCharmLabel(creature.damageType)}
                           </Text>
                         ) : null}
+                        {creature.bestiary?.hasEntry ? (
+                          <View style={styles.bestiaryFacts}>
+                            <Text style={styles.blockText}>
+                              {t("hunts.bestiaryDifficulty")}:{" "}
+                              {creature.bestiary.category || formatDifficultyLabel(creature.catalogDifficulty) || "—"}
+                            </Text>
+                            <Text style={styles.blockText}>
+                              {t("hunts.bestiaryKills")}: {formatCount(creature.bestiary.killsRequired) || "—"}
+                            </Text>
+                            <Text style={styles.blockText}>
+                              {t("hunts.bestiaryCharmPoints")}: {formatCount(creature.bestiary.charmPoints) || "—"}
+                            </Text>
+                            <Text style={styles.blockText}>
+                              {t("hunts.bestiaryTime")}:{" "}
+                              {creature.bestiary.estimatedHours
+                                ? `≈ ${creature.bestiary.estimatedHours}h`
+                                : t("hunts.bestiaryTimeUnknown")}
+                            </Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.blockText}>{t("hunts.bestiaryMissing")}</Text>
+                        )}
                         {creature.notes ? <Text style={styles.blockText}>{creature.notes}</Text> : null}
                         {(creature.elements || []).length ? (
                           <View style={styles.dmgRow}>
@@ -698,6 +725,7 @@ const styles = StyleSheet.create({
   metaChip: { color: "#b8d0ef", fontSize: 11, fontWeight: "800" },
   bestiaryLink: { flexDirection: "row", alignItems: "center", gap: 2 },
   bestiaryText: { color: COLORS.goldLight, fontSize: 10, fontWeight: "800" },
+  bestiaryFacts: { marginTop: 4, gap: 2 },
   iconLabelRow: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 },
   dmgRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10 },
   dmgIcon: { width: 18, height: 18 },

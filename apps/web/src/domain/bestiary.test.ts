@@ -139,6 +139,25 @@ describe("bestiary mapping", () => {
   });
 });
 
+const emptyHuntBestiary = {
+  hasEntry: false,
+  category: null,
+  killsRequired: null,
+  charmPoints: null,
+  estimatedKillsPerHour: null,
+  estimatedHours: null,
+  hoursEstimateSource: null,
+  killsPerHourUsed: null,
+} as const;
+
+const emptyHuntBestiarySummary = {
+  totalCharmPoints: 0,
+  creaturesWithEntry: 0,
+  creatureCount: 0,
+  totalEstimatedHours: null,
+  estimatedHoursCreatureCount: 0,
+};
+
 function huntItem(partial: Partial<HuntListItem> & Pick<HuntListItem, "slug" | "name">): HuntListItem {
   return {
     id: partial.id || partial.slug,
@@ -158,6 +177,28 @@ function huntItem(partial: Partial<HuntListItem> & Pick<HuntListItem, "slug" | "
     spawn: [],
     mapImage: null,
     youtubeUrl: null,
+    bestiarySummary: emptyHuntBestiarySummary,
+    ...partial,
+  };
+}
+
+function huntSpawnCreature(
+  partial: Partial<HuntListItem["spawn"][number]> &
+    Pick<HuntListItem["spawn"][number], "id" | "slug" | "name">,
+): HuntListItem["spawn"][number] {
+  return {
+    image: null,
+    hp: null,
+    xp: null,
+    elements: [],
+    recommendedCharm: null,
+    damageType: null,
+    killPerHour: null,
+    isPrimary: false,
+    quantity: null,
+    notes: null,
+    bestiary: { ...emptyHuntBestiary },
+    catalogDifficulty: null,
     ...partial,
   };
 }
@@ -168,17 +209,15 @@ describe("bestiary hunt routes", () => {
     name: "Roshamuul Prison",
     levelMin: 450,
     spawn: [
-      { id: "1", slug: "dark-torturer", name: "Dark Torturer", image: null, hp: null, xp: null, elements: [], recommendedCharm: null, damageType: null, killPerHour: null, isPrimary: true, quantity: null, notes: null },
-      { id: "2", slug: "hellhound", name: "Hellhound", image: null, hp: null, xp: null, elements: [], recommendedCharm: null, damageType: null, killPerHour: null, isPrimary: false, quantity: null, notes: null },
+      huntSpawnCreature({ id: "1", slug: "dark-torturer", name: "Dark Torturer", isPrimary: true }),
+      huntSpawnCreature({ id: "2", slug: "hellhound", name: "Hellhound" }),
     ],
   });
   const halls = huntItem({
     slug: "halls",
     name: "Halls of Ascension",
     levelMin: 400,
-    spawn: [
-      { id: "1", slug: "dark-torturer", name: "Dark Torturer", image: null, hp: null, xp: null, elements: [], recommendedCharm: null, damageType: null, killPerHour: null, isPrimary: false, quantity: null, notes: null },
-    ],
+    spawn: [huntSpawnCreature({ id: "1", slug: "dark-torturer", name: "Dark Torturer" })],
   });
 
   it("prefers hunts where the selected creature is primary for the recommended route", () => {

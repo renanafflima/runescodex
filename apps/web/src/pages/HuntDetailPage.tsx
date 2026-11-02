@@ -16,6 +16,11 @@ import {
   mapHuntDetail,
   preferredHuntVocation,
 } from "../domain/hunts";
+import {
+  formatBestiaryDifficultyLabel,
+  formatHuntBestiaryHoursLabel,
+  formatHuntCardBestiarySummary,
+} from "../domain/hunt-bestiary";
 import { HuntComments } from "../components/hunts/HuntComments";
 import { HuntUpdateRequests } from "../components/hunts/HuntUpdateRequests";
 import { ReportProblem } from "../components/tickets/ReportProblem";
@@ -78,6 +83,7 @@ export function HuntDetailPage() {
   const videos = hunt?.videos || [];
   const attacks = hunt ? huntAttackElements(hunt) : [];
   const defenses = hunt ? huntDefenseElements(hunt) : [];
+  const bestiarySummary = hunt ? formatHuntCardBestiarySummary(hunt.bestiarySummary) : null;
 
   async function shareHunt() {
     const url = window.location.href;
@@ -226,6 +232,35 @@ export function HuntDetailPage() {
                       {formatCount(creature.hp) ? <span>{formatCount(creature.hp)} HP</span> : null}
                       {formatCount(creature.xp) ? <span>{formatCount(creature.xp)} XP</span> : null}
                     </div>
+                    {creature.bestiary.hasEntry ? (
+                      <dl className="hunt-creature__bestiary">
+                        <div>
+                          <dt>Dificuldade</dt>
+                          <dd>
+                            {formatBestiaryDifficultyLabel(
+                              creature.bestiary,
+                              creature.catalogDifficulty,
+                            ) || "—"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Kills necessárias</dt>
+                          <dd>{formatCount(creature.bestiary.killsRequired) || "—"}</dd>
+                        </div>
+                        <div>
+                          <dt>Charm points</dt>
+                          <dd>{formatCount(creature.bestiary.charmPoints) || "—"}</dd>
+                        </div>
+                        <div>
+                          <dt>Tempo estimado</dt>
+                          <dd>
+                            {formatHuntBestiaryHoursLabel(creature.bestiary) || "—"}
+                          </dd>
+                        </div>
+                      </dl>
+                    ) : (
+                      <p className="hunt-creature__bestiary-missing">Bestiário não cadastrado</p>
+                    )}
                     {creature.recommendedCharm ? (
                       <div className="hunt-creature__charm">
                         <ElementIcon element={creature.recommendedCharm} size={28} />
@@ -267,6 +302,20 @@ export function HuntDetailPage() {
               <div className="hunt-info__row">
                 <span>Localização</span>
                 <strong>{hunt.displayLocation}</strong>
+              </div>
+            ) : null}
+            {bestiarySummary ? (
+              <div className="hunt-info__row">
+                <span>Bestiário (hunt)</span>
+                <strong>
+                  {[
+                    `${bestiarySummary.charms} charm points`,
+                    bestiarySummary.creatures,
+                    bestiarySummary.hours
+                      ? `${bestiarySummary.hours}${bestiarySummary.partial ? " (parcial)" : ""}`
+                      : "Tempo não estimado",
+                  ].join(" · ")}
+                </strong>
               </div>
             ) : null}
             {hunt.respawn ? (

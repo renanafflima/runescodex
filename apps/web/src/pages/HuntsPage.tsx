@@ -29,6 +29,7 @@ import {
   type HuntDifficultyFilter,
   type HuntVocationFilter,
 } from "../domain/hunts";
+import { formatHuntCardBestiarySummary } from "../domain/hunt-bestiary";
 import { normalizeVocation } from "../domain/vocation";
 import { describeApiError } from "../services/api/errors";
 import { recordSearchMiss } from "../services/api/admin-portal";
@@ -297,6 +298,7 @@ export function HuntsPage() {
               const summary = huntSummary(hunt);
               const attack = primaryAttackElement(hunt);
               const defense = primaryDefenseElement(hunt);
+              const bestiary = formatHuntCardBestiarySummary(hunt.bestiarySummary);
               const shown = hunt.spawn.slice(0, 3);
               return (
                 <Link className="hunt-card" key={hunt.id || hunt.slug} to={`/hunts/${hunt.slug}`}>
@@ -351,6 +353,22 @@ export function HuntsPage() {
                         )}
                       </div>
                     </div>
+                    {bestiary ? (
+                      <div className="hunt-card__bestiary" aria-label="Resumo de bestiário">
+                        <span>{bestiary.charms} charm points</span>
+                        <span aria-hidden="true">·</span>
+                        <span>{bestiary.creatures}</span>
+                        {bestiary.hours ? (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span>
+                              {bestiary.hours}
+                              {bestiary.partial ? " (parcial)" : ""}
+                            </span>
+                          </>
+                        ) : null}
+                      </div>
+                    ) : null}
                     <div className="hunt-card__creatures">
                       <span>Principais:</span>
                       {shown.map((creature) =>

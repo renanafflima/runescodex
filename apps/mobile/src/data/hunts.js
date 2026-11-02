@@ -278,6 +278,31 @@ function mapVocations(vocations) {
   }));
 }
 
+function mapHuntCreatureBestiary(value) {
+  const data = value && typeof value === "object" ? value : {};
+  return {
+    hasEntry: Boolean(data.hasEntry),
+    category: data.category || null,
+    killsRequired: Number.isInteger(data.killsRequired) ? data.killsRequired : null,
+    charmPoints: Number.isInteger(data.charmPoints) ? data.charmPoints : null,
+    estimatedHours: Number.isInteger(data.estimatedHours) ? data.estimatedHours : null,
+    hoursEstimateSource: data.hoursEstimateSource || null,
+  };
+}
+
+function mapHuntBestiarySummary(value) {
+  const data = value && typeof value === "object" ? value : {};
+  return {
+    totalCharmPoints: Number.isInteger(data.totalCharmPoints) ? data.totalCharmPoints : 0,
+    creaturesWithEntry: Number.isInteger(data.creaturesWithEntry) ? data.creaturesWithEntry : 0,
+    creatureCount: Number.isInteger(data.creatureCount) ? data.creatureCount : 0,
+    totalEstimatedHours: Number.isInteger(data.totalEstimatedHours) ? data.totalEstimatedHours : null,
+    estimatedHoursCreatureCount: Number.isInteger(data.estimatedHoursCreatureCount)
+      ? data.estimatedHoursCreatureCount
+      : 0,
+  };
+}
+
 function mapHuntCreature(item) {
   const nested = item?.creature && typeof item.creature === "object" ? item.creature : null;
   const source = nested || item || {};
@@ -295,6 +320,8 @@ function mapHuntCreature(item) {
     isPrimary: Boolean(item?.isPrimary),
     quantity: item?.quantity ?? null,
     notes: item?.notes || null,
+    catalogDifficulty: nested?.difficulty || null,
+    bestiary: mapHuntCreatureBestiary(item?.bestiary),
   };
 }
 
@@ -348,6 +375,7 @@ export function mapHuntListItem(hunt, preferredVocation) {
     spawn,
     mapImage: hunt.mapImage || null,
     youtubeUrl: videos.find((item) => item.isRecommended)?.url || videos[0]?.url || null,
+    bestiarySummary: mapHuntBestiarySummary(hunt?.bestiarySummary),
   };
 }
 
@@ -381,7 +409,19 @@ export function mapHuntDetail(hunt, preferredVocation) {
     videos,
     youtubeUrl: videos.find((item) => item.isRecommended)?.url || videos[0]?.url || null,
     loot: mapHuntLoot(hunt?.loot),
+    bestiarySummary: mapHuntBestiarySummary(hunt?.bestiarySummary),
   };
+}
+
+export function formatHuntBestiaryCardSummary(summary) {
+  if (!summary?.creaturesWithEntry) return null;
+  const charms = `${summary.totalCharmPoints} CP`;
+  const creatures = `${summary.creaturesWithEntry}/${summary.creatureCount}`;
+  const hours =
+    summary.totalEstimatedHours != null && summary.estimatedHoursCreatureCount > 0
+      ? `≈ ${summary.totalEstimatedHours}h`
+      : null;
+  return [charms, creatures, hours].filter(Boolean).join(" · ");
 }
 
 export function getHuntHero(hunt) {

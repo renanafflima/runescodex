@@ -44,8 +44,25 @@ const ekHunt = {
       image: "https://cdn.example/cyclops.gif",
       recommendedCharm: "zap",
       damageType: "physical",
+      bestiary: {
+        hasEntry: true,
+        category: "Medium",
+        killsRequired: 500,
+        charmPoints: 10,
+        estimatedKillsPerHour: null,
+        estimatedHours: null,
+        hoursEstimateSource: null,
+        killsPerHourUsed: null,
+      },
     },
   ],
+  bestiarySummary: {
+    totalCharmPoints: 10,
+    creaturesWithEntry: 1,
+    creatureCount: 1,
+    totalEstimatedHours: null,
+    estimatedHoursCreatureCount: 0,
+  },
 };
 
 const msHunt = {
@@ -75,6 +92,8 @@ describe("hunt mapping and active character", () => {
     expect(mapped.creature).toBe("Cyclops");
     expect(mapped.creatureImage).toMatch(/images\/creatures\/Cyclops\.gif$/);
     expect(mapped.displayLocation).toBe("Thais - Cyclops Cave");
+    expect(mapped.spawn[0]?.bestiary.charmPoints).toBe(10);
+    expect(mapped.bestiarySummary.totalCharmPoints).toBe(10);
   });
 
   it("builds API filters from the active character", () => {

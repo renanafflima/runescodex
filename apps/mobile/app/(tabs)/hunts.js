@@ -29,6 +29,7 @@ import {
   formatDifficultyLabel,
   formatLevelRange,
   formatRate,
+  formatHuntBestiaryCardSummary,
   hasNumericValue,
   huntsBackground,
   huntsHero,
@@ -365,6 +366,7 @@ function HuntRow({ item, recommended, onPress, onOpenMap }) {
   const uniqueVocations = [...new Set(vocationLabels)];
   const xpLabel = formatRate(item.xpH);
   const profitLabel = formatRate(item.profitH);
+  const bestiaryLabel = formatHuntBestiaryCardSummary(item.bestiarySummary);
   const mapSource = resolveMapImage(item.mapImage, item.creature);
 
   const art = item.creatureImage || huntsHero;
@@ -406,6 +408,11 @@ function HuntRow({ item, recommended, onPress, onOpenMap }) {
           {item.difficulty ? <Text style={styles.dot}>·</Text> : null}
           <Text style={styles.secondaryText}>{formatDifficultyLabel(item.difficulty)}</Text>
         </View>
+        {bestiaryLabel ? (
+          <Text style={styles.bestiarySummary} numberOfLines={2}>
+            {bestiaryLabel}
+          </Text>
+        ) : null}
       </Pressable>
       <View style={styles.actionRow}>
         {item.youtubeUrl ? (
@@ -566,6 +573,13 @@ const styles = StyleSheet.create({
   profitText: { color: "#8bddaa" },
   secondaryFacts: { flexDirection: "row", alignItems: "center", minWidth: 0 },
   secondaryText: { color: COLORS.textSecondary, fontSize: 12, fontWeight: "600", flexShrink: 1 },
+  bestiarySummary: {
+    marginTop: 6,
+    color: COLORS.goldLight,
+    fontSize: 11,
+    fontWeight: "700",
+    opacity: 0.92,
+  },
   dot: { color: COLORS.textMuted, marginHorizontal: 7 },
   actionRow: {
     flexDirection: "row",

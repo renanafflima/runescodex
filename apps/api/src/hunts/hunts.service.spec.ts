@@ -72,6 +72,12 @@ describe('HuntsService', () => {
         name: 'Cyclops',
         slug: 'cyclops',
         image: 'runescodex/creatures/Cyclops.gif',
+        bestiaryEntry: {
+          category: 'Medium',
+          killsRequired: 500,
+          estimatedKillsPerHour: null,
+          charmPoints: 10,
+        },
       },
     ]);
 
@@ -90,6 +96,9 @@ describe('HuntsService', () => {
     expect(result.items[0]).not.toHaveProperty('xpPerHour');
     expect(result.items[0].creatureCount).toBe(1);
     expect(result.items[0].creatures[0].slug).toBe('cyclops');
+    expect(result.items[0].creatures[0].bestiary.killsRequired).toBe(500);
+    expect(result.items[0].bestiarySummary.totalCharmPoints).toBe(10);
+    expect(result.items[0].bestiarySummary.creaturesWithEntry).toBe(1);
   });
 
   it('filters hunts by vocation and level on HuntVocation', async () => {
@@ -168,12 +177,15 @@ describe('HuntsService', () => {
         difficulty: 'VERY_HARD',
         youtubeUrl: 'javascript:alert(1)',
         elements: [{ element: 'HOLY', modifier: 150 }],
+        bestiaryEntry: null,
       },
     ]);
 
     const result = await service.findBySlug('demon-hunt');
 
     expect(result.creatures[0].recommendedCharm).toBe('FREEZE');
+    expect(result.creatures[0].bestiary.hasEntry).toBe(false);
+    expect(result.bestiarySummary.creaturesWithEntry).toBe(0);
     expect(result.creatures[0].killPerHour).toBeNull();
     expect(result.creatures[0].creature.elements).toEqual([
       { element: 'HOLY', modifier: 150 },
@@ -224,6 +236,7 @@ describe('HuntsService', () => {
         name: 'Cyclops',
         slug: 'cyclops',
         image: 'runescodex/creatures/Cyclops.gif',
+        bestiaryEntry: null,
       },
     ]);
 
@@ -237,6 +250,16 @@ describe('HuntsService', () => {
         image: 'runescodex/creatures/Cyclops.gif',
         isPrimary: false,
         recommendedCharm: null,
+        bestiary: {
+          hasEntry: false,
+          category: null,
+          killsRequired: null,
+          charmPoints: null,
+          estimatedKillsPerHour: null,
+          estimatedHours: null,
+          hoursEstimateSource: null,
+          killsPerHourUsed: null,
+        },
       },
     ]);
     expect(result.items[0].creatureCount).toBe(1);
@@ -392,6 +415,63 @@ describe('HuntsService', () => {
     expect(result.creatures).toEqual([]);
     expect(result.loot).toEqual([]);
     expect(prisma.creature.findMany).not.toHaveBeenCalled();
+  });
+
+  it('computes hunt bestiary hours from hunt killPerHour when present', async () => {
+    prisma.hunt.findFirst.mockResolvedValue({
+      id: 'hunt-5',
+      name: 'Choking Hunt',
+      slug: 'choking-hunt',
+      location: 'Venore',
+      subLocation: null,
+      difficulty: 'HARD',
+      respawn: null,
+      description: null,
+      heroImage: null,
+      mapImage: null,
+      vocations: [],
+      creatures: [
+        {
+          id: 'hc-2',
+          damageType: null,
+          isPrimary: true,
+          quantity: null,
+          recommendedCharm: null,
+          killPerHour: 200,
+          notes: null,
+          creatureId: 'c5',
+        },
+      ],
+      loot: [],
+      videos: [],
+    });
+    prisma.creature.findMany.mockResolvedValue([
+      {
+        id: 'c5',
+        name: 'Choking Fear',
+        slug: 'choking-fear',
+        image: 'runescodex/creatures/Choking_Fear.gif',
+        hp: 5800,
+        experience: 4700,
+        difficulty: 'HARD',
+        youtubeUrl: null,
+        elements: [],
+        bestiaryEntry: {
+          category: 'Hard',
+          killsRequired: 1000,
+          estimatedKillsPerHour: 50,
+          charmPoints: 50,
+        },
+      },
+    ]);
+
+    const result = await service.findBySlug('choking-hunt');
+
+    expect(result.creatures[0].bestiary.estimatedHours).toBe(5);
+    expect(result.creatures[0].bestiary.hoursEstimateSource).toBe(
+      'HUNT_CREATURE',
+    );
+    expect(result.bestiarySummary.totalEstimatedHours).toBe(5);
   });
 });
 
