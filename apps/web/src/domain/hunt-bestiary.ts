@@ -95,3 +95,19 @@ export function formatHuntCardBestiarySummary(summary: HuntBestiarySummary) {
     creatures,
   };
 }
+
+/**
+ * Same numbers as formatHuntCardBestiarySummary, split into the two compact
+ * lines used on the Hunts list cards ("Bestiário: x/y" and "Charm Points: n").
+ * Presentation only — does not recompute bestiary or charm point values.
+ */
+export function formatHuntCardBestiaryLines(summary: HuntBestiarySummary) {
+  if (!summary.creaturesWithEntry) {
+    return null;
+  }
+  const charms = formatCount(summary.totalCharmPoints) ?? "0";
+  return {
+    bestiaryLine: `Bestiário: ${summary.creaturesWithEntry}/${summary.creatureCount}`,
+    charmLine: `Charm Points: ${charms}`,
+  };
+}

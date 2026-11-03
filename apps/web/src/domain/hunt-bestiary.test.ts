@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatHuntBestiaryHoursLabel,
+  formatHuntCardBestiaryLines,
   formatHuntCardBestiarySummary,
   mapHuntCreatureBestiary,
 } from "./hunt-bestiary";
@@ -55,6 +56,42 @@ describe("hunt-bestiary domain", () => {
         totalCharmPoints: 0,
         creaturesWithEntry: 0,
         creatureCount: 4,
+        totalEstimatedHours: null,
+        estimatedHoursCreatureCount: 0,
+      }),
+    ).toBeNull();
+  });
+
+  it("formats the two compact card lines for a complete bestiary", () => {
+    const lines = formatHuntCardBestiaryLines({
+      totalCharmPoints: 275,
+      creaturesWithEntry: 6,
+      creatureCount: 6,
+      totalEstimatedHours: null,
+      estimatedHoursCreatureCount: 0,
+    });
+    expect(lines?.bestiaryLine).toBe("Bestiário: 6/6");
+    expect(lines?.charmLine).toBe("Charm Points: 275");
+  });
+
+  it("formats the card lines for an incomplete bestiary", () => {
+    const lines = formatHuntCardBestiaryLines({
+      totalCharmPoints: 90,
+      creaturesWithEntry: 2,
+      creatureCount: 5,
+      totalEstimatedHours: null,
+      estimatedHoursCreatureCount: 0,
+    });
+    expect(lines?.bestiaryLine).toBe("Bestiário: 2/5");
+    expect(lines?.charmLine).toBe("Charm Points: 90");
+  });
+
+  it("returns null card lines when no bestiary entries exist", () => {
+    expect(
+      formatHuntCardBestiaryLines({
+        totalCharmPoints: 0,
+        creaturesWithEntry: 0,
+        creatureCount: 3,
         totalEstimatedHours: null,
         estimatedHoursCreatureCount: 0,
       }),

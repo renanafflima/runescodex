@@ -183,16 +183,17 @@ describe("catalog pages load a single page", () => {
       page: 1,
       limit: 50,
     });
-    expect(screen.getByRole("button", { name: "Carregar mais" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Próxima página" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "2" })).toBeInTheDocument();
   });
 
   it("loads the next hunts page only when requested", async () => {
     listHuntsPage
-      .mockResolvedValueOnce(pageResult([prisonHunt], { hasMore: true, total: 2 }))
+      .mockResolvedValueOnce(pageResult([prisonHunt], { hasMore: true, total: 60 }))
       .mockResolvedValueOnce(
         pageResult(
           [{ ...prisonHunt, id: "h2", slug: "other-hunt", name: "Other Hunt" }],
-          { page: 2, hasMore: false, total: 2 },
+          { page: 2, hasMore: false, total: 60 },
         ),
       );
 
@@ -203,7 +204,7 @@ describe("catalog pages load a single page", () => {
     );
 
     expect(await screen.findByText("Roshamuul Prison -2")).toBeInTheDocument();
-    screen.getByRole("button", { name: "Carregar mais" }).click();
+    screen.getByRole("button", { name: "2" }).click();
     expect(await screen.findByText("Other Hunt")).toBeInTheDocument();
     expect(listHuntsPage).toHaveBeenNthCalledWith(2, {
       vocation: "EK",
@@ -220,7 +221,7 @@ describe("catalog pages load a single page", () => {
         <HuntsPage />
       </MemoryRouter>,
     );
-    fireEvent.change(await screen.findByPlaceholderText("Buscar hunt, criatura ou local"), {
+    fireEvent.change(await screen.findByPlaceholderText("Buscar hunt, criatura ou local..."), {
       target: { value: "prison" },
     });
     await waitFor(() => {

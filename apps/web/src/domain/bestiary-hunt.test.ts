@@ -17,6 +17,7 @@ const huntA: HuntListItem = {
   difficulty: null,
   respawn: null,
   attention: null,
+  heroImage: null,
   vocations: [],
   creature: "Dragon",
   creatureImage: null,

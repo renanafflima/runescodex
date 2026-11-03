@@ -189,6 +189,7 @@ function mapHuntBase(hunt: unknown, preferredVocation?: string | null): HuntList
     levelMax: vocation?.levelMax ?? null,
     vocation: vocation?.vocation || null,
     spawn,
+    heroImage: publicImageUrl(data.heroImage),
     mapImage: publicImageUrl(data.mapImage),
     youtubeUrl: videos.find((item) => item.isRecommended)?.url || videos[0]?.url || null,
     bestiarySummary: mapHuntBestiarySummary(data.bestiarySummary),
@@ -206,7 +207,6 @@ export function mapHuntDetail(hunt: unknown, preferredVocation?: string | null):
   return {
     ...mapHuntBase(hunt, preferredVocation),
     description: typeof data.description === "string" ? data.description : null,
-    heroImage: publicImageUrl(data.heroImage),
     videos,
     youtubeUrl: videos.find((item) => item.isRecommended)?.url || videos[0]?.url || null,
     loot: mapHuntLoot(data.loot),
@@ -277,12 +277,23 @@ export type HuntClientFilters = {
   vocation: HuntVocationFilter;
   attackElement?: CombatElement | "Any";
   defenseElement?: CombatElement | "Any";
+  /** Exact match against hunt.location. "Any" or omitted means no filter. */
+  location?: string;
   minXpH: string;
   minProfitH: string;
   minLevel: string;
   sortBy: HuntSort;
   character: Character | null | undefined;
 };
+
+/** Unique hunt.location values from the currently loaded hunts, for the "Localização" filter. */
+export function huntLocationOptions(hunts: HuntListItem[]): string[] {
+  const seen = new Set<string>();
+  hunts.forEach((hunt) => {
+    if (hunt.location) seen.add(hunt.location);
+  });
+  return [...seen].sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
 
 export function huntAttackElements(hunt: HuntListItem | HuntDetail) {
   const fromBestAttack = uniqueElements(hunt.bestAttack?.elements ?? []);
@@ -347,7 +358,18 @@ export function filterAndSortHunts(hunts: HuntListItem[], filters: HuntClientFil
       !filters.defenseElement ||
       filters.defenseElement === "Any" ||
       huntDefenseElements(hunt).includes(filters.defenseElement);
-    return matchVocation && matchQuery && matchXp && matchProfit && matchLevel && matchAttack && matchDefense;
+    const matchLocation =
+      !filters.location || filters.location === "Any" || hunt.location === filters.location;
+    return (
+      matchVocation &&
+      matchQuery &&
+      matchXp &&
+      matchProfit &&
+      matchLevel &&
+      matchAttack &&
+      matchDefense &&
+      matchLocation
+    );
   });
 
   return [...filtered].sort((a, b) => {

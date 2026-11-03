@@ -9,10 +9,14 @@ export type IconName =
   | "download"
   | "gift"
   | "home"
+  | "map-pin"
   | "menu"
   | "message"
   | "refresh"
   | "search"
+  | "shield"
+  | "sort"
+  | "star"
   | "swords"
   | "user";
 
@@ -70,6 +74,13 @@ function IconPath({ name }: { name: IconName }) {
           <path d="M5 10v10h14V10M9 20v-6h6v6" />
         </>
       );
+    case "map-pin":
+      return (
+        <>
+          <path d="M12 21s7-5.6 7-11.2A7 7 0 0 0 5 9.8C5 15.4 12 21 12 21Z" />
+          <circle cx="12" cy="9.6" r="2.3" />
+        </>
+      );
     case "menu":
       return <path d="M4 7h16M4 12h16M4 17h16" />;
     case "message":
@@ -92,6 +103,19 @@ function IconPath({ name }: { name: IconName }) {
           <circle cx="11" cy="11" r="6.5" />
           <path d="m16 16 4 4" />
         </>
+      );
+    case "shield":
+      return <path d="M12 3.2 5.5 5.8v5.7c0 4.9 3.1 7.6 6.5 9.3 3.4-1.7 6.5-4.4 6.5-9.3V5.8L12 3.2Z" />;
+    case "sort":
+      return (
+        <>
+          <path d="M7.5 15.5V4.5m0 0L4.5 7.5M7.5 4.5l3 3" />
+          <path d="M16.5 8.5v11m0 0 3-3m-3 3-3-3" />
+        </>
+      );
+    case "star":
+      return (
+        <path d="m12 3.5 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.9l-4.8 2.5.9-5.4-3.9-3.8 5.4-.8L12 3.5Z" />
       );
     case "swords":
       return (

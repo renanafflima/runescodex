@@ -126,6 +126,8 @@ export type HuntListItem = {
   levelMax: number | null;
   vocation: string | null;
   spawn: HuntCreature[];
+  /** Hunt-specific background image. Cards fall back to a generic hero when null. */
+  heroImage: string | null;
   mapImage: string | null;
   youtubeUrl: string | null;
   bestiarySummary: HuntBestiarySummary;
@@ -134,7 +136,6 @@ export type HuntListItem = {
 
 export type HuntDetail = HuntListItem & {
   description: string | null;
-  heroImage: string | null;
   videos: HuntVideo[];
   loot: HuntLoot[];
 };

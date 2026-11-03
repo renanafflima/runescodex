@@ -4,6 +4,7 @@ import {
   huntAttackElements,
   huntCompatibility,
   huntListQueryFromFilters,
+  huntLocationOptions,
   mapHuntAttention,
   mapHuntDetail,
   mapHuntListItem,
@@ -284,5 +285,37 @@ describe("hunt mapping and active character", () => {
       character: null,
     });
     expect(holyDefense.map((hunt) => hunt.slug)).toEqual(["dragon"]);
+  });
+
+  it("derives unique location filter options from loaded hunts", () => {
+    const hunts = [mapHuntListItem(ekHunt, "EK"), mapHuntListItem(msHunt, "MS")];
+    expect(huntLocationOptions(hunts)).toEqual(["Darashia", "Thais"]);
+  });
+
+  it("filters hunts by exact location when a location filter is set", () => {
+    const hunts = [mapHuntListItem(ekHunt, "EK"), mapHuntListItem(msHunt, "MS")];
+    const thais = filterAndSortHunts(hunts, {
+      query: "",
+      vocation: "Any",
+      location: "Thais",
+      minXpH: "",
+      minProfitH: "",
+      minLevel: "",
+      sortBy: "Name",
+      character: null,
+    });
+    expect(thais.map((hunt) => hunt.slug)).toEqual(["cyclops"]);
+
+    const any = filterAndSortHunts(hunts, {
+      query: "",
+      vocation: "Any",
+      location: "Any",
+      minXpH: "",
+      minProfitH: "",
+      minLevel: "",
+      sortBy: "Name",
+      character: null,
+    });
+    expect(any.map((hunt) => hunt.slug)).toEqual(["cyclops", "dragon"]);
   });
 });
