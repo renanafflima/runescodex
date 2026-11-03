@@ -21,6 +21,8 @@ import { AdminTicketsController } from './tickets/admin-tickets.controller';
 import { AdminTicketsService } from './tickets/admin-tickets.service';
 import { AdminMercadoPagoDiagnosticController } from './billing/admin-mercado-pago-diagnostic.controller';
 import { AdminMercadoPagoDiagnosticService } from './billing/admin-mercado-pago-diagnostic.service';
+import { AdminDatabaseMigrationDiagnosticController } from './system/admin-database-migration-diagnostic.controller';
+import { AdminDatabaseMigrationDiagnosticService } from './system/admin-database-migration-diagnostic.service';
 
 @Module({
   imports: [AuthModule, TicketsModule, ReferralsModule],
@@ -35,6 +37,7 @@ import { AdminMercadoPagoDiagnosticService } from './billing/admin-mercado-pago-
     AdminLicensesController,
     AdminReferralsController,
     AdminMercadoPagoDiagnosticController,
+    AdminDatabaseMigrationDiagnosticController,
   ],
   providers: [
     AdminGuard,
@@ -46,6 +49,7 @@ import { AdminMercadoPagoDiagnosticService } from './billing/admin-mercado-pago-
     AdminTicketsService,
     AdminLicensesService,
     AdminMercadoPagoDiagnosticService,
+    AdminDatabaseMigrationDiagnosticService,
   ],
 })
 export class AdminModule {}
