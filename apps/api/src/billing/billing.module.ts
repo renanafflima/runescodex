@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { ReferralsModule } from '../referrals/referrals.module';
+import { BillingCheckoutAttemptService } from './billing-checkout-attempt.service';
 import { BillingCheckoutService } from './billing-checkout.service';
 import { BillingController } from './billing.controller';
 import { BillingService } from './billing.service';
@@ -16,6 +17,7 @@ import { VoucherService } from './voucher.service';
   controllers: [BillingController],
   providers: [
     BillingService,
+    BillingCheckoutAttemptService,
     BillingCheckoutService,
     RevenueCatBillingService,
     RevenueCatClient,
@@ -26,6 +28,7 @@ import { VoucherService } from './voucher.service';
   ],
   exports: [
     BillingService,
+    BillingCheckoutAttemptService,
     BillingCheckoutService,
     MercadoPagoClient,
     PremiumGuard,

@@ -62,12 +62,11 @@ describe('AdminMercadoPagoDiagnosticService', () => {
   function mockOpenCheckoutSnapshots(
     map: Record<
       string,
-      | {
-          paymentId: string;
-          preferenceId: string | null;
-          checkoutUrl?: string;
-        }
-      | null
+      {
+        paymentId: string;
+        preferenceId: string | null;
+        checkoutUrl?: string;
+      } | null
     >,
     latestStoredPreferenceId = 'pref-abc',
   ) {
@@ -306,7 +305,11 @@ describe('AdminMercadoPagoDiagnosticService', () => {
     const result = await service.run();
 
     expect(result.failedSteps).toEqual(
-      expect.arrayContaining(['users_me', 'payment_methods', 'latest_preference']),
+      expect.arrayContaining([
+        'users_me',
+        'payment_methods',
+        'latest_preference',
+      ]),
     );
     expect(result.paymentMethodsOutcome).toBe('unexpected_error');
     expect(result.reusablePendingCheckouts).toBe(2);
@@ -445,8 +448,9 @@ describe('AdminMercadoPagoDiagnosticService', () => {
       errorCode: 'internal_error',
       skipped: false,
     });
-    expect(JSON.stringify(result.reusablePreferences?.items[1].mercadoPago)).not
-      .toMatch(/buyer@|https:\/\//);
+    expect(
+      JSON.stringify(result.reusablePreferences?.items[1].mercadoPago),
+    ).not.toMatch(/buyer@|https:\/\//);
     expect(result.latestPreference?.preferenceId).toBe('pref-abc');
     expect(result.latestPreference?.matchesAuthenticatedCollector).toBe(true);
   });

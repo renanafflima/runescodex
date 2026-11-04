@@ -1,4 +1,7 @@
-import { ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import {
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { OAuth2Client, type TokenPayload } from 'google-auth-library';
 import { GoogleIdentityService, readGoogleIdentity } from './google-identity';
 

@@ -52,20 +52,42 @@ export function CheckoutPage() {
   const [busy, setBusy] = useState(false);
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
+  const [checkoutState, setCheckoutState] = useState<
+    "idle" | "processing" | "reconcile"
+  >("idle");
   const premium = user?.premium;
   const pending = premium?.paymentStatus === "PENDING";
+  const payBlocked = checkoutState === "reconcile";
 
   async function pay() {
+    if (payBlocked) return;
     setBusy(true);
     setMessage("");
     try {
       const session = await startCheckout();
-      if (!session.checkoutUrl.startsWith("https://")) {
+      if (session.outcome === "in_progress" || session.status === "IN_PROGRESS") {
+        setCheckoutState("processing");
+        setMessage("O checkout ainda está sendo preparado. Aguarde e atualize o status.");
+        return;
+      }
+      if (
+        session.outcome === "reconciliation_required" ||
+        session.status === "RECONCILIATION_REQUIRED"
+      ) {
+        setCheckoutState("reconcile");
+        setMessage(
+          "Esta tentativa de pagamento precisa de conferência. Não inicie outra compra. Atualize o status ou fale com o suporte.",
+        );
+        return;
+      }
+      const checkoutUrl = session.checkoutUrl;
+      if (!checkoutUrl || !checkoutUrl.startsWith("https://")) {
         throw new Error("Checkout URL inválida");
       }
-      window.location.assign(session.checkoutUrl);
+      window.location.assign(checkoutUrl);
     } catch (error) {
       setMessage(checkoutError(error));
+    } finally {
       setBusy(false);
     }
   }
@@ -151,10 +173,21 @@ export function CheckoutPage() {
           </Button>
         </form>
         {message ? <p role="alert">{message}</p> : null}
+        {checkoutState === "processing" ? (
+          <p>Estamos confirmando o checkout em andamento. Não abra outra tentativa.</p>
+        ) : null}
+        {checkoutState === "reconcile" ? (
+          <p>
+            Há uma tentativa anterior que ainda precisa ser conferida. O botão de pagamento
+            permanece bloqueado para não criar outra preferência.
+          </p>
+        ) : null}
         <div className="checkout-page__actions">
-          <Button disabled={busy} onClick={() => void pay()}>
-            {busy ? "Aguarde" : "Pagar com Mercado Pago"}
-          </Button>
+          {payBlocked ? null : (
+            <Button disabled={busy} onClick={() => void pay()}>
+              {busy ? "Aguarde" : "Pagar com Mercado Pago"}
+            </Button>
+          )}
           <Button disabled={busy} onClick={() => void refresh()} variant="secondary">
             Atualizar status
           </Button>

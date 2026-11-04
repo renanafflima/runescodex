@@ -116,41 +116,36 @@ describe('CORS for Web/PWA', () => {
     'https://tritech.app.br',
     'https://www.tritech.app.br',
     'https://runescodex-web.onrender.com',
-  ])(
-    'answers the device challenge preflight for %s',
-    async (origin) => {
-      const response = await request(app.getHttpServer())
-        .options('/auth/devices/challenge')
-        .set('Origin', origin)
-        .set('Access-Control-Request-Method', 'POST')
-        .set('Access-Control-Request-Headers', 'content-type,authorization');
+  ])('answers the device challenge preflight for %s', async (origin) => {
+    const response = await request(app.getHttpServer())
+      .options('/auth/devices/challenge')
+      .set('Origin', origin)
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'content-type,authorization');
 
-      expect(response.status).toBe(204);
-      expect(response.headers['access-control-allow-origin']).toBe(origin);
-      expect(response.headers['access-control-allow-methods']).toMatch(/POST/);
-      expect(response.headers['access-control-allow-methods']).toMatch(
-        /OPTIONS/,
-      );
-      expect(response.headers['access-control-allow-headers']).toMatch(
-        /content-type/i,
-      );
-      expect(response.headers['access-control-allow-headers']).toMatch(
-        /authorization/i,
-      );
+    expect(response.status).toBe(204);
+    expect(response.headers['access-control-allow-origin']).toBe(origin);
+    expect(response.headers['access-control-allow-methods']).toMatch(/POST/);
+    expect(response.headers['access-control-allow-methods']).toMatch(/OPTIONS/);
+    expect(response.headers['access-control-allow-headers']).toMatch(
+      /content-type/i,
+    );
+    expect(response.headers['access-control-allow-headers']).toMatch(
+      /authorization/i,
+    );
 
-      const posted = await request(app.getHttpServer())
-        .post('/auth/devices/challenge')
-        .set('Origin', origin)
-        .set('Content-Type', 'application/json')
-        .send({
-          installationId: '6f1d7c3a-2d4b-4f4a-9c1e-8a7b6c5d4e3f',
-          publicKeySpki: 'dGVzdC1wdWJsaWMta2V5LXNwa2k=',
-        });
+    const posted = await request(app.getHttpServer())
+      .post('/auth/devices/challenge')
+      .set('Origin', origin)
+      .set('Content-Type', 'application/json')
+      .send({
+        installationId: '6f1d7c3a-2d4b-4f4a-9c1e-8a7b6c5d4e3f',
+        publicKeySpki: 'dGVzdC1wdWJsaWMta2V5LXNwa2k=',
+      });
 
-      expect(posted.status).toBe(201);
-      expect(posted.headers['access-control-allow-origin']).toBe(origin);
-    },
-  );
+    expect(posted.status).toBe(201);
+    expect(posted.headers['access-control-allow-origin']).toBe(origin);
+  });
 
   it('does not reflect unknown origins', async () => {
     const response = await request(app.getHttpServer())

@@ -406,7 +406,7 @@ describe("bestiary evolution and hunts screens", () => {
   it("opens the evolution path with the selected creature and real hunts", async () => {
     renderBestiaryCreature("/bestiary/dark-torturer");
 
-    expect(await screen.findByRole("heading", { name: "Dark Torturer" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "Dark Torturer" })).toBeInTheDocument();
     expect(screen.getByText("Rota recomendada")).toBeInTheDocument();
     expect(screen.getByText("Roshamuul Prison -2")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ir para a hunt" })).toHaveAttribute(
@@ -431,7 +431,7 @@ describe("bestiary evolution and hunts screens", () => {
         </Routes>
       </MemoryRouter>,
     );
-    expect(await screen.findByRole("heading", { name: "Dark Torturer" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "Dark Torturer" })).toBeInTheDocument();
     expect(getBestiaryBySlug).toHaveBeenCalledTimes(1);
     expect(listHuntsPage).toHaveBeenCalledTimes(1);
 
@@ -445,7 +445,7 @@ describe("bestiary evolution and hunts screens", () => {
         </Routes>
       </MemoryRouter>,
     );
-    expect(await screen.findByRole("heading", { name: "Dark Torturer" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "Dark Torturer" })).toBeInTheDocument();
     expect(getBestiaryBySlug).toHaveBeenCalledTimes(1);
     expect(listHuntsPage).toHaveBeenCalledTimes(1);
   });
@@ -453,7 +453,7 @@ describe("bestiary evolution and hunts screens", () => {
   it("keeps the selected creature when opening all hunts", async () => {
     renderBestiaryCreature("/bestiary/dark-torturer/hunts");
 
-    expect(await screen.findByRole("heading", { name: "Dark Torturer" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "Dark Torturer" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Todas as hunts do Dark Torturer" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ir para a hunt →" })).toHaveAttribute(
       "href",

@@ -19,6 +19,8 @@ import { AdminLicensesController } from './licenses/admin-licenses.controller';
 import { AdminLicensesService } from './licenses/admin-licenses.service';
 import { AdminTicketsController } from './tickets/admin-tickets.controller';
 import { AdminTicketsService } from './tickets/admin-tickets.service';
+import { AdminCheckoutAttemptController } from './billing/admin-checkout-attempt.controller';
+import { AdminCheckoutAttemptService } from './billing/admin-checkout-attempt.service';
 import { AdminMercadoPagoDiagnosticController } from './billing/admin-mercado-pago-diagnostic.controller';
 import { AdminMercadoPagoDiagnosticService } from './billing/admin-mercado-pago-diagnostic.service';
 import { AdminDatabaseMigrationDiagnosticController } from './system/admin-database-migration-diagnostic.controller';
@@ -37,6 +39,10 @@ import { AdminDatabaseMigrationDiagnosticService } from './system/admin-database
     AdminLicensesController,
     AdminReferralsController,
     AdminMercadoPagoDiagnosticController,
+<<<<<<< Updated upstream
+=======
+    AdminCheckoutAttemptController,
+>>>>>>> Stashed changes
     AdminDatabaseMigrationDiagnosticController,
   ],
   providers: [
@@ -49,6 +55,10 @@ import { AdminDatabaseMigrationDiagnosticService } from './system/admin-database
     AdminTicketsService,
     AdminLicensesService,
     AdminMercadoPagoDiagnosticService,
+<<<<<<< Updated upstream
+=======
+    AdminCheckoutAttemptService,
+>>>>>>> Stashed changes
     AdminDatabaseMigrationDiagnosticService,
   ],
 })

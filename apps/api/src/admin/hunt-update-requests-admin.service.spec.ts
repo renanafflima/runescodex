@@ -48,7 +48,7 @@ describe('HuntUpdateRequestsAdminService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
-    huntVocation: { updateMany: jest.fn() },
+    huntVocation: { updateMany: jest.fn(), count: jest.fn() },
     hunt: { update: jest.fn() },
     ticket: { findUnique: jest.fn() },
     $transaction: jest.fn(),
@@ -175,6 +175,8 @@ describe('HuntUpdateRequestsAdminService', () => {
         huntId: 'hunt-1',
         proposedValue: '1800000',
         vocation: 'EK',
+        rangeLevelMin: null,
+        rangeLevelMax: null,
         appliedAt: null,
       })
       .mockResolvedValueOnce({
@@ -183,12 +185,15 @@ describe('HuntUpdateRequestsAdminService', () => {
         type: HuntUpdateRequestType.XP,
         proposedValue: '1800000',
         vocation: 'EK',
+        rangeLevelMin: null,
+        rangeLevelMax: null,
         appliedAt: null,
         status: HuntUpdateRequestStatus.IN_REVIEW,
       });
     prisma.$transaction.mockImplementation(
       async (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
     );
+    prisma.huntVocation.count.mockResolvedValue(1);
     prisma.huntVocation.updateMany.mockResolvedValue({ count: 1 });
     prisma.huntUpdateRequest.update.mockResolvedValue({
       ...row(HuntUpdateRequestStatus.RESOLVED),
@@ -247,6 +252,86 @@ describe('HuntUpdateRequestsAdminService', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(prisma.huntUpdateRequest.update).not.toHaveBeenCalled();
+  });
+
+  it('applies only the identified range when several exist for the vocation', async () => {
+    prisma.huntUpdateRequest.findUnique
+      .mockResolvedValueOnce({
+        ...row(HuntUpdateRequestStatus.IN_REVIEW),
+        huntId: 'hunt-1',
+        proposedValue: '3600000',
+        vocation: 'ED',
+        rangeLevelMin: 400,
+        rangeLevelMax: 600,
+        appliedAt: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'request-1',
+        huntId: 'hunt-1',
+        type: HuntUpdateRequestType.XP,
+        proposedValue: '3600000',
+        vocation: 'ED',
+        rangeLevelMin: 400,
+        rangeLevelMax: 600,
+        appliedAt: null,
+        status: HuntUpdateRequestStatus.IN_REVIEW,
+      });
+    prisma.$transaction.mockImplementation(
+      async (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
+    prisma.huntVocation.updateMany.mockResolvedValue({ count: 1 });
+    prisma.huntUpdateRequest.update.mockResolvedValue(
+      row(HuntUpdateRequestStatus.RESOLVED),
+    );
+
+    await service.update('admin-1', 'request-1', {
+      status: HuntUpdateRequestStatus.RESOLVED,
+    });
+
+    expect(prisma.huntVocation.updateMany).toHaveBeenCalledWith({
+      where: {
+        huntId: 'hunt-1',
+        vocation: 'ED',
+        levelMin: 400,
+        levelMax: 600,
+      },
+      data: { xpPerHour: 3_600_000 },
+    });
+  });
+
+  it('does not apply a legacy request when several ranges exist and none was identified', async () => {
+    prisma.huntUpdateRequest.findUnique
+      .mockResolvedValueOnce({
+        ...row(HuntUpdateRequestStatus.IN_REVIEW),
+        huntId: 'hunt-1',
+        proposedValue: '3600000',
+        vocation: 'ED',
+        rangeLevelMin: null,
+        rangeLevelMax: null,
+        appliedAt: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'request-1',
+        huntId: 'hunt-1',
+        type: HuntUpdateRequestType.XP,
+        proposedValue: '3600000',
+        vocation: 'ED',
+        rangeLevelMin: null,
+        rangeLevelMax: null,
+        appliedAt: null,
+        status: HuntUpdateRequestStatus.IN_REVIEW,
+      });
+    prisma.$transaction.mockImplementation(
+      async (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
+    prisma.huntVocation.count.mockResolvedValue(2);
+
+    await expect(
+      service.update('admin-1', 'request-1', {
+        status: HuntUpdateRequestStatus.RESOLVED,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.huntVocation.updateMany).not.toHaveBeenCalled();
   });
 });
 

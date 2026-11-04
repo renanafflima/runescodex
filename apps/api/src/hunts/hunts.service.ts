@@ -55,10 +55,15 @@ const HUNT_CREATURE_ORDER = [
   { createdAt: 'asc' as const },
 ];
 
+const VOCATION_ORDER = [
+  { vocation: 'asc' as const },
+  { levelMin: 'asc' as const },
+];
+
 const HUNT_LIST_INCLUDE = {
   vocations: {
     select: VOCATION_SELECT,
-    orderBy: { vocation: 'asc' as const },
+    orderBy: VOCATION_ORDER,
   },
   creatures: {
     select: {
@@ -75,7 +80,7 @@ const HUNT_LIST_INCLUDE = {
 const HUNT_DETAIL_INCLUDE = {
   vocations: {
     select: VOCATION_SELECT,
-    orderBy: { vocation: 'asc' as const },
+    orderBy: VOCATION_ORDER,
   },
   creatures: {
     select: {

@@ -45,10 +45,7 @@ describe('calculateHuntBestAttack', () => {
   });
 
   it('does not invent neutral modifiers for missing rows', () => {
-    const result = calculateHuntBestAttack([
-      [row(ElementType.EARTH, 120)],
-      [],
-    ]);
+    const result = calculateHuntBestAttack([[row(ElementType.EARTH, 120)], []]);
 
     expect(result.elements).toEqual([ElementType.EARTH]);
     expect(result.status).toBe('PARTIAL');

@@ -97,9 +97,29 @@ function createBillingDb() {
     billingPayment: {
       findUnique: ({ where }: { where: Row }) =>
         state.payments.find((row) => matches(row, where)) ?? null,
-      findFirst: ({ where }: { where: Row }) => {
+      findFirst: ({
+        where,
+        orderBy,
+      }: {
+        where: Row;
+        orderBy?: { createdAt?: 'asc' | 'desc' };
+      }) => {
         const rows = state.payments.filter((row) => matches(row, where));
-        return rows.at(-1) ?? null;
+        if (orderBy?.createdAt === 'asc') {
+          rows.sort(
+            (left, right) =>
+              (left.createdAt as Date).getTime() -
+              (right.createdAt as Date).getTime(),
+          );
+        }
+        if (orderBy?.createdAt === 'desc') {
+          rows.sort(
+            (left, right) =>
+              (right.createdAt as Date).getTime() -
+              (left.createdAt as Date).getTime(),
+          );
+        }
+        return rows[0] ?? null;
       },
       create: ({ data }: { data: Row }) =>
         insert(state.payments, data, [
@@ -282,6 +302,203 @@ describe('BillingService', () => {
     expect(db.state.licenses).toHaveLength(0);
     expect(Number.isInteger(brazil.amountMinor)).toBe(true);
     expect(Number.isInteger(international.amountMinor)).toBe(true);
+  });
+
+  it('applies an old preference payment without filling a newer checkout placeholder', async () => {
+    const order = await service.createOrder(USER_ID, 'BR');
+    await service.attachCheckout({
+      orderId: order.id,
+      provider: 'mercadopago',
+      providerCheckoutId: 'pref-old',
+      checkoutUrl: 'https://www.mercadopago.com.br/checkout/pref-old',
+    });
+    await service.attachCheckout({
+      orderId: order.id,
+      provider: 'mercadopago',
+      providerCheckoutId: 'pref-new',
+      checkoutUrl: 'https://www.mercadopago.com.br/checkout/pref-new',
+    });
+
+    await service.applyProviderEvent({
+      provider: 'mercadopago',
+      providerEventId: 'payment:9001:PAYMENT_PAID',
+      providerPaymentId: '9001',
+      orderId: order.id,
+      type: 'PAYMENT_PAID',
+      providerCheckoutId: 'pref-old',
+    });
+
+    expect(db.state.payments).toHaveLength(2);
+    expect(db.state.payments[0]).toMatchObject({
+      providerCheckoutId: 'pref-old',
+      providerPaymentId: '9001',
+      status: 'PAID',
+    });
+    expect(db.state.payments[1]).toMatchObject({
+      providerCheckoutId: 'pref-new',
+      status: 'PENDING',
+    });
+    expect(db.state.payments[1].providerPaymentId).toBeFalsy();
+    expect(db.state.licenses).toHaveLength(1);
+  });
+
+  it('applies the current preference payment to the matching checkout row', async () => {
+    const order = await service.createOrder(USER_ID, 'BR');
+    await service.attachCheckout({
+      orderId: order.id,
+      provider: 'mercadopago',
+      providerCheckoutId: 'pref-current',
+      checkoutUrl: 'https://www.mercadopago.com.br/checkout/pref-current',
+    });
+
+    await service.applyProviderEvent({
+      provider: 'mercadopago',
+      providerEventId: 'payment:9002:PAYMENT_PAID',
+      providerPaymentId: '9002',
+      orderId: order.id,
+      type: 'PAYMENT_PAID',
+      providerCheckoutId: 'pref-current',
+    });
+
+    expect(db.state.payments).toHaveLength(1);
+    expect(db.state.payments[0]).toMatchObject({
+      providerCheckoutId: 'pref-current',
+      providerPaymentId: '9002',
+      status: 'PAID',
+    });
+  });
+
+  it('does not bind an unknown preference to an existing checkout placeholder', async () => {
+    const order = await service.createOrder(USER_ID, 'BR');
+    await service.attachCheckout({
+      orderId: order.id,
+      provider: 'mercadopago',
+      providerCheckoutId: 'pref-known',
+      checkoutUrl: 'https://www.mercadopago.com.br/checkout/pref-known',
+    });
+
+    await service.applyProviderEvent({
+      provider: 'mercadopago',
+      providerEventId: 'payment:9003:PAYMENT_PAID',
+      providerPaymentId: '9003',
+      orderId: order.id,
+      type: 'PAYMENT_PAID',
+      providerCheckoutId: 'pref-unknown',
+    });
+
+    expect(db.state.payments).toHaveLength(2);
+    expect(db.state.payments[0]).toMatchObject({
+      providerCheckoutId: 'pref-known',
+      status: 'PENDING',
+    });
+    expect(db.state.payments[0].providerPaymentId).toBeFalsy();
+    expect(db.state.payments[1]).toMatchObject({
+      providerCheckoutId: 'pref-unknown',
+      providerPaymentId: '9003',
+      status: 'PAID',
+    });
+  });
+
+  it('does not fill a checkout placeholder when the payment has no preference id', async () => {
+    const order = await service.createOrder(USER_ID, 'BR');
+    await service.attachCheckout({
+      orderId: order.id,
+      provider: 'mercadopago',
+      providerCheckoutId: 'pref-open',
+      checkoutUrl: 'https://www.mercadopago.com.br/checkout/pref-open',
+    });
+
+    await service.applyProviderEvent({
+      provider: 'mercadopago',
+      providerEventId: 'payment:9004:PAYMENT_PAID',
+      providerPaymentId: '9004',
+      orderId: order.id,
+      type: 'PAYMENT_PAID',
+    });
+
+    expect(db.state.payments[0]).toMatchObject({
+      providerCheckoutId: 'pref-open',
+      status: 'PENDING',
+    });
+    expect(db.state.payments[0].providerPaymentId).toBeFalsy();
+    expect(db.state.payments[1]).toMatchObject({
+      providerPaymentId: '9004',
+      status: 'PAID',
+    });
+    expect(db.state.payments[1].providerCheckoutId).toBeFalsy();
+    expect(db.state.licenses).toHaveLength(1);
+  });
+
+  it('records a second distinct payment on a paid order without a second license', async () => {
+    const order = await service.createOrder(USER_ID, 'BR');
+    await service.attachCheckout({
+      orderId: order.id,
+      provider: 'mercadopago',
+      providerCheckoutId: 'pref-a',
+      checkoutUrl: 'https://www.mercadopago.com.br/checkout/pref-a',
+    });
+    await service.attachCheckout({
+      orderId: order.id,
+      provider: 'mercadopago',
+      providerCheckoutId: 'pref-b',
+      checkoutUrl: 'https://www.mercadopago.com.br/checkout/pref-b',
+    });
+    await service.applyProviderEvent({
+      provider: 'mercadopago',
+      providerEventId: 'payment:1:PAYMENT_PAID',
+      providerPaymentId: 'pay-a',
+      orderId: order.id,
+      type: 'PAYMENT_PAID',
+      providerCheckoutId: 'pref-a',
+    });
+    await service.applyProviderEvent({
+      provider: 'mercadopago',
+      providerEventId: 'payment:2:PAYMENT_PAID',
+      providerPaymentId: 'pay-b',
+      orderId: order.id,
+      type: 'PAYMENT_PAID',
+      providerCheckoutId: 'pref-b',
+    });
+
+    expect(db.state.licenses).toHaveLength(1);
+    expect(
+      db.state.payments.map((row) => row.providerPaymentId).sort(),
+    ).toEqual(['pay-a', 'pay-b']);
+    expect(db.state.payments.every((row) => row.status === 'PAID')).toBe(true);
+  });
+
+  it('attaches a new checkout attempt without changing the old payment history', async () => {
+    const order = await service.createOrder(USER_ID, 'BR');
+    const oldPayment = {
+      id: 'payment-old',
+      orderId: order.id,
+      provider: 'mercadopago',
+      providerCheckoutId: 'pref-old',
+      checkoutUrl: 'https://sandbox.mercadopago.com/checkout/pref-old',
+      status: 'PENDING',
+      currency: 'BRL',
+      amountMinor: 4990,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    };
+    db.state.payments.push(oldPayment);
+
+    await service.attachCheckout({
+      orderId: order.id,
+      provider: 'mercadopago',
+      providerCheckoutId: 'pref-new',
+      checkoutUrl: 'https://www.mercadopago.com.br/checkout/pref-new',
+    });
+
+    expect(db.state.payments).toHaveLength(2);
+    expect(db.state.payments[0]).toEqual(oldPayment);
+    expect(db.state.payments[1]).toMatchObject({
+      orderId: order.id,
+      providerCheckoutId: 'pref-new',
+      status: 'PENDING',
+    });
+    expect(db.state.orders).toHaveLength(1);
+    expect(db.state.orders[0].status).toBe('PENDING');
   });
 
   it('rejects a stored price that differs from the approved amount', async () => {
@@ -499,8 +716,13 @@ describe('BillingService', () => {
       licenseStatus: null,
     });
     expect(db.state.licenses).toHaveLength(0);
-    expect(db.state.payments).toHaveLength(1);
+    expect(db.state.payments).toHaveLength(2);
     expect(db.state.payments[0]).toMatchObject({
+      id: 'pay-row',
+      status: 'PENDING',
+    });
+    expect(db.state.payments[0].providerPaymentId).toBeFalsy();
+    expect(db.state.payments[1]).toMatchObject({
       providerPaymentId: '9001',
       status: 'PENDING',
     });
@@ -608,7 +830,7 @@ describe('BillingService', () => {
   });
 
   it('grants Premium to ADMIN staff without creating a license or payment', async () => {
-    db.state.users[0]!.role = 'ADMIN';
+    db.state.users[0].role = 'ADMIN';
 
     await expect(service.getPremium(USER_ID)).resolves.toEqual({
       productCode: PREMIUM_PRODUCT_CODE,
@@ -627,7 +849,7 @@ describe('BillingService', () => {
   });
 
   it('keeps a real ADMIN license visible when one already exists', async () => {
-    db.state.users[0]!.role = 'ADMIN';
+    db.state.users[0].role = 'ADMIN';
     db.state.licenses.push({
       id: 'license-admin',
       userId: USER_ID,

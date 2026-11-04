@@ -18,6 +18,11 @@ import { PageQueryDto } from '../common/dto/page-query.dto';
 import { pageResult, resolvePage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateHuntUpdateRequestDto } from './dto/create-hunt-update-request.dto';
+import {
+  countHuntVocationRanges,
+  huntVocationRangeWhere,
+  type HuntVocationRangeKey,
+} from './hunt-vocation-range';
 
 const OPEN_STATUSES: HuntUpdateRequestStatus[] = [
   HuntUpdateRequestStatus.OPEN,
@@ -114,6 +119,8 @@ export class HuntUpdateRequestsService {
         currentValue: proposal.currentValue,
         proposedValue: proposal.proposedValue,
         vocation: proposal.vocation,
+        rangeLevelMin: proposal.rangeLevelMin,
+        rangeLevelMax: proposal.rangeLevelMax,
       },
       select: REQUEST_SELECT,
     });
@@ -150,9 +157,14 @@ export class HuntUpdateRequestsService {
       );
     }
     let currentValue: string | null = null;
+    let rangeLevelMin: number | null = null;
+    let rangeLevelMax: number | null = null;
     if (numericType && vocation) {
-      const stats = await this.prisma.huntVocation.findUnique({
-        where: { huntId_vocation: { huntId, vocation } },
+      const range = await this.resolveProposalRange(huntId, vocation, dto);
+      rangeLevelMin = range.levelMin;
+      rangeLevelMax = range.levelMax;
+      const stats = await this.prisma.huntVocation.findFirst({
+        where: huntVocationRangeWhere(huntId, vocation, range),
         select: { xpPerHour: true, profitPerHour: true, levelMin: true },
       });
       if (!stats) {
@@ -173,7 +185,55 @@ export class HuntUpdateRequestsService {
       });
       currentValue = hunt?.location ?? null;
     }
-    return { currentValue, proposedValue, vocation };
+    return {
+      currentValue,
+      proposedValue,
+      vocation,
+      rangeLevelMin,
+      rangeLevelMax,
+    };
+  }
+
+  private async resolveProposalRange(
+    huntId: string,
+    vocation: Vocation,
+    dto: CreateHuntUpdateRequestDto,
+  ): Promise<HuntVocationRangeKey> {
+    const total = await countHuntVocationRanges(this.prisma, huntId, vocation);
+    if (total === 0) {
+      throw new BadRequestException('Esta Hunt não tem a vocação informada.');
+    }
+    if (dto.rangeLevelMin != null) {
+      const row = await this.prisma.huntVocation.findFirst({
+        where:
+          dto.rangeLevelMax !== undefined
+            ? huntVocationRangeWhere(huntId, vocation, {
+                levelMin: dto.rangeLevelMin,
+                levelMax: dto.rangeLevelMax,
+              })
+            : { huntId, vocation, levelMin: dto.rangeLevelMin },
+        select: { levelMin: true, levelMax: true },
+      });
+      if (!row) {
+        throw new BadRequestException(
+          'A faixa de level informada não existe para esta vocação nesta Hunt.',
+        );
+      }
+      return { levelMin: row.levelMin, levelMax: row.levelMax };
+    }
+    if (total > 1) {
+      throw new BadRequestException(
+        'Informe a faixa de level (rangeLevelMin) desta vocação para abrir a solicitação.',
+      );
+    }
+    const only = await this.prisma.huntVocation.findFirst({
+      where: { huntId, vocation },
+      select: { levelMin: true, levelMax: true },
+    });
+    if (!only) {
+      throw new BadRequestException('Esta Hunt não tem a vocação informada.');
+    }
+    return { levelMin: only.levelMin, levelMax: only.levelMax };
   }
 
   private async requireHunt(slug: string) {

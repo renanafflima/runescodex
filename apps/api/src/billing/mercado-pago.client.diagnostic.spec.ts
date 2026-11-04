@@ -12,11 +12,12 @@ const validEnv = {
 };
 
 describe('MercadoPagoClient diagnostics', () => {
-  const client = new MercadoPagoClient();
+  let client: MercadoPagoClient;
   const originalFetch = global.fetch;
   const originalEnv = process.env;
 
   beforeEach(() => {
+    client = new MercadoPagoClient();
     process.env = { ...originalEnv, ...validEnv };
     global.fetch = jest.fn();
   });
@@ -52,7 +53,9 @@ describe('MercadoPagoClient diagnostics', () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => [{ id: 'visa', payment_type_id: 'credit_card', status: 'active' }],
+      json: async () => [
+        { id: 'visa', payment_type_id: 'credit_card', status: 'active' },
+      ],
     });
 
     const result = await client.inspectPixPaymentMethods();
@@ -173,7 +176,9 @@ describe('MercadoPagoClient diagnostics', () => {
       message: 'Mercado Pago request timed out',
       data: { outcome: 'timeout' },
     });
-    expect(JSON.stringify(result)).not.toContain('APP_USR-not-a-real-token-value');
+    expect(JSON.stringify(result)).not.toContain(
+      'APP_USR-not-a-real-token-value',
+    );
   });
 
   it('reports an incomplete users/me payload', async () => {
@@ -214,7 +219,8 @@ describe('MercadoPagoClient diagnostics', () => {
       json: async () => ({
         collector_id: 99,
         date_created: '2026-10-01T00:00:00.000Z',
-        init_point: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=pref-1',
+        init_point:
+          'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=pref-1',
         payer: { email: 'buyer@example.com' },
         payment_methods: {
           excluded_payment_types: [{ id: 'ticket' }],
@@ -241,5 +247,186 @@ describe('MercadoPagoClient diagnostics', () => {
     expect(JSON.stringify(result)).not.toMatch(
       /buyer@|init_point|APP_USR-abcdefghijkl/,
     );
+  });
+
+  it('reuses a preference owned by the authenticated current collector and caches users/me', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 3543058237 }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ collector_id: 3543058237 }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ collector_id: 3543058237 }),
+      });
+
+    await expect(client.canReusePreference('pref-1')).resolves.toBe(true);
+    await expect(client.canReusePreference('pref-2')).resolves.toBe(true);
+
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      1,
+      'https://api.mercadopago.com/users/me',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('rejects a preference owned by another collector', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 3543058237 }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ collector_id: 3546947169 }),
+      });
+
+    await expect(client.canReusePreference('pref-old')).resolves.toBe(false);
+  });
+
+  it('fails closed when preference lookup returns 401', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 3543058237 }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({
+          error: 'invalid_caller_id',
+          message: 'caller.id invalid',
+        }),
+      });
+
+    await expect(client.canReusePreference('pref-old')).resolves.toBe(false);
+  });
+
+  it('fails closed when preference lookup has a network error', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 3543058237 }),
+      })
+      .mockRejectedValueOnce(new Error('network down'));
+
+    await expect(client.canReusePreference('pref-old')).resolves.toBe(false);
+  });
+
+  it('creates a new preference with the current token context and does not disable Pix', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({
+        id: 'pref-new',
+        init_point: 'https://www.mercadopago.com.br/checkout/pref-new',
+      }),
+    });
+
+    await client.createPreference({
+      orderId: 'order-1',
+      amountMinor: 4990,
+    });
+
+    const [, request] = (global.fetch as jest.Mock).mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    const headers = request.headers as Record<string, string>;
+    const body = JSON.parse(String(request.body)) as Record<string, unknown>;
+    expect(headers.Authorization).toBe(
+      `Bearer ${validEnv.MERCADO_PAGO_ACCESS_TOKEN}`,
+    );
+    expect(headers['X-Idempotency-Key']).toBeUndefined();
+    expect(body).not.toHaveProperty('payment_methods');
+    expect(JSON.stringify(body)).not.toMatch(
+      /excluded_payment_methods|excluded_payment_types/,
+    );
+  });
+
+  it('classifies HTTP 400 as a definitive preference failure', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({
+        error: 'bad_request',
+        message: 'invalid payload APP_USR-abcdefghijkl',
+      }),
+    });
+
+    const outcome = await client.createPreferenceOutcome({
+      orderId: 'order-1',
+      amountMinor: 4990,
+    });
+
+    expect(outcome).toEqual({
+      ok: false,
+      failure: 'definitive',
+      errorCode: 'bad_request',
+      message: 'invalid payload [redacted-secret]',
+    });
+  });
+
+  it('classifies timeout, network and HTTP 500 as ambiguous preference outcomes', async () => {
+    (global.fetch as jest.Mock).mockRejectedValueOnce(
+      Object.assign(new Error('aborted'), { name: 'AbortError' }),
+    );
+    await expect(
+      client.createPreferenceOutcome({ orderId: 'order-1', amountMinor: 4990 }),
+    ).resolves.toMatchObject({
+      ok: false,
+      failure: 'ambiguous',
+      errorCode: 'timeout',
+    });
+
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('offline'));
+    await expect(
+      client.createPreferenceOutcome({ orderId: 'order-1', amountMinor: 4990 }),
+    ).resolves.toMatchObject({
+      ok: false,
+      failure: 'ambiguous',
+      errorCode: 'network_error',
+    });
+
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: async () => ({ message: 'unavailable' }),
+    });
+    await expect(
+      client.createPreferenceOutcome({ orderId: 'order-1', amountMinor: 4990 }),
+    ).resolves.toMatchObject({
+      ok: false,
+      failure: 'ambiguous',
+    });
+  });
+
+  it('treats a 201 without preference id as ambiguous', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({ init_point: 'https://www.mercadopago.com.br/x' }),
+    });
+
+    await expect(
+      client.createPreferenceOutcome({ orderId: 'order-1', amountMinor: 4990 }),
+    ).resolves.toEqual({
+      ok: false,
+      failure: 'ambiguous',
+      errorCode: 'incomplete_response',
+      message: 'Preference response was incomplete',
+    });
   });
 });

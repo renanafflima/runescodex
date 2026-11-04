@@ -13,7 +13,11 @@ describe('PendingLicenseGrantService', () => {
 
   const prisma = {
     user: {
-      findUnique: async ({ where }: { where: { email?: string; id?: string } }) =>
+      findUnique: async ({
+        where,
+      }: {
+        where: { email?: string; id?: string };
+      }) =>
         users.find((user) =>
           where.email ? user.email === where.email : user.id === where.id,
         ) ?? null,
@@ -95,8 +99,9 @@ describe('PendingLicenseGrantService', () => {
     },
     billingLicense: {
       findFirst: async () =>
-        licenses.find((row) => row.status === 'ACTIVE' || row.status === 'SUSPENDED') ??
-        null,
+        licenses.find(
+          (row) => row.status === 'ACTIVE' || row.status === 'SUSPENDED',
+        ) ?? null,
       updateMany: async () => ({ count: 0 }),
       create: async ({ data }: { data: Record<string, unknown> }) => {
         const row = {
@@ -115,7 +120,8 @@ describe('PendingLicenseGrantService', () => {
         return row;
       },
     },
-    $transaction: async (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    $transaction: async (fn: (tx: typeof prisma) => Promise<unknown>) =>
+      fn(prisma),
   };
 
   let service: PendingLicenseGrantService;
@@ -196,7 +202,10 @@ describe('PendingLicenseGrantService', () => {
       status: 'ACTIVE',
     });
     expect(grants[0]).toMatchObject({ category: 'CONTENT_CREATOR' });
-    expect(pending[0]).toMatchObject({ status: 'CLAIMED', claimedUserId: 'user-2' });
+    expect(pending[0]).toMatchObject({
+      status: 'CLAIMED',
+      claimedUserId: 'user-2',
+    });
     expect(audits.some((item) => item.action === 'license.pending_claim')).toBe(
       true,
     );

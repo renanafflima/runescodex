@@ -23,6 +23,13 @@ const catalogMigration = readFileSync(
   ),
   'utf8',
 );
+const huntVocationRangesMigration = readFileSync(
+  join(
+    __dirname,
+    '../prisma/migrations/20261103000000_hunt_vocation_multiple_level_ranges/migration.sql',
+  ),
+  'utf8',
+);
 
 function enumValues(name: string) {
   const match = schema.match(new RegExp(`enum ${name} \\{([^}]+)\\}`));
@@ -56,7 +63,8 @@ describe('catalog schema consistency', () => {
     expect(schema).toContain(
       'hunt           Hunt        @relation(fields: [huntId], references: [id], onDelete: Cascade)',
     );
-    expect(schema).toContain('@@unique([huntId, vocation])');
+    expect(schema).toContain('@@index([huntId, vocation])');
+    expect(schema).not.toContain('@@unique([huntId, vocation])');
     expect(schema).toContain('model HuntCreature');
     expect(schema).toContain(
       'creature         Creature     @relation(fields: [creatureId], references: [id], onDelete: Restrict)',
@@ -76,6 +84,18 @@ describe('catalog schema consistency', () => {
     );
     expect(killPerHourMigration).not.toMatch(
       /\b(DROP|DELETE|TRUNCATE|UPDATE)\b/i,
+    );
+  });
+
+  it('allows several HuntVocation level ranges per vocation without touching data', () => {
+    expect(huntVocationRangesMigration).toContain(
+      'DROP INDEX "HuntVocation_huntId_vocation_key"',
+    );
+    expect(huntVocationRangesMigration).toContain(
+      'CREATE INDEX "HuntVocation_huntId_vocation_idx"',
+    );
+    expect(huntVocationRangesMigration).not.toMatch(
+      /\b(DELETE|TRUNCATE|UPDATE)\b/i,
     );
   });
 });

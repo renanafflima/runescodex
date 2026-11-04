@@ -40,6 +40,10 @@ function formatWhen(value: string) {
   }).format(date);
 }
 
+/** Comments shown before "Ver todos os comentários" is used. CSS further
+ * limits this to 3 on narrow viewports so mobile still reads "3 recentes". */
+const INITIAL_VISIBLE_COMMENTS = 10;
+
 export function HuntComments({ slug }: HuntCommentsProps) {
   const { isAuthenticated, user } = useAuth();
   const [page, setPage] = useState<HuntCommentPage | null>(null);
@@ -52,6 +56,7 @@ export function HuntComments({ slug }: HuntCommentsProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [pending, setPending] = useState("");
+  const [expanded, setExpanded] = useState(false);
 
   const load = useCallback(async (mode: "initial" | "refresh" = "initial") => {
     if (mode === "initial") setLoading(true);
@@ -134,6 +139,8 @@ export function HuntComments({ slug }: HuntCommentsProps) {
 
   const busy = pending !== "";
   const comments = page?.items ?? [];
+  const visibleComments = expanded ? comments : comments.slice(0, INITIAL_VISIBLE_COMMENTS);
+  const canExpand = !expanded && comments.length > 3;
 
   return (
     <section className="hunt-comments" aria-labelledby="hunt-comments-title">
@@ -142,44 +149,23 @@ export function HuntComments({ slug }: HuntCommentsProps) {
         <span>{loading ? "Carregando" : `${page?.commentCount ?? 0} comentários`}</span>
       </div>
 
-      {isAuthenticated ? (
-        <form className="hunt-comments__form" onSubmit={submitNew}>
-          <label className="sr-only" htmlFor="hunt-comment-draft">
-            Escreva um comentário...
-          </label>
-          <textarea
-            className="field__control hunt-comments__input"
-            id="hunt-comment-draft"
-            maxLength={1000}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder="Escreva um comentário..."
-            value={draft}
-          />
-          <Button disabled={busy} loading={pending === "create"} type="submit">
-            Comentar
-          </Button>
-        </form>
-      ) : (
-        <p className="hunt-comments__login">
-          Entre na sua conta para comentar. <Link to="/login">Entrar</Link>
-        </p>
-      )}
+      <div className="hunt-comments__scroll">
+        {notice ? (
+          <p className="hunt-comments__notice" role="alert">
+            {notice}
+          </p>
+        ) : null}
 
-      {notice ? (
-        <p className="hunt-comments__notice" role="alert">
-          {notice}
-        </p>
-      ) : null}
-
-      {loading ? (
-        <CatalogLoading label="Carregando comentários" />
-      ) : error ? (
-        <CatalogError description={error} onRetry={() => void load()} title="Não foi possível carregar os comentários" />
-      ) : comments.length === 0 ? (
-        <p className="hunt-comments__empty">Nenhum comentário.</p>
-      ) : (
-        <ol className="hunt-comments__list">
-          {comments.map((comment) => (
+        {loading ? (
+          <CatalogLoading label="Carregando comentários" />
+        ) : error ? (
+          <CatalogError description={error} onRetry={() => void load()} title="Não foi possível carregar os comentários" />
+        ) : comments.length === 0 ? (
+          <p className="hunt-comments__empty">Nenhum comentário.</p>
+        ) : (
+          <>
+          <ol className={`hunt-comments__list${expanded ? " hunt-comments__list--expanded" : ""}`}>
+            {visibleComments.map((comment) => (
             <li key={comment.id}>
               <CommentCard
                 busy={busy}
@@ -271,8 +257,38 @@ export function HuntComments({ slug }: HuntCommentsProps) {
                 </ol>
               ) : null}
             </li>
-          ))}
-        </ol>
+            ))}
+          </ol>
+          {canExpand ? (
+            <Button className="hunt-comments__expand" onClick={() => setExpanded(true)} type="button" variant="ghost">
+              Ver todos os comentários ({page?.commentCount ?? comments.length})
+            </Button>
+          ) : null}
+          </>
+        )}
+      </div>
+
+      {isAuthenticated ? (
+        <form className="hunt-comments__form hunt-comments__form--pinned" onSubmit={submitNew}>
+          <label className="sr-only" htmlFor="hunt-comment-draft">
+            Escreva um comentário...
+          </label>
+          <textarea
+            className="field__control hunt-comments__input"
+            id="hunt-comment-draft"
+            maxLength={1000}
+            onChange={(event) => setDraft(event.target.value)}
+            placeholder="Escreva um comentário..."
+            value={draft}
+          />
+          <Button disabled={busy} loading={pending === "create"} type="submit">
+            Comentar
+          </Button>
+        </form>
+      ) : (
+        <p className="hunt-comments__login hunt-comments__login--pinned">
+          Entre na sua conta para comentar. <Link to="/login">Entrar</Link>
+        </p>
       )}
     </section>
   );

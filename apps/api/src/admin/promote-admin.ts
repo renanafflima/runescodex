@@ -65,8 +65,7 @@ export function assertPromoteAdminSafety(input: PromoteAdminInput) {
     );
   }
 
-  const expectedAppEnv =
-    target === 'local' ? 'development' : target;
+  const expectedAppEnv = target === 'local' ? 'development' : target;
   if (input.appEnv.trim().toLowerCase() !== expectedAppEnv) {
     throw new Error(
       `APP_ENV must be ${expectedAppEnv} when CONFIRM_TARGET=${target}.`,

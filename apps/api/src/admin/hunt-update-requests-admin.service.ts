@@ -16,6 +16,10 @@ import {
   isAutoApplicableHuntUpdate,
   parseProposedHuntNumber,
 } from '../hunts/hunt-field-proposal';
+import {
+  applyHuntVocationFieldUpdate,
+  type HuntVocationRangeKey,
+} from '../hunts/hunt-vocation-range';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { pageResult, resolvePage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
@@ -104,6 +108,8 @@ type ProposalRow = {
   type: HuntUpdateRequestType;
   proposedValue: string | null;
   vocation: Vocation | null;
+  rangeLevelMin: number | null;
+  rangeLevelMax: number | null;
   appliedAt: Date | null;
 };
 
@@ -202,6 +208,8 @@ export class HuntUpdateRequestsAdminService {
         type: true,
         proposedValue: true,
         vocation: true,
+        rangeLevelMin: true,
+        rangeLevelMax: true,
         appliedAt: true,
       },
     });
@@ -280,6 +288,8 @@ export class HuntUpdateRequestsAdminService {
           type: true,
           proposedValue: true,
           vocation: true,
+          rangeLevelMin: true,
+          rangeLevelMax: true,
           appliedAt: true,
           status: true,
         },
@@ -346,15 +356,20 @@ export class HuntUpdateRequestsAdminService {
     }
     const vocation = assertHuntVocation(current.vocation);
     const value = parseProposedHuntNumber(current.type, current.proposedValue);
-    const written = await tx.huntVocation.updateMany({
-      where: { huntId: current.huntId, vocation },
-      data: huntVocationProposalData(current.type, value),
-    });
-    if (written.count !== 1) {
-      throw new BadRequestException(
-        'Esta Hunt não tem a vocação informada na proposta.',
-      );
-    }
+    const range: HuntVocationRangeKey | null =
+      current.rangeLevelMin != null
+        ? {
+            levelMin: current.rangeLevelMin,
+            levelMax: current.rangeLevelMax,
+          }
+        : null;
+    await applyHuntVocationFieldUpdate(
+      tx,
+      current.huntId,
+      vocation,
+      range,
+      huntVocationProposalData(current.type, value),
+    );
     return true;
   }
 

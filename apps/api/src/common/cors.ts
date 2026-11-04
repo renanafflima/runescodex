@@ -18,9 +18,7 @@ export function resolveCorsOrigins(
   env: NodeJS.ProcessEnv = process.env,
 ): string[] {
   const extra =
-    env.CORS_ORIGINS?.split(',')
-      .map(normalizeOrigin)
-      .filter(Boolean) ?? [];
+    env.CORS_ORIGINS?.split(',').map(normalizeOrigin).filter(Boolean) ?? [];
 
   return [...new Set<string>([...DEFAULT_WEB_ORIGINS, ...extra])];
 }

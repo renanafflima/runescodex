@@ -10,6 +10,8 @@ import {
   type HuntUpdateRequestStatus,
   type HuntUpdateRequestType,
 } from "../../services/api/hunt-update-requests";
+import { pickHuntVocation } from "../../domain/hunts";
+import type { HuntVocation } from "../../services/api/types";
 import { CatalogError, CatalogLoading } from "../catalog/CatalogState";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
@@ -34,6 +36,8 @@ const STATUS_LABEL: Record<HuntUpdateRequestStatus, string> = {
 
 type HuntUpdateRequestsProps = {
   slug: string;
+  vocations?: HuntVocation[];
+  characterLevel?: number | null;
 };
 
 function requestError(error: unknown) {
@@ -56,7 +60,11 @@ function typeLabel(type: HuntUpdateRequestType) {
   return TYPE_OPTIONS.find((option) => option.value === type)?.label ?? type;
 }
 
-export function HuntUpdateRequests({ slug }: HuntUpdateRequestsProps) {
+export function HuntUpdateRequests({
+  slug,
+  vocations = [],
+  characterLevel = null,
+}: HuntUpdateRequestsProps) {
   const { isAuthenticated } = useAuth();
   const [page, setPage] = useState<HuntUpdateRequestPage | null>(null);
   const [loading, setLoading] = useState(isAuthenticated);
@@ -103,11 +111,21 @@ export function HuntUpdateRequests({ slug }: HuntUpdateRequestsProps) {
     setNotice("");
     try {
       const structured = type === "XP" || type === "PROFIT" || type === "LEVEL" || type === "LOCATION";
+      const range =
+        structured && type !== "LOCATION" && vocation
+          ? pickHuntVocation(vocations, vocation, characterLevel)
+          : null;
       await createHuntUpdateRequest(slug, {
         type,
         description: text,
         ...(structured && vocation && type !== "LOCATION" ? { vocation } : {}),
         ...(structured && proposedValue.trim() ? { proposedValue: proposedValue.trim() } : {}),
+        ...(range
+          ? {
+              rangeLevelMin: range.levelMin ?? undefined,
+              rangeLevelMax: range.levelMax ?? null,
+            }
+          : {}),
       });
       setDescription("");
       setProposedValue("");

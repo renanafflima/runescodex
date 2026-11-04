@@ -97,13 +97,15 @@ type OpenCheckoutSnapshot = {
 const REUSABLE_PREFERENCES_LISTING_NOTE =
   'Lists up to four newest reusable checkouts globally. The checkout each owner would reuse via findOpenCheckout may not appear here when more than four exist or when reuse is keyed by checkoutUrl without a stored preference id.';
 
-type PreferenceLookup = MercadoPagoDiagnosticHttpResult<MercadoPagoPreferenceDiagnosticView> & {
-  skipped?: boolean;
-};
+type PreferenceLookup =
+  MercadoPagoDiagnosticHttpResult<MercadoPagoPreferenceDiagnosticView> & {
+    skipped?: boolean;
+  };
 
 function diagnosticEnabled(env: NodeJS.ProcessEnv = process.env) {
-  return env.ENABLE_MERCADO_PAGO_ADMIN_DIAGNOSTIC?.trim().toLowerCase() ===
-    'true';
+  return (
+    env.ENABLE_MERCADO_PAGO_ADMIN_DIAGNOSTIC?.trim().toLowerCase() === 'true'
+  );
 }
 
 function ownerKeyForIndex(index: number) {
@@ -167,9 +169,7 @@ export class AdminMercadoPagoDiagnosticService {
       ok: Boolean(config),
       httpStatus: null,
       errorCode: config ? null : 'not_configured',
-      message: config
-        ? null
-        : 'Mercado Pago billing is not configured',
+      message: config ? null : 'Mercado Pago billing is not configured',
       data: {
         productionCheckoutMode: config ? !config.sandbox : null,
       },
@@ -356,9 +356,7 @@ export class AdminMercadoPagoDiagnosticService {
     totalReusableCount: number | null,
     collectorId: number | null,
     cache: Map<string, PreferenceLookup>,
-  ): Promise<
-    MercadoPagoDiagnosticStep<MercadoPagoReusablePreferencesView>
-  > {
+  ): Promise<MercadoPagoDiagnosticStep<MercadoPagoReusablePreferencesView>> {
     try {
       const rows = await this.listReusablePendingCheckouts();
       const openCheckoutByOwner = await this.openCheckoutSnapshotByUser(
@@ -389,8 +387,7 @@ export class AdminMercadoPagoDiagnosticService {
           openCheckoutPaymentId: openCheckout?.paymentId ?? null,
           openCheckoutPreferenceId: openCheckout?.providerCheckoutId ?? null,
           openCheckoutHasUrl: openCheckout?.hasCheckoutUrl ?? false,
-          ownerListedPaymentIds:
-            listedPaymentIdsByOwner.get(row.userId) ?? [],
+          ownerListedPaymentIds: listedPaymentIdsByOwner.get(row.userId) ?? [],
         });
         const lookup = await this.lookupPreference(
           row.providerCheckoutId,
@@ -478,18 +475,18 @@ export class AdminMercadoPagoDiagnosticService {
       );
       const result = lookup.result;
       if (!result.ok) {
-      return {
-        id: 'latest_preference',
-        ok: false,
-        httpStatus: result.httpStatus,
-        errorCode: sanitizeDiagnosticField(result.errorCode),
-        message: sanitizeDiagnosticField(result.message),
-        data: {
-          preferenceId,
-          collectorId: null,
-          matchesAuthenticatedCollector: null,
-        },
-      };
+        return {
+          id: 'latest_preference',
+          ok: false,
+          httpStatus: result.httpStatus,
+          errorCode: sanitizeDiagnosticField(result.errorCode),
+          message: sanitizeDiagnosticField(result.message),
+          data: {
+            preferenceId,
+            collectorId: null,
+            matchesAuthenticatedCollector: null,
+          },
+        };
       }
       const preferenceCollectorId = result.data?.collectorId ?? null;
       return {

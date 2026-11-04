@@ -25,6 +25,7 @@ import { HuntsController } from '../hunts/hunts.controller';
 import { RewardsController } from '../rewards/rewards.controller';
 import { TicketsController } from '../tickets/tickets.controller';
 import { AdminGuard } from '../admin/admin.guard';
+import { AdminCheckoutAttemptController } from '../admin/billing/admin-checkout-attempt.controller';
 import { AdminMercadoPagoDiagnosticController } from '../admin/billing/admin-mercado-pago-diagnostic.controller';
 import { AdminDatabaseMigrationDiagnosticController } from '../admin/system/admin-database-migration-diagnostic.controller';
 import { BillingController } from './billing.controller';
@@ -142,6 +143,15 @@ describe('Premium access on API routes', () => {
     expect(guardsOf(AdminMercadoPagoDiagnosticController)).not.toContain(
       PremiumGuard,
     );
+<<<<<<< Updated upstream
+=======
+    expect(guardsOf(AdminCheckoutAttemptController)).toEqual(
+      expect.arrayContaining([JwtAuthGuard, AdminGuard]),
+    );
+    expect(guardsOf(AdminCheckoutAttemptController)).not.toContain(
+      PremiumGuard,
+    );
+>>>>>>> Stashed changes
     expect(guardsOf(AdminDatabaseMigrationDiagnosticController)).toEqual(
       expect.arrayContaining([JwtAuthGuard, AdminGuard]),
     );

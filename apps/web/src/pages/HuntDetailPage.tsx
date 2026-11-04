@@ -3,11 +3,13 @@ import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { CharacterSwitcher } from "../components/characters/CharacterSwitcher";
 import { CatalogError, CatalogLoading } from "../components/catalog/CatalogState";
+import { CatalogImage } from "../components/catalog/CatalogImage";
 import { ButtonLink } from "../components/ui/Button";
 import { ElementIcon } from "../components/ui/ElementIcon";
+import { Icon } from "../components/ui/Icon";
 import { Modal } from "../components/ui/Modal";
 import { useLatestRequest } from "../hooks/useLatestRequest";
-import { formatCharmLabel, formatCount, formatLevelRange, formatRate } from "../domain/format";
+import { formatCharmLabel, formatCount } from "../domain/format";
 import { elementLabel } from "../domain/elements";
 import {
   huntAttackElements,
@@ -20,6 +22,8 @@ import {
   formatBestiaryDifficultyLabel,
   formatHuntCardBestiarySummary,
 } from "../domain/hunt-bestiary";
+import { youtubeThumbnailUrl } from "../domain/youtube";
+import { HuntVocationBreakdown } from "../components/hunts/HuntVocationBreakdown";
 import { HuntComments } from "../components/hunts/HuntComments";
 import { HuntUpdateRequests } from "../components/hunts/HuntUpdateRequests";
 import { ReportProblem } from "../components/tickets/ReportProblem";
@@ -65,8 +69,11 @@ export function HuntDetailPage() {
   }, [loadHunt]);
 
   const hunt = useMemo(
-    () => (rawHunt ? mapHuntDetail(rawHunt, preferred) : null),
-    [preferred, rawHunt],
+    () =>
+      rawHunt
+        ? mapHuntDetail(rawHunt, preferred, activeCharacter?.level ?? null)
+        : null,
+    [activeCharacter?.level, preferred, rawHunt],
   );
 
   useEffect(() => {
@@ -78,8 +85,11 @@ export function HuntDetailPage() {
   const summary = hunt ? huntSummary(hunt) : null;
   const spawn = useMemo(() => hunt?.spawn || [], [hunt]);
   const loot = hunt?.loot || [];
-  const vocations = hunt?.vocations || [];
   const videos = hunt?.videos || [];
+  const primaryVideo = useMemo(
+    () => videos.find((video) => video.isRecommended) || videos[0] || null,
+    [videos],
+  );
   const attacks = hunt ? huntAttackElements(hunt) : [];
   const defenses = hunt ? huntDefenseElements(hunt) : [];
   const bestiarySummary = hunt ? formatHuntCardBestiarySummary(hunt.bestiarySummary) : null;
@@ -159,252 +169,269 @@ export function HuntDetailPage() {
           <h1>{hunt.name}</h1>
           {hunt.displayLocation ? <p className="hunt-detail__location">{hunt.displayLocation}</p> : null}
           <CharacterSwitcher className="character-switcher--page" id="hunt-detail-character" />
-          <div className="hunt-detail__kpis">
-            <div className="hunt-detail__kpi">
-              <span className="hunt-detail__kpi-icon hunt-detail__kpi-icon--xp">XP</span>
-              <div>
-                <small>XP/h</small>
-                <strong>{summary?.xp || "—"}</strong>
-              </div>
-            </div>
-            <div className="hunt-detail__kpi">
-              <span className="hunt-detail__kpi-icon">◉</span>
-              <div>
-                <small>Profit/h</small>
-                <strong>{summary?.profit || "—"}</strong>
-              </div>
-            </div>
-            <div className="hunt-detail__kpi">
-              <span className="hunt-detail__kpi-icon">♟</span>
-              <div>
-                <small>Criaturas</small>
-                <strong>{spawn.length || "—"}</strong>
-              </div>
-            </div>
-          </div>
           <div className="hunt-detail__chips">
             {summary?.difficulty ? <span className="hunt-detail__chip">{summary.difficulty}</span> : null}
             {summary?.level ? <span className="hunt-detail__chip">Level {summary.level}</span> : null}
-            {hunt.vocation ? <span className="hunt-detail__chip">{hunt.vocation}</span> : null}
-            {attacks.map((element) => (
-              <span className="hunt-detail__chip" key={`atk-${element}`}>
-                <ElementIcon element={element} /> {elementLabel(element)}
-              </span>
-            ))}
           </div>
         </header>
 
-        <div className="hunt-detail__cta">
-          {hunt.mapImage ? (
-            <button className="hunt-detail__action hunt-detail__action--map" onClick={() => setMapOpen(true)} type="button">
-              Ver mapa
-            </button>
-          ) : null}
-          {hunt.youtubeUrl ? (
-            <a className="hunt-detail__action hunt-detail__action--youtube" href={hunt.youtubeUrl} rel="noreferrer" target="_blank">
-              YouTube
-            </a>
-          ) : null}
-        </div>
-
-        {hunt.attention ? (
-          <aside className="hunt-detail__attention" role="note">
-            <span aria-hidden="true" className="hunt-detail__attention-icon">
-              ⚠
-            </span>
-            <div>
-              <strong className="hunt-detail__attention-title">Atenção</strong>
-              <p className="hunt-detail__attention-text">{hunt.attention}</p>
+        <div className="hunt-detail__layout">
+          <div className="hunt-detail__main">
+            <div className="hunt-detail__kpis">
+              <div className="hunt-detail__kpi">
+                <span className="hunt-detail__kpi-icon hunt-detail__kpi-icon--xp">XP</span>
+                <div>
+                  <small>XP/h</small>
+                  <strong>{summary?.xp || "—"}</strong>
+                </div>
+              </div>
+              <div className="hunt-detail__kpi">
+                <span className="hunt-detail__kpi-icon">◉</span>
+                <div>
+                  <small>Profit/h</small>
+                  <strong>{summary?.profit || "—"}</strong>
+                </div>
+              </div>
+              <div className="hunt-detail__kpi">
+                <span className="hunt-detail__kpi-icon">♟</span>
+                <div>
+                  <small>Criaturas</small>
+                  <strong>{spawn.length || "—"}</strong>
+                </div>
+              </div>
             </div>
-          </aside>
-        ) : null}
 
-        {spawn.length ? (
-          <section>
-            <h2 className="hunt-detail__section-title">
-              <span>⚔</span> Criaturas / Charms
-            </h2>
-            <div className="hunt-detail__creatures">
-              {spawn.map((creature) => (
-                <article className="hunt-creature" key={`${creature.slug || creature.name}`}>
-                  {creature.image ? (
-                    <img alt={creature.name} className="hunt-creature__art" src={creature.image} />
-                  ) : null}
-                  <div>
-                    {creature.slug ? (
-                      <Link className="hunt-creature__name" to={`/bestiary/${creature.slug}`}>
-                        {creature.name}
-                      </Link>
-                    ) : (
-                      <div className="hunt-creature__name">{creature.name}</div>
-                    )}
-                    {creature.notes ? <p className="hunt-creature__notes">{creature.notes}</p> : null}
-                    <div className="hunt-creature__meta">
-                      {formatCount(creature.hp) ? <span>{formatCount(creature.hp)} HP</span> : null}
-                      {formatCount(creature.xp) ? <span>{formatCount(creature.xp)} XP</span> : null}
+            {hunt.vocations.length ? (
+              <section>
+                <h2 className="hunt-detail__section-title">
+                  <span>♦</span> Level e vocações recomendadas
+                </h2>
+                <HuntVocationBreakdown vocations={hunt.vocations} />
+              </section>
+            ) : null}
+
+            {hunt.attention || hunt.description ? (
+              <section className="hunt-detail__intro-copy">
+                {hunt.attention ? (
+                  <aside className="hunt-detail__attention" role="note">
+                    <span aria-hidden="true" className="hunt-detail__attention-icon">
+                      ⚠
+                    </span>
+                    <div>
+                      <strong className="hunt-detail__attention-title">Dica de hunt</strong>
+                      <p className="hunt-detail__attention-text">{hunt.attention}</p>
                     </div>
-                    {creature.bestiary.hasEntry ? (
-                      <dl className="hunt-creature__bestiary">
-                        <div>
-                          <dt>Dificuldade</dt>
-                          <dd>
-                            {formatBestiaryDifficultyLabel(
-                              creature.bestiary,
-                              creature.catalogDifficulty,
-                            ) || "—"}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>Kills necessárias</dt>
-                          <dd>{formatCount(creature.bestiary.killsRequired) || "—"}</dd>
-                        </div>
-                        <div>
-                          <dt>Charm points</dt>
-                          <dd>{formatCount(creature.bestiary.charmPoints) || "—"}</dd>
-                        </div>
-                      </dl>
-                    ) : (
-                      <p className="hunt-creature__bestiary-missing">Bestiário não cadastrado</p>
-                    )}
-                    {creature.recommendedCharm ? (
-                      <div className="hunt-creature__charm">
-                        <ElementIcon element={creature.recommendedCharm} size={28} />
-                        <span>
-                          <small>Charm</small>
-                          {formatCharmLabel(creature.recommendedCharm)}
-                        </span>
-                      </div>
-                    ) : null}
-                    {creature.elements.length ? (
-                      <div className="hunt-creature__elements">
-                        {creature.elements.map((element) => (
-                          <span key={element}>
-                            <ElementIcon element={element} size={16} />
-                            {formatCharmLabel(element)}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : null}
+                  </aside>
+                ) : null}
+                {hunt.description ? <p className="hunt-detail__copy">{hunt.description}</p> : null}
+              </section>
+            ) : null}
 
-        <section>
-          <h2 className="hunt-detail__section-title">
-            <span>▤</span> Informações da Hunt
-          </h2>
-          <div className="hunt-info">
-            {summary?.level ? (
-              <div className="hunt-info__row">
-                <span>Nível recomendado</span>
-                <strong>{summary.level}</strong>
-              </div>
+            {hunt.mapImage || primaryVideo ? (
+              <section className="hunt-detail__media">
+                {hunt.mapImage ? (
+                  <article className="hunt-detail__media-card">
+                    <img alt={`Mapa de ${hunt.name}`} className="hunt-detail__media-thumb" src={hunt.mapImage} />
+                    <div className="hunt-detail__media-body">
+                      <h3>Mapa da Hunt</h3>
+                      <button
+                        className="hunt-detail__media-action"
+                        onClick={() => setMapOpen(true)}
+                        type="button"
+                      >
+                        Abrir mapa <Icon name="chevron-right" size={14} />
+                      </button>
+                    </div>
+                  </article>
+                ) : null}
+                {primaryVideo ? (
+                  <article className="hunt-detail__media-card">
+                    <CatalogImage
+                      alt=""
+                      className="hunt-detail__media-thumb"
+                      name={hunt.name}
+                      src={youtubeThumbnailUrl(primaryVideo.url)}
+                    />
+                    <div className="hunt-detail__media-body">
+                      <h3>{primaryVideo.title || "Vídeo da Hunt"}</h3>
+                      {primaryVideo.channel ? <p className="hunt-detail__media-channel">{primaryVideo.channel}</p> : null}
+                      <a
+                        className="hunt-detail__media-action"
+                        href={primaryVideo.url}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        Ver no YouTube <Icon name="chevron-right" size={14} />
+                      </a>
+                    </div>
+                  </article>
+                ) : null}
+              </section>
             ) : null}
-            {hunt.displayLocation ? (
-              <div className="hunt-info__row">
-                <span>Localização</span>
-                <strong>{hunt.displayLocation}</strong>
-              </div>
+
+            {spawn.length ? (
+              <section>
+                <h2 className="hunt-detail__section-title">
+                  <span>⚔</span> Criaturas / Charms
+                </h2>
+                <div className="hunt-detail__creatures">
+                  {spawn.map((creature) => (
+                    <article className="hunt-creature" key={`${creature.slug || creature.name}`}>
+                      {creature.image ? (
+                        <img alt={creature.name} className="hunt-creature__art" src={creature.image} />
+                      ) : null}
+                      <div>
+                        {creature.slug ? (
+                          <Link className="hunt-creature__name" to={`/bestiary/${creature.slug}`}>
+                            {creature.name}
+                          </Link>
+                        ) : (
+                          <div className="hunt-creature__name">{creature.name}</div>
+                        )}
+                        {creature.notes ? <p className="hunt-creature__notes">{creature.notes}</p> : null}
+                        <div className="hunt-creature__meta">
+                          {formatCount(creature.hp) ? <span>{formatCount(creature.hp)} HP</span> : null}
+                          {formatCount(creature.xp) ? <span>{formatCount(creature.xp)} XP</span> : null}
+                        </div>
+                        {creature.bestiary.hasEntry ? (
+                          <dl className="hunt-creature__bestiary">
+                            <div>
+                              <dt>Dificuldade</dt>
+                              <dd>
+                                {formatBestiaryDifficultyLabel(
+                                  creature.bestiary,
+                                  creature.catalogDifficulty,
+                                ) || "—"}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>Kills necessárias</dt>
+                              <dd>{formatCount(creature.bestiary.killsRequired) || "—"}</dd>
+                            </div>
+                            <div>
+                              <dt>Charm points</dt>
+                              <dd>{formatCount(creature.bestiary.charmPoints) || "—"}</dd>
+                            </div>
+                          </dl>
+                        ) : (
+                          <p className="hunt-creature__bestiary-missing">Bestiário não cadastrado</p>
+                        )}
+                        {creature.recommendedCharm ? (
+                          <div className="hunt-creature__charm">
+                            <ElementIcon element={creature.recommendedCharm} size={28} />
+                            <span>
+                              <small>Charm</small>
+                              {formatCharmLabel(creature.recommendedCharm)}
+                            </span>
+                          </div>
+                        ) : null}
+                        {creature.elements.length ? (
+                          <div className="hunt-creature__elements">
+                            {creature.elements.map((element) => (
+                              <span key={element}>
+                                <ElementIcon element={element} size={16} />
+                                {formatCharmLabel(element)}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
             ) : null}
-            {bestiarySummary ? (
-              <div className="hunt-info__row">
-                <span>Bestiário (hunt)</span>
-                <strong>
-                  {[`${bestiarySummary.charms} charm points`, bestiarySummary.creatures].join(" · ")}
-                </strong>
+
+            <section>
+              <h2 className="hunt-detail__section-title">
+                <span>▤</span> Informações da Hunt
+              </h2>
+              <div className="hunt-info">
+                {hunt.respawn ? (
+                  <div className="hunt-info__row">
+                    <span>Respawn</span>
+                    <strong>{hunt.respawn}</strong>
+                  </div>
+                ) : null}
+                {bestiarySummary ? (
+                  <div className="hunt-info__row">
+                    <span>Bestiário (hunt)</span>
+                    <strong>
+                      {[`${bestiarySummary.charms} charm points`, bestiarySummary.creatures].join(" · ")}
+                    </strong>
+                  </div>
+                ) : null}
+                {attacks.length ? (
+                  <div className="hunt-info__row">
+                    <span>Melhor ataque</span>
+                    <strong>
+                      {attacks.map(elementLabel).join(" + ")}
+                      {hunt.bestAttack?.status === "PARTIAL"
+                        ? ` · Dados parciais (${hunt.bestAttack.creaturesWithAnyData}/${hunt.bestAttack.creatureCount} criaturas com dados)`
+                        : ""}
+                    </strong>
+                  </div>
+                ) : null}
+                {defenses.length ? (
+                  <div className="hunt-info__row">
+                    <span>Proteção</span>
+                    <strong>{defenses.map(elementLabel).join(" · ")}</strong>
+                  </div>
+                ) : null}
               </div>
+            </section>
+
+            {loot.length ? (
+              <details className="hunt-accordion" open>
+                <summary>Loot principal</summary>
+                <ul>
+                  {loot.map((item) => (
+                    <li key={item.id}>
+                      <strong>{item.itemName}</strong>
+                      <span>
+                        {item.importance ? formatCharmLabel(item.importance) : ""}
+                        {formatCount(item.estimatedValue) ? ` · ${formatCount(item.estimatedValue)}` : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
             ) : null}
-            {hunt.respawn ? (
-              <div className="hunt-info__row">
-                <span>Respawn</span>
-                <strong>{hunt.respawn}</strong>
-              </div>
-            ) : null}
-            {attacks.length ? (
-              <div className="hunt-info__row">
-                <span>Melhor ataque</span>
-                <strong>
-                  {attacks.map(elementLabel).join(" + ")}
-                  {hunt.bestAttack?.status === "PARTIAL"
-                    ? ` · Dados parciais (${hunt.bestAttack.creaturesWithAnyData}/${hunt.bestAttack.creatureCount} criaturas com dados)`
-                    : ""}
-                </strong>
-              </div>
-            ) : null}
-            {defenses.length ? (
-              <div className="hunt-info__row">
-                <span>Atenção / dano recebido</span>
-                <strong>{defenses.map(elementLabel).join(" · ")}</strong>
-              </div>
-            ) : null}
-            {summary?.difficulty ? (
-              <div className="hunt-info__row">
-                <span>Dificuldade</span>
-                <strong>{summary.difficulty}</strong>
-              </div>
-            ) : null}
-            {vocations.length ? (
-              <div className="hunt-info__row">
-                <span>Vocações</span>
-                <strong>
-                  {vocations
-                    .map((entry) =>
-                      [
-                        entry.vocation,
-                        entry.isRecommended ? "recomendada" : "",
-                        formatLevelRange(entry.levelMin, entry.levelMax),
-                        formatRate(entry.xpPerHour) ? `${formatRate(entry.xpPerHour)} XP/h` : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" · "),
-                    )
-                    .join(" | ")}
-                </strong>
-              </div>
+
+            {videos.length ? (
+              <details className="hunt-accordion">
+                <summary>Vídeos recomendados</summary>
+                <ul>
+                  {videos.map((video) => (
+                    <li key={video.id}>
+                      <a href={video.url} rel="noreferrer" target="_blank">
+                        {video.title || "YouTube"}
+                      </a>
+                      {video.channel ? <span>{video.channel}</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              </details>
             ) : null}
           </div>
-          {hunt.description ? <p className="hunt-detail__copy">{hunt.description}</p> : null}
-        </section>
 
-        {loot.length ? (
-          <details className="hunt-accordion" open>
-            <summary>Loot principal</summary>
-            <ul>
-              {loot.map((item) => (
-                <li key={item.id}>
-                  <strong>{item.itemName}</strong>
-                  <span>
-                    {item.importance ? formatCharmLabel(item.importance) : ""}
-                    {formatCount(item.estimatedValue) ? ` · ${formatCount(item.estimatedValue)}` : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </details>
-        ) : null}
-
-        {videos.length ? (
-          <details className="hunt-accordion" open>
-            <summary>Vídeos recomendados</summary>
-            <ul>
-              {videos.map((video) => (
-                <li key={video.id}>
-                  <a href={video.url} rel="noreferrer" target="_blank">
-                    {video.title || "YouTube"}
-                  </a>
-                  {video.channel ? <span>{video.channel}</span> : null}
-                </li>
-              ))}
-            </ul>
-          </details>
-        ) : null}
-
-        <HuntUpdateRequests slug={hunt.slug} />
-        <ReportProblem huntId={hunt.id} origin="HUNT" />
-        <HuntComments slug={hunt.slug} />
+          <aside className="hunt-detail__sidebar">
+            <div className="hunt-detail__comments-panel">
+              <HuntComments slug={hunt.slug} />
+            </div>
+            <details className="hunt-detail__side-accordion">
+              <summary>Solicitações e report</summary>
+              <div className="hunt-detail__side-accordion-body">
+                <HuntUpdateRequests
+                  characterLevel={activeCharacter?.level ?? null}
+                  slug={hunt.slug}
+                  vocations={hunt.vocations}
+                />
+                <ReportProblem huntId={hunt.id} origin="HUNT" />
+              </div>
+            </details>
+          </aside>
+        </div>
       </div>
 
       <Modal onClose={() => setMapOpen(false)} open={mapOpen} title="Mapa da hunt">

@@ -9,7 +9,10 @@ import {
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { pageResult, resolvePage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
-import { PREMIUM_PRODUCT_CODE, activeUserProductKey } from './billing.constants';
+import {
+  PREMIUM_PRODUCT_CODE,
+  activeUserProductKey,
+} from './billing.constants';
 import { licenseGrantsAccess } from './license-access';
 
 const DAY_MS = 86_400_000;
@@ -105,9 +108,7 @@ export class PendingLicenseGrantService {
       ? new Date(input.offerExpiresAt)
       : new Date(Date.now() + DEFAULT_OFFER_DAYS * DAY_MS);
     if (offerExpiresAt.getTime() <= Date.now()) {
-      throw new BadRequestException(
-        'A validade da oferta precisa ser futura',
-      );
+      throw new BadRequestException('A validade da oferta precisa ser futura');
     }
     const duplicate = await this.prisma.billingPendingLicenseGrant.findFirst({
       where: {
@@ -310,7 +311,10 @@ export class PendingLicenseGrantService {
             status: { in: ['ACTIVE', 'SUSPENDED'] },
           },
         });
-        if (active && (active.status === 'SUSPENDED' || licenseGrantsAccess(active))) {
+        if (
+          active &&
+          (active.status === 'SUSPENDED' || licenseGrantsAccess(active))
+        ) {
           await tx.billingPendingLicenseGrant.updateMany({
             where: { id: offer.id, status: 'PENDING' },
             data: {

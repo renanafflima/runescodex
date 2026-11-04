@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   filterAndSortHunts,
+  groupHuntVocations,
   huntAttackElements,
   huntCompatibility,
   huntDefenseElements,
@@ -9,6 +10,7 @@ import {
   mapHuntAttention,
   mapHuntDetail,
   mapHuntListItem,
+  pickHuntVocation,
 } from "./hunts";
 import type { HuntListItem } from "../services/api/types";
 
@@ -318,6 +320,175 @@ describe("hunt mapping and active character", () => {
       character: null,
     });
     expect(any.map((hunt) => hunt.slug)).toEqual(["cyclops", "dragon"]);
+  });
+
+  it("groups several level ranges under the same vocation without mixing stats", () => {
+    const mapped = mapHuntDetail({
+      id: "court",
+      slug: "court-of-winter",
+      name: "Court of Winter",
+      vocations: [
+        { vocation: "ED", isRecommended: true, levelMin: 270, levelMax: 399, xpPerHour: 3_000_000, profitPerHour: 250_000 },
+        { vocation: "ED", isRecommended: false, levelMin: 400, levelMax: 600, xpPerHour: 3_500_000, profitPerHour: 300_000 },
+        { vocation: "MS", isRecommended: true, levelMin: 270, levelMax: 399, xpPerHour: 4_500_000, profitPerHour: 250_000 },
+        { vocation: "MS", isRecommended: false, levelMin: 400, levelMax: 600, xpPerHour: 5_000_000, profitPerHour: 300_000 },
+      ],
+      creatures: [],
+    });
+
+    const groups = groupHuntVocations(mapped.vocations);
+    expect(groups.map((group) => group.vocation)).toEqual(["ED", "MS"]);
+
+    const ed = groups[0]!;
+    expect(ed.ranges).toHaveLength(2);
+    expect(ed.ranges[0]).toMatchObject({ levelMin: 270, levelMax: 399, xpPerHour: 3_000_000, profitPerHour: 250_000 });
+    expect(ed.ranges[1]).toMatchObject({ levelMin: 400, levelMax: 600, xpPerHour: 3_500_000, profitPerHour: 300_000 });
+
+    const ms = groups[1]!;
+    expect(ms.ranges).toHaveLength(2);
+    expect(ms.ranges[0]).toMatchObject({ xpPerHour: 4_500_000, profitPerHour: 250_000 });
+    expect(ms.ranges[1]).toMatchObject({ xpPerHour: 5_000_000, profitPerHour: 300_000 });
+  });
+
+  it("does not assume every hunt has multiple ranges or every vocation", () => {
+    const mapped = mapHuntDetail({
+      id: "simple",
+      slug: "simple-hunt",
+      name: "Simple Hunt",
+      vocations: [
+        { vocation: "EK", isRecommended: true, levelMin: 100, levelMax: null, xpPerHour: 1_000_000, profitPerHour: 50_000 },
+      ],
+      creatures: [],
+    });
+    expect(groupHuntVocations(mapped.vocations)).toEqual([
+      {
+        vocation: "EK",
+        ranges: [mapped.vocations[0]],
+      },
+    ]);
+    expect(groupHuntVocations([])).toEqual([]);
+  });
+});
+
+const courtRanges = [
+  { vocation: "ED", isRecommended: true, levelMin: 270, levelMax: 399, xpPerHour: 3_000_000, profitPerHour: 250_000, difficulty: null, notes: null },
+  { vocation: "ED", isRecommended: false, levelMin: 400, levelMax: 600, xpPerHour: 3_500_000, profitPerHour: 300_000, difficulty: null, notes: null },
+  { vocation: "MS", isRecommended: true, levelMin: 270, levelMax: 399, xpPerHour: 4_500_000, profitPerHour: 250_000, difficulty: null, notes: null },
+  { vocation: "MS", isRecommended: false, levelMin: 400, levelMax: 600, xpPerHour: 5_000_000, profitPerHour: 300_000, difficulty: null, notes: null },
+] as const;
+
+const courtHuntPayload = {
+  id: "court",
+  slug: "court-of-winter",
+  name: "Court of Winter",
+  vocations: [...courtRanges],
+  creatures: [],
+};
+
+describe("multiple level ranges per vocation", () => {
+  const character = (vocation: "ED" | "MS", level: number) => ({
+    id: "c1",
+    name: "Player",
+    vocation,
+    level,
+    world: "Antica",
+  });
+
+  it("selects ED 270-399 for ED level 300", () => {
+    const picked = pickHuntVocation([...courtRanges], "ED", 300);
+    expect(picked).toMatchObject({ levelMin: 270, levelMax: 399, xpPerHour: 3_000_000 });
+  });
+
+  it("selects ED 400-600 for ED level 450", () => {
+    const picked = pickHuntVocation([...courtRanges], "ED", 450);
+    expect(picked).toMatchObject({ levelMin: 400, levelMax: 600, xpPerHour: 3_500_000 });
+  });
+
+  it("selects MS 270-399 for MS level 300", () => {
+    const picked = pickHuntVocation([...courtRanges], "MS", 300);
+    expect(picked).toMatchObject({ levelMin: 270, levelMax: 399, xpPerHour: 4_500_000 });
+  });
+
+  it("selects MS 400-600 for MS level 450", () => {
+    const picked = pickHuntVocation([...courtRanges], "MS", 450);
+    expect(picked).toMatchObject({ levelMin: 400, levelMax: 600, xpPerHour: 5_000_000 });
+  });
+
+  it("does not use MS stats when ED is preferred", () => {
+    const picked = pickHuntVocation([...courtRanges], "ED", 450);
+    expect(picked?.vocation).toBe("ED");
+    expect(picked?.xpPerHour).not.toBe(5_000_000);
+  });
+
+  it("does not expose incompatible stats when the level is outside every range", () => {
+    const mapped = mapHuntListItem(courtHuntPayload, "ED", 650);
+    expect(mapped.xpH).toBeNull();
+    expect(mapped.profitH).toBeNull();
+  });
+
+  it("sorts by XP using the range that matches the active character", () => {
+    const low = mapHuntListItem(
+      { ...courtHuntPayload, slug: "court-low", name: "Court Low" },
+      "ED",
+      300,
+    );
+    const high = mapHuntListItem(
+      {
+        ...courtHuntPayload,
+        slug: "court-high",
+        name: "Court High",
+        vocations: [
+          { vocation: "ED", isRecommended: true, levelMin: 270, levelMax: 399, xpPerHour: 2_000_000, profitPerHour: 100_000 },
+          { vocation: "ED", isRecommended: false, levelMin: 400, levelMax: 600, xpPerHour: 6_000_000, profitPerHour: 400_000 },
+        ],
+      },
+      "ED",
+      450,
+    );
+    const sorted = filterAndSortHunts([low, high], {
+      query: "",
+      vocation: "Any",
+      minXpH: "",
+      minProfitH: "",
+      minLevel: "",
+      sortBy: "Best XP",
+      character: character("ED", 450),
+    });
+    expect(sorted.map((hunt) => hunt.slug)).toEqual(["court-high", "court-low"]);
+  });
+
+  it("sorts by Profit using the range that matches the active character", () => {
+    const hunts = [
+      mapHuntListItem(courtHuntPayload, "MS", 450),
+      mapHuntListItem(
+        {
+          ...courtHuntPayload,
+          slug: "other",
+          name: "Other",
+          vocations: [
+            { vocation: "MS", isRecommended: true, levelMin: 400, levelMax: 600, xpPerHour: 1, profitPerHour: 500_000 },
+          ],
+        },
+        "MS",
+        450,
+      ),
+    ];
+    const sorted = filterAndSortHunts(hunts, {
+      query: "",
+      vocation: "Any",
+      minXpH: "",
+      minProfitH: "",
+      minLevel: "",
+      sortBy: "Best Profit",
+      character: character("MS", 450),
+    });
+    expect(sorted[0]?.slug).toBe("other");
+  });
+
+  it("marks ED level 450 as compatible when the 400-600 range exists", () => {
+    const mapped = mapHuntListItem(courtHuntPayload, "ED", 450);
+    expect(huntCompatibility(mapped, character("ED", 450))).toBe(4);
+    expect(mapped.xpH).toBe(3_500_000);
   });
 });
 

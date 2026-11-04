@@ -49,7 +49,10 @@ describe('CharactersService', () => {
     };
     prisma.character.create.mockResolvedValue(created);
     prisma.user.findUnique.mockResolvedValue({ activeCharacterId: null });
-    prisma.user.update.mockResolvedValue({ id: 'user-a', activeCharacterId: 'char-1' });
+    prisma.user.update.mockResolvedValue({
+      id: 'user-a',
+      activeCharacterId: 'char-1',
+    });
 
     const result = await service.create('user-a', {
       name: '  Knight ',
@@ -207,7 +210,9 @@ describe('CharactersService', () => {
 
     await service.remove('user-a', 'char-1');
 
-    expect(prisma.character.delete).toHaveBeenCalledWith({ where: { id: 'char-1' } });
+    expect(prisma.character.delete).toHaveBeenCalledWith({
+      where: { id: 'char-1' },
+    });
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: 'user-a' },
       data: { activeCharacterId: 'char-2' },

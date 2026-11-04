@@ -99,7 +99,13 @@ describe('AuthService', () => {
         email: 'user@email.com',
         passwordHash: 'hashed-password',
       },
-      select: { id: true, email: true, role: true, googleSub: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        googleSub: true,
+        createdAt: true,
+      },
     });
     expect(result.user).toEqual({
       id: 'user-1',
@@ -291,7 +297,13 @@ describe('AuthService', () => {
 
     expect(prisma.user.create).toHaveBeenCalledWith({
       data: { email: 'new@email.com', googleSub: 'google-subject' },
-      select: { id: true, email: true, role: true, googleSub: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        googleSub: true,
+        createdAt: true,
+      },
     });
     expect(result.user).toEqual({
       id: 'user-2',

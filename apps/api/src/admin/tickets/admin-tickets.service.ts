@@ -416,6 +416,16 @@ export class AdminTicketsService {
           'Informe uma vocação de Hunt para aplicar o valor. Monk não faz parte da ficha da Hunt.',
         );
       }
+      for (const vocation of vocations) {
+        const ranges = await tx.huntVocation.count({
+          where: { huntId: ticket.huntId, vocation },
+        });
+        if (ranges > 1) {
+          throw new BadRequestException(
+            'Esta Hunt possui várias faixas para uma ou mais vocações. Aplique a correção manualmente pela faixa correta.',
+          );
+        }
+      }
       const updated = await tx.huntVocation.updateMany({
         where: { huntId: ticket.huntId, vocation: { in: vocations } },
         data: { [field]: value },

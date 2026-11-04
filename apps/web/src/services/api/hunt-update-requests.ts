@@ -53,6 +53,8 @@ export function createHuntUpdateRequest(
     description: string;
     vocation?: string;
     proposedValue?: string;
+    rangeLevelMin?: number;
+    rangeLevelMax?: number | null;
   },
 ) {
   return apiRequest<HuntUpdateRequest>(`/hunts/${encodeURIComponent(slug)}/update-requests`, {

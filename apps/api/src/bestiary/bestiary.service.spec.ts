@@ -146,9 +146,7 @@ describe('BestiaryService', () => {
       userProgress: undefined,
     };
     prisma.huntCreature.findMany.mockResolvedValue([{ creatureId: 'c2' }]);
-    prisma.creature.count
-      .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(1);
+    prisma.creature.count.mockResolvedValueOnce(1).mockResolvedValueOnce(1);
     prisma.creature.findMany
       .mockResolvedValueOnce([hellhound])
       .mockResolvedValueOnce([{ ...cyclops, userProgress: undefined }]);
@@ -156,7 +154,10 @@ describe('BestiaryService', () => {
     const result = await service.findAll({ vocation: 'RP', level: 150 });
 
     expect(prisma.huntCreature.findMany).toHaveBeenCalled();
-    expect(result.items.map((item) => item.slug)).toEqual(['hellhound', 'cyclops']);
+    expect(result.items.map((item) => item.slug)).toEqual([
+      'hellhound',
+      'cyclops',
+    ]);
     expect(result.total).toBe(2);
     expect(result.hasMore).toBe(false);
   });

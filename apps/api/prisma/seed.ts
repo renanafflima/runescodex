@@ -144,27 +144,40 @@ async function main() {
       });
 
       for (const vocation of hunt.vocations) {
-        await prisma.huntVocation.upsert({
+        const levelMax =
+          "levelMax" in vocation && vocation.levelMax != null
+            ? vocation.levelMax
+            : null;
+        const existing = await prisma.huntVocation.findFirst({
           where: {
-            huntId_vocation: { huntId: row.id, vocation: vocation.vocation },
-          },
-          update: {
-            isRecommended: vocation.isRecommended,
-            levelMin: vocation.levelMin,
-            xpPerHour: vocation.xpPerHour,
-            profitPerHour: vocation.profitPerHour,
-            notes: vocation.notes,
-          },
-          create: {
             huntId: row.id,
             vocation: vocation.vocation,
-            isRecommended: vocation.isRecommended,
             levelMin: vocation.levelMin,
-            xpPerHour: vocation.xpPerHour,
-            profitPerHour: vocation.profitPerHour,
-            notes: vocation.notes,
+            levelMax,
           },
         });
+        const payload = {
+          isRecommended: vocation.isRecommended,
+          levelMin: vocation.levelMin,
+          levelMax,
+          xpPerHour: vocation.xpPerHour,
+          profitPerHour: vocation.profitPerHour,
+          notes: vocation.notes,
+        };
+        if (existing) {
+          await prisma.huntVocation.update({
+            where: { id: existing.id },
+            data: payload,
+          });
+        } else {
+          await prisma.huntVocation.create({
+            data: {
+              huntId: row.id,
+              vocation: vocation.vocation,
+              ...payload,
+            },
+          });
+        }
       }
 
       for (const appearance of hunt.creatures) {

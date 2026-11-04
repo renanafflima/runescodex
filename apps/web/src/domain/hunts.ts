@@ -62,12 +62,114 @@ function mapVocations(vocations: unknown): HuntVocation[] {
   });
 }
 
-export function pickHuntVocation(vocations: HuntVocation[], preferred?: string | null) {
-  if (preferred && preferred !== "Any") {
-    const match = vocations.find((item) => item.vocation === preferred);
-    if (match) return match;
+export type PickHuntVocationOptions = {
+  preferredVocation?: string | null;
+  characterLevel?: number | null;
+};
+
+function normalizePickOptions(
+  preferredOrOptions?: string | null | PickHuntVocationOptions,
+  characterLevel?: number | null,
+): PickHuntVocationOptions {
+  if (preferredOrOptions && typeof preferredOrOptions === "object") {
+    return preferredOrOptions;
   }
+  return {
+    preferredVocation: preferredOrOptions,
+    characterLevel,
+  };
+}
+
+function vocationEntries(vocations: HuntVocation[], vocation: string) {
+  const normalized = normalizeVocation(vocation);
+  if (!normalized) return [];
+  return vocations.filter(
+    (entry) => entry.vocation && normalizeVocation(entry.vocation) === normalized,
+  );
+}
+
+function pickBestFallbackEntry(entries: HuntVocation[]) {
+  if (entries.length === 0) return null;
+  const recommended = entries.find((entry) => entry.isRecommended);
+  if (recommended) return recommended;
+  return [...entries].sort(
+    (a, b) => Number(a.levelMin ?? Number.POSITIVE_INFINITY) - Number(b.levelMin ?? Number.POSITIVE_INFINITY),
+  )[0]!;
+}
+
+/**
+ * Picks the HuntVocation row for list cards and filters. When a vocation is
+ * preferred, never substitutes another vocation. When a character level is
+ * known, picks the range that contains that level for the preferred vocation.
+ */
+export function pickHuntVocation(
+  vocations: HuntVocation[],
+  preferredOrOptions?: string | null | PickHuntVocationOptions,
+  characterLevel?: number | null,
+): HuntVocation | null {
+  const { preferredVocation, characterLevel: level } = normalizePickOptions(
+    preferredOrOptions,
+    characterLevel,
+  );
+  const preferred =
+    preferredVocation && preferredVocation !== "Any" ? preferredVocation : null;
+
+  if (preferred) {
+    const entries = vocationEntries(vocations, preferred);
+    if (entries.length === 0) return null;
+    if (hasNumericValue(level)) {
+      return entries.find((entry) => levelFits(entry, level)) ?? null;
+    }
+    return pickBestFallbackEntry(entries);
+  }
+
+  if (hasNumericValue(level)) {
+    const fitting = vocations.find((entry) => levelFits(entry, level));
+    if (fitting) return fitting;
+  }
+
   return vocations.find((item) => item.isRecommended) || vocations[0] || null;
+}
+
+export function huntVocationForContext(
+  hunt: HuntListItem | HuntDetail,
+  filters: Pick<HuntClientFilters, "vocation" | "character">,
+): HuntVocation | null {
+  const preferred =
+    filters.vocation !== "Any"
+      ? filters.vocation
+      : normalizeVocation(filters.character?.vocation);
+  const characterLevel = hasNumericValue(filters.character?.level)
+    ? Number(filters.character?.level)
+    : null;
+  return pickHuntVocation(hunt.vocations, {
+    preferredVocation: preferred,
+    characterLevel,
+  });
+}
+
+export type HuntVocationGroup = {
+  vocation: string;
+  ranges: HuntVocation[];
+};
+
+/**
+ * Groups a hunt's HuntVocation rows by vocation, preserving each range's own
+ * xpPerHour/profitPerHour. A vocation can have several level ranges in the
+ * same hunt; this never merges or averages their stats.
+ */
+export function groupHuntVocations(vocations: HuntVocation[]): HuntVocationGroup[] {
+  const order: string[] = [];
+  const byVocation = new Map<string, HuntVocation[]>();
+  vocations.forEach((entry) => {
+    if (!entry.vocation) return;
+    if (!byVocation.has(entry.vocation)) {
+      byVocation.set(entry.vocation, []);
+      order.push(entry.vocation);
+    }
+    byVocation.get(entry.vocation)!.push(entry);
+  });
+  return order.map((vocation) => ({ vocation, ranges: byVocation.get(vocation) || [] }));
 }
 
 function mapHuntCreature(item: unknown): HuntCreature {
@@ -164,10 +266,14 @@ function mapHuntLoot(loot: unknown): HuntLoot[] {
     .filter((item): item is HuntLoot => Boolean(item));
 }
 
-function mapHuntBase(hunt: unknown, preferredVocation?: string | null): HuntListItem {
+function mapHuntBase(
+  hunt: unknown,
+  preferredVocation?: string | null,
+  characterLevel?: number | null,
+): HuntListItem {
   const data = asRecord(hunt);
   const vocations = mapVocations(data.vocations);
-  const vocation = pickHuntVocation(vocations, preferredVocation);
+  const vocation = pickHuntVocation(vocations, preferredVocation, characterLevel);
   const spawn = (Array.isArray(data.creatures) ? data.creatures : []).map(mapHuntCreature);
   const primary = spawn.find((item) => item.isPrimary) || spawn[0] || null;
   const videos = mapHuntVideos(data.videos);
@@ -198,15 +304,23 @@ function mapHuntBase(hunt: unknown, preferredVocation?: string | null): HuntList
   };
 }
 
-export function mapHuntListItem(hunt: unknown, preferredVocation?: string | null): HuntListItem {
-  return mapHuntBase(hunt, preferredVocation);
+export function mapHuntListItem(
+  hunt: unknown,
+  preferredVocation?: string | null,
+  characterLevel?: number | null,
+): HuntListItem {
+  return mapHuntBase(hunt, preferredVocation, characterLevel);
 }
 
-export function mapHuntDetail(hunt: unknown, preferredVocation?: string | null): HuntDetail {
+export function mapHuntDetail(
+  hunt: unknown,
+  preferredVocation?: string | null,
+  characterLevel?: number | null,
+): HuntDetail {
   const data = asRecord(hunt);
   const videos = mapHuntVideos(data.videos);
   return {
-    ...mapHuntBase(hunt, preferredVocation),
+    ...mapHuntBase(hunt, preferredVocation, characterLevel),
     description: typeof data.description === "string" ? data.description : null,
     videos,
     youtubeUrl: videos.find((item) => item.isRecommended)?.url || videos[0]?.url || null,
@@ -226,14 +340,18 @@ export function huntCompatibility(hunt: HuntListItem | HuntDetail | null | undef
   if (!character || !hunt) return 0;
   const vocation = normalizeVocation(character.vocation);
   const vocations = Array.isArray(hunt.vocations) ? hunt.vocations : [];
-  const vocationEntry = vocation
-    ? vocations.find((entry) => normalizeVocation(entry.vocation) === vocation)
-    : null;
+  const vocationEntries = vocation ? vocationEntriesForCharacter(vocations, vocation) : [];
 
-  if (vocationEntry && levelFits(vocationEntry, character.level)) return 4;
-  if (vocationEntry) return 2;
+  if (vocationEntries.some((entry) => levelFits(entry, character.level))) return 4;
+  if (vocationEntries.length > 0) return 2;
   if (vocations.some((entry) => levelFits(entry, character.level))) return 1;
   return 0;
+}
+
+function vocationEntriesForCharacter(vocations: HuntVocation[], vocation: VocationCode) {
+  return vocations.filter(
+    (entry) => entry.vocation && normalizeVocation(entry.vocation) === vocation,
+  );
 }
 
 export function preferredHuntVocation(
@@ -345,8 +463,11 @@ export function filterAndSortHunts(hunts: HuntListItem[], filters: HuntClientFil
       includesQuery(hunt.displayLocation, search) ||
       includesQuery(hunt.creature, search) ||
       hunt.spawn.some((creature) => includesQuery(creature.name, search));
-    const matchXp = xpN ? hasNumericValue(hunt.xpH) && Number(hunt.xpH) >= xpN : true;
-    const matchProfit = profitN ? hasNumericValue(hunt.profitH) && Number(hunt.profitH) >= profitN : true;
+    const contextVocation = huntVocationForContext(hunt, filters);
+    const contextXp = contextVocation?.xpPerHour ?? null;
+    const contextProfit = contextVocation?.profitPerHour ?? null;
+    const matchXp = xpN ? hasNumericValue(contextXp) && Number(contextXp) >= xpN : true;
+    const matchProfit = profitN ? hasNumericValue(contextProfit) && Number(contextProfit) >= profitN : true;
     const matchLevel = levelN
       ? hunt.vocations.some((item) => {
           const min = item.levelMin;
@@ -383,15 +504,21 @@ export function filterAndSortHunts(hunts: HuntListItem[], filters: HuntClientFil
     const compatibilityDiff =
       huntCompatibility(b, filters.character) - huntCompatibility(a, filters.character);
     if (compatibilityDiff) return compatibilityDiff;
+    const aContext = huntVocationForContext(a, filters);
+    const bContext = huntVocationForContext(b, filters);
     if (filters.sortBy === "Best XP") {
-      return (hasNumericValue(b.xpH) ? Number(b.xpH) : -1) - (hasNumericValue(a.xpH) ? Number(a.xpH) : -1);
+      const bXp = bContext?.xpPerHour ?? null;
+      const aXp = aContext?.xpPerHour ?? null;
+      return (hasNumericValue(bXp) ? Number(bXp) : -1) - (hasNumericValue(aXp) ? Number(aXp) : -1);
     }
     if (filters.sortBy === "Best Profit") {
-      return (hasNumericValue(b.profitH) ? Number(b.profitH) : -1) - (hasNumericValue(a.profitH) ? Number(a.profitH) : -1);
+      const bProfit = bContext?.profitPerHour ?? null;
+      const aProfit = aContext?.profitPerHour ?? null;
+      return (hasNumericValue(bProfit) ? Number(bProfit) : -1) - (hasNumericValue(aProfit) ? Number(aProfit) : -1);
     }
     if (filters.sortBy === "Level") {
-      const aLevel = hasNumericValue(a.levelMin) ? Number(a.levelMin) : Number.POSITIVE_INFINITY;
-      const bLevel = hasNumericValue(b.levelMin) ? Number(b.levelMin) : Number.POSITIVE_INFINITY;
+      const aLevel = hasNumericValue(aContext?.levelMin) ? Number(aContext!.levelMin) : Number.POSITIVE_INFINITY;
+      const bLevel = hasNumericValue(bContext?.levelMin) ? Number(bContext!.levelMin) : Number.POSITIVE_INFINITY;
       return aLevel - bLevel;
     }
     return String(a.name || "").localeCompare(String(b.name || ""));

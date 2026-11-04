@@ -98,6 +98,7 @@ model User {
   tickets                Ticket[]
   resolvedTickets        Ticket[]                    @relation("TicketResolvedBy")
   billingOrders          BillingOrder[]
+  billingCheckoutAttempts BillingCheckoutAttempt[]
   billingLicenses        BillingLicense[]
   billingStoreEntitlements BillingStoreEntitlement[]
   assignedTickets        Ticket[]                    @relation("TicketAssignee")
@@ -361,6 +362,9 @@ model Hunt {
 }
 
 /// Per-vocation stats for a hunt. XP/h, profit/h and level live here, not on Hunt.
+/// A vocation may have more than one row per hunt, each covering a different
+/// level range (e.g. ED 270-399 and ED 400-600 in the same hunt) with its own
+/// xpPerHour/profitPerHour. Ranges are not required to be contiguous or unique.
 model HuntVocation {
   id             String      @id @default(uuid())
   huntId         String
@@ -376,10 +380,10 @@ model HuntVocation {
   updatedAt      DateTime    @updatedAt
   hunt           Hunt        @relation(fields: [huntId], references: [id], onDelete: Cascade)
 
-  @@unique([huntId, vocation])
   @@index([huntId])
   @@index([vocation])
   @@index([vocation, levelMin])
+  @@index([huntId, vocation])
 }
 
 model HuntCreature {
@@ -505,6 +509,9 @@ model HuntUpdateRequest {
   /// Present only when the author submitted a structured value. Free text stays in description.
   proposedValue   String?
   vocation        Vocation?
+  /// When set, structured XP/Profit/Level updates target this HuntVocation range.
+  rangeLevelMin   Int?
+  rangeLevelMax   Int?
   ticketId        String?                @unique
   status          HuntUpdateRequestStatus @default(OPEN)
   adminResponse   String?
@@ -1100,6 +1107,7 @@ model BillingOrder {
   product     BillingProduct     @relation(fields: [productId], references: [id], onDelete: Restrict)
   price       BillingPrice       @relation(fields: [priceId], references: [id], onDelete: Restrict)
   payments    BillingPayment[]
+  checkoutAttempts BillingCheckoutAttempt[]
   license     BillingLicense?
   events      BillingEventReceipt[]
 
@@ -1113,6 +1121,13 @@ enum BillingPaymentStatus {
   PAID
   FAILED
   REFUNDED
+}
+
+enum BillingCheckoutAttemptState {
+  CREATING
+  READY
+  FAILED
+  UNKNOWN
 }
 
 /// One provider charge. Many payments may belong to one order. Rows are not deleted.
@@ -1136,10 +1151,47 @@ model BillingPayment {
   updatedAt         DateTime             @updatedAt
   order             BillingOrder         @relation(fields: [orderId], references: [id], onDelete: Restrict)
   events            BillingEventReceipt[]
+  checkoutAttempt   BillingCheckoutAttempt?
 
   @@unique([provider, providerPaymentId])
   @@index([orderId])
   @@index([status])
+}
+
+/// Durable reservation for one Checkout Pro preference creation generation.
+/// No credentials, payer details or card data are stored here.
+///
+/// PARTIAL UNIQUE INDEX (SQL-only; Prisma cannot express WHERE):
+/// BillingCheckoutAttempt_one_active_per_user_key ON ("userId")
+/// WHERE "state" IN ('CREATING', 'UNKNOWN')
+/// Created in prisma/migrations/20261103143000_billing_checkout_attempt/migration.sql
+/// Future prisma migrate diff/dev must NOT drop or replace this index with a
+/// non-partial unique on userId. READY and FAILED rows must remain unrestricted.
+model BillingCheckoutAttempt {
+  id                 String                       @id @default(uuid())
+  userId             String
+  orderId            String
+  generation         Int
+  state              BillingCheckoutAttemptState @default(CREATING)
+  idempotencyKey     String                       @unique
+  leaseOwner         String?
+  leaseExpiresAt     DateTime?
+  providerCheckoutId String?
+  billingPaymentId   String?                      @unique
+  lastErrorCode      String?
+  lastErrorMessage   String?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  completedAt        DateTime?
+  user               User                         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  order              BillingOrder                 @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  billingPayment     BillingPayment?               @relation(fields: [billingPaymentId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, generation])
+  @@index([userId, state])
+  @@index([orderId])
+  @@index([leaseExpiresAt])
+  @@index([state, updatedAt])
 }
 
 enum BillingLicenseStatus {

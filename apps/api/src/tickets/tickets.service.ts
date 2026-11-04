@@ -222,9 +222,7 @@ export class TicketsService {
     const { page, limit, skip } = resolvePage(query);
     const own = query.mine === 'true' || !(await this.isAdmin(userId));
     const where = {
-      ...(own
-        ? { authorId: userId, referralReward: { is: null } }
-        : {}),
+      ...(own ? { authorId: userId, referralReward: { is: null } } : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(query.problemType ? { problemType: query.problemType } : {}),
     };

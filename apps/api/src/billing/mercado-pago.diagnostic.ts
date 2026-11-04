@@ -59,8 +59,7 @@ export const PREFERENCE_DIAGNOSTIC_BUDGET_MS = 28_000;
 const SECRET_PATTERN =
   /\b(?:bearer\s+)?(?:APP_USR-|TEST-|APP_ID-)[A-Za-z0-9._-]{8,}\b/gi;
 const JWT_PATTERN = /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g;
-const EMAIL_PATTERN =
-  /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gi;
+const EMAIL_PATTERN = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gi;
 const URL_PATTERN = /\bhttps?:\/\/[^\s]+/gi;
 const PAYER_HINT_PATTERN =
   /\b(?:payer|buyer|customer|cardholder)(?:_[a-z]+)?\s*[:=]\s*\S+/gi;
@@ -231,9 +230,7 @@ export function sanitizePaymentMethodSample(
   };
 }
 
-export function sanitizePaymentMethodSampleList(
-  value: unknown,
-): {
+export function sanitizePaymentMethodSampleList(value: unknown): {
   sample: MercadoPagoPaymentMethodSample[];
   paymentMethodCount: number;
   sampleTruncated: boolean;
@@ -289,7 +286,9 @@ function sanitizePreferencePaymentMethods(
     return null;
   }
   return {
-    excludedPaymentMethods: sanitizeExcludedIdList(row.excluded_payment_methods),
+    excludedPaymentMethods: sanitizeExcludedIdList(
+      row.excluded_payment_methods,
+    ),
     excludedPaymentTypes: sanitizeExcludedIdList(row.excluded_payment_types),
     defaultPaymentMethodId: readSanitizedString(row.default_payment_method_id),
     installments: readFiniteNumber(row.installments),
@@ -311,11 +310,8 @@ export function sanitizePreferenceDiagnosticBody(
   body: unknown,
 ): MercadoPagoPreferenceDiagnosticView {
   const row = asRecord(body);
-  const paymentMethods = sanitizePreferencePaymentMethods(
-    row?.payment_methods,
-  );
-  const excludedPaymentMethods =
-    paymentMethods?.excludedPaymentMethods ?? [];
+  const paymentMethods = sanitizePreferencePaymentMethods(row?.payment_methods);
+  const excludedPaymentMethods = paymentMethods?.excludedPaymentMethods ?? [];
   const excludedPaymentTypes = paymentMethods?.excludedPaymentTypes ?? [];
   return {
     collectorId: readCollectorId(row?.collector_id),

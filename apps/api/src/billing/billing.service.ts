@@ -65,6 +65,7 @@ export type ApplyBillingEventInput = {
   providerPaymentId: string;
   orderId: string;
   type: BillingEventTypeCode;
+  providerCheckoutId?: string | null;
 };
 
 export type PremiumView = {
@@ -92,6 +93,10 @@ export type CheckoutView = {
   amountMinor: number;
   currency: string;
   status: 'PENDING';
+};
+
+export type OpenCheckoutCandidate = CheckoutView & {
+  providerCheckoutId: string | null;
 };
 
 export function inactivePremium(): PremiumView {
@@ -238,6 +243,7 @@ export class BillingService {
       providerPaymentId,
       orderId,
       type: input.type,
+      providerCheckoutId: input.providerCheckoutId?.trim() || null,
     };
 
     try {
@@ -379,21 +385,7 @@ export class BillingService {
     }
 
     if (order.status === 'PAID') {
-      const payment = await tx.billingPayment.findUnique({
-        where: {
-          provider_providerPaymentId: {
-            provider: input.provider,
-            providerPaymentId: input.providerPaymentId,
-          },
-        },
-      });
-      if (
-        !payment ||
-        payment.orderId !== order.id ||
-        payment.status !== 'PAID'
-      ) {
-        throw new ConflictException('Order is already paid');
-      }
+      const payment = await this.savePayment(tx, order, input, 'PAID');
       await this.grantLicense(tx, order);
       return payment;
     }
@@ -553,26 +545,62 @@ export class BillingService {
       if (status === 'REFUNDED') {
         throw new NotFoundException('Payment not found');
       }
-      const placeholder = await tx.billingPayment.findFirst({
-        where: {
-          orderId: order.id,
-          provider: input.provider,
-          providerPaymentId: null,
-          status: 'PENDING',
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-      if (placeholder) {
-        return tx.billingPayment.update({
-          where: { id: placeholder.id },
+      const checkoutId = input.providerCheckoutId?.trim() || null;
+      if (checkoutId) {
+        const byCheckout = await tx.billingPayment.findFirst({
+          where: {
+            orderId: order.id,
+            provider: input.provider,
+            providerCheckoutId: checkoutId,
+          },
+          orderBy: { createdAt: 'asc' },
+        });
+        if (byCheckout && !byCheckout.providerPaymentId) {
+          return tx.billingPayment.update({
+            where: { id: byCheckout.id },
+            data: {
+              providerPaymentId: input.providerPaymentId,
+              status,
+              paidAt: status === 'PAID' ? now : byCheckout.paidAt,
+              refundedAt: null,
+            },
+          });
+        }
+        if (
+          byCheckout &&
+          byCheckout.providerPaymentId === input.providerPaymentId
+        ) {
+          return tx.billingPayment.update({
+            where: { id: byCheckout.id },
+            data: {
+              status,
+              paidAt:
+                status === 'PAID'
+                  ? (byCheckout.paidAt ?? now)
+                  : byCheckout.paidAt,
+              refundedAt: null,
+            },
+          });
+        }
+        this.logger.warn(
+          `Creating a payment row for order ${order.id} preference ${checkoutId} instead of reusing another checkout placeholder`,
+        );
+        return tx.billingPayment.create({
           data: {
+            orderId: order.id,
+            provider: input.provider,
+            providerCheckoutId: checkoutId,
             providerPaymentId: input.providerPaymentId,
             status,
-            paidAt: status === 'PAID' ? now : placeholder.paidAt,
-            refundedAt: null,
+            currency: order.currency as 'BRL' | 'USD',
+            amountMinor: order.amountMinor,
+            paidAt: status === 'PAID' ? now : null,
           },
         });
       }
+      this.logger.warn(
+        `Provider payment ${input.providerPaymentId} for order ${order.id} has no preference id; leaving checkout placeholders untouched`,
+      );
       return tx.billingPayment.create({
         data: {
           orderId: order.id,
@@ -758,7 +786,9 @@ export class BillingService {
     return this.getPremium(userId);
   }
 
-  async findOpenCheckout(userId: string): Promise<CheckoutView | null> {
+  async findOpenCheckout(
+    userId: string,
+  ): Promise<OpenCheckoutCandidate | null> {
     const payment = await this.prisma.billingPayment.findFirst({
       where: {
         status: 'PENDING',
@@ -778,6 +808,7 @@ export class BillingService {
     return {
       orderId: payment.orderId,
       checkoutUrl: payment.checkoutUrl,
+      providerCheckoutId: payment.providerCheckoutId,
       amountMinor: payment.amountMinor,
       currency: payment.currency,
       status: 'PENDING',
@@ -823,13 +854,34 @@ export class BillingService {
     });
   }
 
+  async findPaymentByProvider(provider: string, providerPaymentId: string) {
+    return this.prisma.billingPayment.findUnique({
+      where: {
+        provider_providerPaymentId: { provider, providerPaymentId },
+      },
+    });
+  }
+
   async attachCheckout(input: {
     orderId: string;
     provider: string;
     providerCheckoutId: string;
     checkoutUrl: string;
   }): Promise<CheckoutView> {
-    const order = await this.prisma.billingOrder.findUnique({
+    const attached = await this.attachCheckoutInTx(this.prisma, input);
+    return attached.view;
+  }
+
+  async attachCheckoutInTx(
+    tx: BillingTx | PrismaService,
+    input: {
+      orderId: string;
+      provider: string;
+      providerCheckoutId: string;
+      checkoutUrl: string;
+    },
+  ): Promise<{ paymentId: string; view: CheckoutView }> {
+    const order = await tx.billingOrder.findUnique({
       where: { id: input.orderId },
     });
     if (!order || order.status !== 'PENDING' || order.market !== 'BR') {
@@ -843,7 +895,7 @@ export class BillingService {
       throw new ServiceUnavailableException('Billing price is not configured');
     }
 
-    const payment = await this.prisma.billingPayment.create({
+    const payment = await tx.billingPayment.create({
       data: {
         orderId: order.id,
         provider: input.provider,
@@ -855,11 +907,14 @@ export class BillingService {
       },
     });
     return {
-      orderId: order.id,
-      checkoutUrl: payment.checkoutUrl || input.checkoutUrl,
-      amountMinor: payment.amountMinor,
-      currency: payment.currency,
-      status: 'PENDING',
+      paymentId: payment.id,
+      view: {
+        orderId: order.id,
+        checkoutUrl: payment.checkoutUrl || input.checkoutUrl,
+        amountMinor: payment.amountMinor,
+        currency: payment.currency,
+        status: 'PENDING',
+      },
     };
   }
 

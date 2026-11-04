@@ -19,8 +19,13 @@ import {
 import { decimalToMinorUnits, minorUnitsToDecimal } from './mercado-pago.money';
 
 const DIAGNOSTIC_TIMEOUT_MS = 12_000;
+const COLLECTOR_CACHE_TTL_MS = 5 * 60_000;
 
 const API_BASE = 'https://api.mercadopago.com';
+
+export const PREFERENCE_CREATE_TIMEOUT_MS = 20_000;
+
+const DEFINITIVE_PREFERENCE_HTTP_STATUSES = new Set([400, 401, 403, 404, 422]);
 
 export type MercadoPagoPayment = {
   id: string;
@@ -29,7 +34,17 @@ export type MercadoPagoPayment = {
   currency: string;
   amountMinor: number | null;
   transactionAmount: number;
+  preferenceId: string | null;
 };
+
+export type PreferenceCreateOutcome =
+  | { ok: true; id: string; initPoint: string }
+  | {
+      ok: false;
+      failure: 'definitive' | 'ambiguous';
+      errorCode: string | null;
+      message: string | null;
+    };
 
 type PreferenceResponse = {
   id?: string;
@@ -43,6 +58,7 @@ type PaymentResponse = {
   external_reference?: string;
   currency_id?: string;
   transaction_amount?: number;
+  preference_id?: string;
 };
 
 export type MercadoPagoPixMethodSummary = {
@@ -61,6 +77,14 @@ export type MercadoPagoDiagnosticHttpResult<T> = {
 
 @Injectable()
 export class MercadoPagoClient {
+  private collectorCache:
+    | {
+        accessToken: string;
+        collectorId: number;
+        expiresAt: number;
+      }
+    | undefined;
+
   config(): MercadoPagoConfig | null {
     return readMercadoPagoConfig(process.env);
   }
@@ -69,7 +93,30 @@ export class MercadoPagoClient {
     orderId: string;
     amountMinor: number;
   }): Promise<{ id: string; initPoint: string }> {
-    const config = this.requireConfig();
+    const outcome = await this.createPreferenceOutcome(input);
+    if (!outcome.ok) {
+      throw new ServiceUnavailableException('Billing provider request failed');
+    }
+    return { id: outcome.id, initPoint: outcome.initPoint };
+  }
+
+  /**
+   * Classifies POST /checkout/preferences without treating every HTTP failure
+   * as proof that Mercado Pago did not create a preference.
+   */
+  async createPreferenceOutcome(input: {
+    orderId: string;
+    amountMinor: number;
+  }): Promise<PreferenceCreateOutcome> {
+    const config = this.config();
+    if (!config) {
+      return {
+        ok: false,
+        failure: 'definitive',
+        errorCode: 'not_configured',
+        message: 'Billing provider is not configured',
+      };
+    }
     const unitPrice = minorUnitsToDecimal(input.amountMinor);
     const body: Record<string, unknown> = {
       items: [
@@ -94,18 +141,22 @@ export class MercadoPagoClient {
       body.auto_return = 'approved';
     }
 
-    const payload = await this.request<PreferenceResponse>(
-      config,
-      '/checkout/preferences',
-      { method: 'POST', body },
-    );
-    const initPoint = config.sandbox
-      ? payload.sandbox_init_point
-      : payload.init_point;
-    if (!payload.id || !initPoint) {
-      throw new ServiceUnavailableException('Billing provider request failed');
+    const result = await this.postPreference(config, body);
+    if (!result.ok) {
+      return result;
     }
-    return { id: payload.id, initPoint };
+    const initPoint = config.sandbox
+      ? result.payload.sandbox_init_point
+      : result.payload.init_point;
+    if (!result.payload.id || !initPoint) {
+      return {
+        ok: false,
+        failure: 'ambiguous',
+        errorCode: 'incomplete_response',
+        message: 'Preference response was incomplete',
+      };
+    }
+    return { ok: true, id: result.payload.id, initPoint };
   }
 
   async getPayment(paymentId: string): Promise<MercadoPagoPayment> {
@@ -252,12 +303,66 @@ export class MercadoPagoClient {
     };
   }
 
+  /**
+   * Read-only preference lookup for administrative reconciliation.
+   * 404 is absence. Timeout, network and 5xx are inconclusive.
+   */
+  async lookupPreference(preferenceId: string): Promise<{
+    status: 'found' | 'not_found' | 'inconclusive' | 'invalid_id';
+    httpStatus: number | null;
+    collectorId: number | null;
+    initPoint: string | null;
+  }> {
+    const trimmed = preferenceId.trim();
+    if (!/^[A-Za-z0-9-]+$/.test(trimmed)) {
+      return {
+        status: 'invalid_id',
+        httpStatus: null,
+        collectorId: null,
+        initPoint: null,
+      };
+    }
+    const result = await this.diagnosticGet<PreferenceResponse>(
+      `/checkout/preferences/${encodeURIComponent(trimmed)}`,
+    );
+    if (!result.ok) {
+      if (result.httpStatus === 404) {
+        return {
+          status: 'not_found',
+          httpStatus: result.httpStatus,
+          collectorId: null,
+          initPoint: null,
+        };
+      }
+      return {
+        status: 'inconclusive',
+        httpStatus: result.httpStatus,
+        collectorId: null,
+        initPoint: null,
+      };
+    }
+    const config = this.config();
+    const initPoint = config?.sandbox
+      ? (result.data?.sandbox_init_point ?? null)
+      : (result.data?.init_point ?? null);
+    const collectorId = Number(
+      (result.data as { collector_id?: number } | null)?.collector_id,
+    );
+    return {
+      status: 'found',
+      httpStatus: result.httpStatus,
+      collectorId: Number.isFinite(collectorId)
+        ? Math.trunc(collectorId)
+        : null,
+      initPoint:
+        initPoint && initPoint.startsWith('https://') ? initPoint : null,
+    };
+  }
+
   /** Read-only helper for temporary admin diagnostics. */
   async inspectPreferenceCollector(
     preferenceId: string,
-  ): Promise<
-    MercadoPagoDiagnosticHttpResult<{ collectorId: number | null }>
-  > {
+  ): Promise<MercadoPagoDiagnosticHttpResult<{ collectorId: number | null }>> {
     const result = await this.inspectPreferenceForDiagnostic(preferenceId);
     if (!result.ok) {
       return { ...result, data: null };
@@ -266,6 +371,67 @@ export class MercadoPagoClient {
       ...result,
       data: { collectorId: result.data?.collectorId ?? null },
     };
+  }
+
+  /**
+   * Fail-closed ownership check for a stored Checkout Pro preference.
+   * Both reads use the same current backend access token. Only successful
+   * collector lookups are cached, and changing the token invalidates the cache.
+   */
+  async canReusePreference(preferenceId: string): Promise<boolean> {
+    const config = this.config();
+    if (!config) {
+      return false;
+    }
+    const trimmed = preferenceId.trim();
+    if (!/^[A-Za-z0-9-]+$/.test(trimmed)) {
+      return false;
+    }
+    const collectorId = await this.currentCollectorId(config);
+    if (collectorId == null) {
+      return false;
+    }
+    const preference = await this.diagnosticGet<unknown>(
+      `/checkout/preferences/${encodeURIComponent(trimmed)}`,
+      PREFERENCE_DIAGNOSTIC_TIMEOUT_MS,
+      config,
+    );
+    const preferenceCollectorId = preference.ok
+      ? sanitizePreferenceDiagnosticBody(preference.data).collectorId
+      : null;
+    return (
+      preference.ok &&
+      preferenceCollectorId != null &&
+      preferenceCollectorId === collectorId
+    );
+  }
+
+  private async currentCollectorId(
+    config: MercadoPagoConfig,
+  ): Promise<number | null> {
+    const now = Date.now();
+    if (
+      this.collectorCache?.accessToken === config.accessToken &&
+      this.collectorCache.expiresAt > now
+    ) {
+      return this.collectorCache.collectorId;
+    }
+    const collector = await this.diagnosticGet<{ id?: number | string }>(
+      '/users/me',
+      DIAGNOSTIC_TIMEOUT_MS,
+      config,
+    );
+    const collectorId = Number(collector.data?.id);
+    if (!collector.ok || !Number.isFinite(collectorId) || collectorId <= 0) {
+      return null;
+    }
+    const normalizedCollectorId = Math.trunc(collectorId);
+    this.collectorCache = {
+      accessToken: config.accessToken,
+      collectorId: normalizedCollectorId,
+      expiresAt: now + COLLECTOR_CACHE_TTL_MS,
+    };
+    return normalizedCollectorId;
   }
 
   private isPixMethod(row: MercadoPagoPaymentMethodSample): boolean {
@@ -290,8 +456,9 @@ export class MercadoPagoClient {
   private async diagnosticGet<T>(
     path: string,
     timeoutMs = DIAGNOSTIC_TIMEOUT_MS,
+    configured?: MercadoPagoConfig,
   ): Promise<MercadoPagoDiagnosticHttpResult<T>> {
-    const config = this.config();
+    const config = configured ?? this.config();
     if (!config) {
       return {
         ok: false,
@@ -303,10 +470,7 @@ export class MercadoPagoClient {
     }
 
     const controller = new AbortController();
-    const timer = setTimeout(
-      () => controller.abort(),
-      Math.max(1, timeoutMs),
-    );
+    const timer = setTimeout(() => controller.abort(), Math.max(1, timeoutMs));
     try {
       const response = await fetch(`${API_BASE}${path}`, {
         method: 'GET',
@@ -355,6 +519,76 @@ export class MercadoPagoClient {
           ? 'Mercado Pago request timed out'
           : 'Mercado Pago request failed',
         data: null,
+      };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  private async postPreference(
+    config: MercadoPagoConfig,
+    body: Record<string, unknown>,
+  ): Promise<
+    | { ok: true; payload: PreferenceResponse }
+    | Extract<PreferenceCreateOutcome, { ok: false }>
+  > {
+    const controller = new AbortController();
+    const timer = setTimeout(
+      () => controller.abort(),
+      PREFERENCE_CREATE_TIMEOUT_MS,
+    );
+    try {
+      const response = await fetch(`${API_BASE}/checkout/preferences`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${config.accessToken}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      let parsed: unknown = null;
+      try {
+        parsed = await response.json();
+      } catch {
+        parsed = null;
+      }
+      if (!response.ok) {
+        const sanitized = sanitizeMercadoPagoError({
+          httpStatus: response.status,
+          body: parsed,
+          fallback: `Mercado Pago returned HTTP ${response.status}`,
+        });
+        return {
+          ok: false,
+          failure: DEFINITIVE_PREFERENCE_HTTP_STATUSES.has(response.status)
+            ? 'definitive'
+            : 'ambiguous',
+          errorCode: sanitized.errorCode,
+          message: sanitized.message,
+        };
+      }
+      if (!parsed || typeof parsed !== 'object') {
+        return {
+          ok: false,
+          failure: 'ambiguous',
+          errorCode: 'incomplete_response',
+          message: 'Preference response was incomplete',
+        };
+      }
+      return { ok: true, payload: parsed as PreferenceResponse };
+    } catch (error) {
+      const timedOut =
+        error instanceof Error &&
+        (error.name === 'AbortError' || error.message.includes('abort'));
+      return {
+        ok: false,
+        failure: 'ambiguous',
+        errorCode: timedOut ? 'timeout' : 'network_error',
+        message: timedOut
+          ? 'Mercado Pago request timed out'
+          : 'Mercado Pago request failed',
       };
     } finally {
       clearTimeout(timer);
@@ -411,6 +645,7 @@ export class MercadoPagoClient {
         ? decimalToMinorUnits(transactionAmount)
         : null,
       transactionAmount,
+      preferenceId: payload.preference_id?.trim() || null,
     };
   }
 }

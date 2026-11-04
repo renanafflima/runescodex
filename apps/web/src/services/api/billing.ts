@@ -2,11 +2,12 @@ import { apiRequest } from "./client";
 import type { PremiumAccess } from "./types";
 
 export type CheckoutSession = {
+  outcome: "ready" | "in_progress" | "reconciliation_required";
   orderId: string;
-  checkoutUrl: string;
+  checkoutUrl: string | null;
   amountMinor: number;
   currency: string;
-  status: "PENDING";
+  status: "PENDING" | "IN_PROGRESS" | "RECONCILIATION_REQUIRED";
 };
 
 export function startCheckout() {

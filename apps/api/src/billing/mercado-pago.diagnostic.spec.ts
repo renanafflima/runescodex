@@ -51,9 +51,7 @@ describe('Mercado Pago diagnostic sanitization', () => {
       fallback: 'failed',
     });
     expect(sanitized.errorCode).not.toMatch(/shop@|example\.com/);
-    expect(sanitized.message).not.toMatch(
-      /shop@|buyer@|https:\/\/|APP_USR-/,
-    );
+    expect(sanitized.message).not.toMatch(/shop@|buyer@|https:\/\/|APP_USR-/);
     expect(sanitized.message).toContain('[redacted-email]');
     expect(sanitized.message).toContain('[redacted-url]');
     expect(sanitized.message).toContain('[redacted-secret]');
@@ -100,9 +98,7 @@ describe('Mercado Pago diagnostic sanitization', () => {
         ownerListedPaymentIds: ['pay-2'],
       }),
     ).toBe('inconclusive');
-    expect(
-      openCheckoutReuseMatchToLegacyFlag('inconclusive'),
-    ).toBeNull();
+    expect(openCheckoutReuseMatchToLegacyFlag('inconclusive')).toBeNull();
   });
 
   it('keeps only whitelisted payment method fields in the sample', () => {
@@ -161,7 +157,8 @@ describe('Mercado Pago diagnostic sanitization', () => {
       collector_id: 123456789,
       date_created: '2026-10-30T12:00:00.000Z',
       external_reference: 'order-secret-uuid',
-      init_point: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=pref-1',
+      init_point:
+        'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=pref-1',
       sandbox_init_point: 'https://sandbox.mercadopago.com/checkout/pref-1',
       payer: {
         email: 'buyer@example.com',

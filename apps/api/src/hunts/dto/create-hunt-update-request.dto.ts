@@ -1,10 +1,13 @@
 import { Transform } from 'class-transformer';
 import {
   IsEnum,
+  IsInt,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
+  Max,
+  Min,
 } from 'class-validator';
 import {
   HuntUpdateRequestType,
@@ -44,4 +47,17 @@ export class CreateHuntUpdateRequestDto {
   @IsString()
   @MaxLength(120)
   proposedValue?: string;
+
+  /** Identifies the HuntVocation level range when the hunt has several for the same vocation. */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10_000)
+  rangeLevelMin?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10_000)
+  rangeLevelMax?: number;
 }

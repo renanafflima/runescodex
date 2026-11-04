@@ -10,9 +10,7 @@ import { AdminMercadoPagoDiagnosticService } from './admin-mercado-pago-diagnost
 @Controller('admin/billing')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminMercadoPagoDiagnosticController {
-  constructor(
-    private readonly diagnostic: AdminMercadoPagoDiagnosticService,
-  ) {}
+  constructor(private readonly diagnostic: AdminMercadoPagoDiagnosticService) {}
 
   @Get('mercadopago-diagnostic')
   mercadoPagoDiagnostic() {

@@ -71,9 +71,7 @@ export function calculateHuntBestAttack(
     };
   }
 
-  const bestMinimum = Math.max(
-    ...scores.map((score) => score.minimumModifier),
-  );
+  const bestMinimum = Math.max(...scores.map((score) => score.minimumModifier));
   const minimumWinners = scores.filter(
     (score) => score.minimumModifier === bestMinimum,
   );

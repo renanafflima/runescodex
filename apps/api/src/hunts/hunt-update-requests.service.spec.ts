@@ -44,7 +44,7 @@ describe('HuntUpdateRequestsService', () => {
   let service: HuntUpdateRequestsService;
   const prisma = {
     hunt: { findFirst: jest.fn(), findUnique: jest.fn() },
-    huntVocation: { findUnique: jest.fn() },
+    huntVocation: { findFirst: jest.fn(), count: jest.fn() },
     huntUpdateRequest: {
       count: jest.fn(),
       findMany: jest.fn(),
@@ -85,6 +85,8 @@ describe('HuntUpdateRequestsService', () => {
         currentValue: null,
         proposedValue: null,
         vocation: null,
+        rangeLevelMin: null,
+        rangeLevelMax: null,
       },
       select: {
         id: true,
@@ -105,10 +107,12 @@ describe('HuntUpdateRequestsService', () => {
 
   it('stores the current hunt value and does not trust a client current value', async () => {
     prisma.huntUpdateRequest.findFirst.mockResolvedValue(null);
-    prisma.huntVocation.findUnique.mockResolvedValue({
+    prisma.huntVocation.count.mockResolvedValue(1);
+    prisma.huntVocation.findFirst.mockResolvedValue({
       xpPerHour: 1_500_000,
       profitPerHour: 80_000,
       levelMin: 250,
+      levelMax: null,
     });
     prisma.huntUpdateRequest.create.mockResolvedValue(row());
 
@@ -119,6 +123,18 @@ describe('HuntUpdateRequestsService', () => {
       proposedValue: '1800000',
     });
 
+    expect(prisma.huntVocation.count).toHaveBeenCalledWith({
+      where: { huntId: 'hunt-1', vocation: 'EK' },
+    });
+    expect(prisma.huntVocation.findFirst).toHaveBeenLastCalledWith({
+      where: {
+        huntId: 'hunt-1',
+        vocation: 'EK',
+        levelMin: 250,
+        levelMax: null,
+      },
+      select: { xpPerHour: true, profitPerHour: true, levelMin: true },
+    });
     expect(prisma.huntUpdateRequest.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -128,6 +144,55 @@ describe('HuntUpdateRequestsService', () => {
         }) as unknown as Record<string, unknown>,
       }),
     );
+  });
+
+  it('snapshots the identified range when a vocation has several level ranges', async () => {
+    prisma.huntUpdateRequest.findFirst.mockResolvedValue(null);
+    prisma.huntVocation.count.mockResolvedValue(2);
+    prisma.huntVocation.findFirst
+      .mockResolvedValueOnce({
+        levelMin: 400,
+        levelMax: 600,
+      })
+      .mockResolvedValueOnce({
+        xpPerHour: 3_500_000,
+        profitPerHour: 300_000,
+        levelMin: 400,
+      });
+    prisma.huntUpdateRequest.create.mockResolvedValue(row());
+
+    await service.create('court-of-winter', 'user-a', {
+      type: HuntUpdateRequestType.XP,
+      description,
+      vocation: 'ED',
+      proposedValue: '3200000',
+      rangeLevelMin: 400,
+      rangeLevelMax: 600,
+    });
+
+    expect(prisma.huntUpdateRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          currentValue: '3500000',
+          rangeLevelMin: 400,
+          rangeLevelMax: 600,
+        }) as unknown as Record<string, unknown>,
+      }),
+    );
+  });
+
+  it('requires a range when several exist and none was provided', async () => {
+    prisma.huntUpdateRequest.findFirst.mockResolvedValue(null);
+    prisma.huntVocation.count.mockResolvedValue(2);
+
+    await expect(
+      service.create('court-of-winter', 'user-a', {
+        type: HuntUpdateRequestType.XP,
+        description,
+        vocation: 'ED',
+        proposedValue: '3200000',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects a structured value for a field that cannot be applied automatically', async () => {

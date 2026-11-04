@@ -93,8 +93,11 @@ export function BestiaryCreaturePage() {
 
   const preferred = preferredHuntVocation("Any", activeCharacter);
   const hunts = useMemo(
-    () => rawHunts.map((item) => mapHuntListItem(item, preferred)),
-    [preferred, rawHunts],
+    () =>
+      rawHunts.map((item) =>
+        mapHuntListItem(item, preferred, activeCharacter?.level ?? null),
+      ),
+    [activeCharacter?.level, preferred, rawHunts],
   );
   const involved = useMemo(() => uniqueHuntCreatures(hunts).length, [hunts]);
 

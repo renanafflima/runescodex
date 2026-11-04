@@ -68,6 +68,22 @@ function renderComments() {
   );
 }
 
+function manyComments(count: number): HuntCommentPage {
+  const items = Array.from({ length: count }, (_, index) => ({
+    id: `c${index + 1}`,
+    content: `Comentário ${index + 1}`,
+    isEdited: false,
+    isDeleted: false,
+    createdAt: "2026-10-05T12:00:00.000Z",
+    updatedAt: "2026-10-05T12:00:00.000Z",
+    user: { id: `user-${index + 1}`, name: `Jogador ${index + 1}` },
+    likesCount: 0,
+    likedByMe: false,
+    replies: [],
+  }));
+  return { items, page: 1, limit: 20, total: count, hasMore: false, commentCount: count };
+}
+
 describe("HuntComments", () => {
   beforeEach(() => {
     auth.isAuthenticated = false;
@@ -155,6 +171,29 @@ describe("HuntComments", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /^Descurtir/ }));
     await waitFor(() => expect(api.unlikeHuntComment).toHaveBeenCalledWith("cyclops", "r1"));
+  });
+
+  it("shows every comment up front and no expand button when there are 3 or fewer", async () => {
+    api.listHuntComments.mockResolvedValue(manyComments(3));
+    renderComments();
+    expect(await screen.findByText("Comentário 1")).toBeInTheDocument();
+    expect(screen.getByText("Comentário 3")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Ver todos os comentários/ })).not.toBeInTheDocument();
+  });
+
+  it("shows up to 10 comments initially and reveals the rest with 'Ver todos os comentários'", async () => {
+    api.listHuntComments.mockResolvedValue(manyComments(12));
+    renderComments();
+
+    expect(await screen.findByText("Comentário 1")).toBeInTheDocument();
+    expect(screen.getByText("Comentário 10")).toBeInTheDocument();
+    expect(screen.queryByText("Comentário 11")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Ver todos os comentários (12)" }));
+
+    expect(screen.getByText("Comentário 11")).toBeInTheDocument();
+    expect(screen.getByText("Comentário 12")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Ver todos os comentários/ })).not.toBeInTheDocument();
   });
 
   it("disables the submit button while the comment is being sent", async () => {

@@ -59,6 +59,7 @@ function show() {
 describe("CheckoutPage license", () => {
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
     auth.user.premium = {
       access: false,
@@ -134,5 +135,60 @@ describe("CheckoutPage license", () => {
     expect(screen.getByText("Origem: Acesso administrativo")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Pagar com Mercado Pago" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Código do voucher")).not.toBeInTheDocument();
+  });
+
+  it("redirects when checkout is ready", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign });
+    billing.startCheckout.mockResolvedValue({
+      outcome: "ready",
+      orderId: "order-1",
+      checkoutUrl: "https://www.mercadopago.com.br/checkout/pref-1",
+      amountMinor: 4990,
+      currency: "BRL",
+      status: "PENDING",
+    });
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Pagar com Mercado Pago" }));
+    await waitFor(() =>
+      expect(assign).toHaveBeenCalledWith("https://www.mercadopago.com.br/checkout/pref-1"),
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it("shows a transient state without creating another pay action loop", async () => {
+    billing.startCheckout.mockResolvedValue({
+      outcome: "in_progress",
+      orderId: "order-1",
+      checkoutUrl: null,
+      amountMinor: 4990,
+      currency: "BRL",
+      status: "IN_PROGRESS",
+    });
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Pagar com Mercado Pago" }));
+    expect(
+      await screen.findByText("O checkout ainda está sendo preparado. Aguarde e atualize o status."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pagar com Mercado Pago" })).toBeInTheDocument();
+    expect(billing.startCheckout).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks a new Mercado Pago click when reconciliation is required", async () => {
+    billing.startCheckout.mockResolvedValue({
+      outcome: "reconciliation_required",
+      orderId: "order-1",
+      checkoutUrl: null,
+      amountMinor: 4990,
+      currency: "BRL",
+      status: "RECONCILIATION_REQUIRED",
+    });
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Pagar com Mercado Pago" }));
+    expect(
+      await screen.findByText(/precisa de conferência/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Pagar com Mercado Pago" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Atualizar status" })).toBeInTheDocument();
   });
 });

@@ -35,7 +35,7 @@ import {
   type HuntVocationFilter,
 } from "../domain/hunts";
 import { formatHuntCardBestiaryLines } from "../domain/hunt-bestiary";
-import { normalizeVocation } from "../domain/vocation";
+import { normalizeVocation, VOCATION_LABEL } from "../domain/vocation";
 import { describeApiError } from "../services/api/errors";
 import { recordSearchMiss } from "../services/api/admin-portal";
 import { CATALOG_PAGE_SIZE } from "../services/api/page";
@@ -52,11 +52,7 @@ const HUNT_DIFFICULTY_LABEL: Record<string, string> = {
 
 const HUNT_VOCATION_LABEL: Record<string, string> = {
   Any: "Todas",
-  EK: "Knight",
-  RP: "Paladin",
-  ED: "Druid",
-  MS: "Sorcerer",
-  EM: "Monk",
+  ...VOCATION_LABEL,
 };
 
 const HUNT_SORT_LABEL: Record<HuntSort, string> = {
@@ -204,7 +200,10 @@ export function HuntsPage() {
         });
         if (!current()) return;
         const preferred = preferredHuntVocation(vocation, activeCharacter);
-        const mapped = result.items.map((hunt) => mapHuntListItem(hunt, preferred));
+        const characterLevel = activeCharacter?.level ?? null;
+        const mapped = result.items.map((hunt) =>
+          mapHuntListItem(hunt, preferred, characterLevel),
+        );
         setHunts(mapped);
         setPage(result.page);
         setTotal(result.total);

@@ -785,7 +785,11 @@ describe('TicketsService', () => {
     prisma.ticketMessage.create.mockResolvedValue({ id: 'msg-1' });
     prisma.ticket.update.mockResolvedValue(ticketRow());
 
-    const result = await service.reply(USER_ID, TICKET_ID, '  Segue o que aconteceu. ');
+    const result = await service.reply(
+      USER_ID,
+      TICKET_ID,
+      '  Segue o que aconteceu. ',
+    );
 
     expect(prisma.ticketMessage.create).toHaveBeenCalledWith({
       data: {
@@ -801,8 +805,12 @@ describe('TicketsService', () => {
         data: { updatedAt: expect.any(Date) },
       }),
     );
-    expect(JSON.stringify(prisma.ticket.update.mock.calls)).not.toContain('RESOLVED');
-    expect(JSON.stringify(prisma.ticket.update.mock.calls)).not.toContain('priority');
+    expect(JSON.stringify(prisma.ticket.update.mock.calls)).not.toContain(
+      'RESOLVED',
+    );
+    expect(JSON.stringify(prisma.ticket.update.mock.calls)).not.toContain(
+      'priority',
+    );
     expect(result.messages).toEqual([
       expect.objectContaining({ body: 'Segue o que aconteceu.' }),
     ]);
@@ -815,9 +823,9 @@ describe('TicketsService', () => {
       status: 'OPEN',
       referralReward: null,
     });
-    await expect(service.reply(USER_ID, TICKET_ID, 'oi')).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
+    await expect(
+      service.reply(USER_ID, TICKET_ID, 'oi'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
 
     prisma.ticket.findUnique.mockResolvedValueOnce({
       id: TICKET_ID,
@@ -825,9 +833,9 @@ describe('TicketsService', () => {
       status: 'RESOLVED',
       referralReward: null,
     });
-    await expect(service.reply(USER_ID, TICKET_ID, 'oi')).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.reply(USER_ID, TICKET_ID, 'oi'),
+    ).rejects.toBeInstanceOf(BadRequestException);
 
     prisma.ticket.findUnique.mockResolvedValueOnce({
       id: TICKET_ID,
@@ -835,9 +843,9 @@ describe('TicketsService', () => {
       status: 'OPEN',
       referralReward: { id: 'reward-1' },
     });
-    await expect(service.reply(USER_ID, TICKET_ID, 'oi')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      service.reply(USER_ID, TICKET_ID, 'oi'),
+    ).rejects.toBeInstanceOf(NotFoundException);
     expect(prisma.ticketMessage.create).not.toHaveBeenCalled();
   });
 
