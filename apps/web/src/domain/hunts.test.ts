@@ -3,6 +3,7 @@ import {
   filterAndSortHunts,
   huntAttackElements,
   huntCompatibility,
+  huntDefenseElements,
   huntListQueryFromFilters,
   huntLocationOptions,
   mapHuntAttention,
@@ -317,5 +318,108 @@ describe("hunt mapping and active character", () => {
       character: null,
     });
     expect(any.map((hunt) => hunt.slug)).toEqual(["cyclops", "dragon"]);
+  });
+});
+
+describe("hunt protection elements", () => {
+  function huntFromCreatures(
+    creatures: Array<{ damageType?: string | null; elements?: string[]; recommendedCharm?: string | null }>,
+  ) {
+    return mapHuntListItem({
+      id: "h1",
+      slug: "test-hunt",
+      name: "Test Hunt",
+      creatures: creatures.map((creature, index) => ({
+        name: `Creature ${index + 1}`,
+        isPrimary: index === 0,
+        ...creature,
+      })),
+    });
+  }
+
+  it("uses a single creature damage type", () => {
+    const hunt = huntFromCreatures([{ damageType: "fire" }]);
+    expect(huntDefenseElements(hunt)).toEqual(["fire"]);
+  });
+
+  it("aggregates different damage types across creatures", () => {
+    const hunt = huntFromCreatures([
+      { damageType: "fire" },
+      { damageType: "death" },
+      { damageType: "energy" },
+    ]);
+    expect(huntDefenseElements(hunt)).toEqual(["death", "energy", "fire"]);
+  });
+
+  it("deduplicates repeated damage types", () => {
+    const hunt = huntFromCreatures([
+      { damageType: "fire" },
+      { damageType: "FIRE" },
+      { damageType: "physical" },
+    ]);
+    expect(huntDefenseElements(hunt)).toEqual(["fire", "physical"]);
+  });
+
+  it("ignores creatures without attack damage data", () => {
+    const hunt = huntFromCreatures([{ damageType: null }, { damageType: "holy" }]);
+    expect(huntDefenseElements(hunt)).toEqual(["holy"]);
+  });
+
+  it("returns known elements when the composition is only partially documented", () => {
+    const hunt = huntFromCreatures([
+      { damageType: "ice" },
+      { damageType: null },
+      { damageType: "earth" },
+    ]);
+    expect(huntDefenseElements(hunt)).toEqual(["earth", "ice"]);
+  });
+
+  it("returns an empty list when no creature has damageType", () => {
+    const hunt = huntFromCreatures([
+      { damageType: null, elements: ["death"], recommendedCharm: "enflame" },
+    ]);
+    expect(huntDefenseElements(hunt)).toEqual([]);
+    expect(huntAttackElements(hunt)).toEqual(["death", "fire"]);
+  });
+
+  it("matches list and detail mapping for the same hunt payload", () => {
+    const payload = {
+      id: "h1",
+      slug: "court",
+      name: "Court",
+      creatures: [
+        { name: "A", isPrimary: true, damageType: "physical" },
+        { name: "B", damageType: "energy" },
+      ],
+    };
+    expect(huntDefenseElements(mapHuntListItem(payload))).toEqual(
+      huntDefenseElements(mapHuntDetail(payload)),
+    );
+  });
+
+  it("maps list API creatures with damageType onto spawn for cards", () => {
+    const mapped = mapHuntListItem({
+      id: "h1",
+      slug: "api-hunt",
+      name: "API Hunt",
+      bestAttack: { elements: ["FIRE"], status: "COMPLETE", creatureCount: 1, creaturesWithAnyData: 1, creaturesWithoutData: 0 },
+      creatures: [
+        {
+          id: "c1",
+          name: "Dragon",
+          slug: "dragon",
+          isPrimary: true,
+          damageType: "FIRE",
+        },
+        {
+          id: "c2",
+          name: "Knight",
+          slug: "knight",
+          damageType: "PHYSICAL",
+        },
+      ],
+    });
+    expect(huntDefenseElements(mapped)).toEqual(["fire", "physical"]);
+    expect(huntAttackElements(mapped)).toEqual(["fire"]);
   });
 });

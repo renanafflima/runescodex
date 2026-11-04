@@ -11,6 +11,7 @@ import {
 } from "./format";
 import { resolveCreatureImage } from "./creature-image";
 import {
+  elementLabel,
   uniqueElements,
   type CombatElement,
 } from "./elements";
@@ -308,8 +309,14 @@ export function huntAttackElements(hunt: HuntListItem | HuntDetail) {
   );
 }
 
+/**
+ * Damage types creatures deal in this hunt (HuntCreature.damageType). This is
+ * player protection guidance — not creature weakness (CreatureElement) and not
+ * the recommended attack elements (bestAttack / charms).
+ */
 export function huntDefenseElements(hunt: HuntListItem | HuntDetail) {
-  return uniqueElements(hunt.spawn.map((creature) => creature.damageType));
+  const elements = uniqueElements(hunt.spawn.map((creature) => creature.damageType));
+  return [...elements].sort((a, b) => elementLabel(a).localeCompare(elementLabel(b), "pt-BR"));
 }
 
 export function primaryAttackElement(hunt: HuntListItem | HuntDetail) {

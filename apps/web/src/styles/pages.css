@@ -1982,6 +1982,10 @@
   gap: 0.3rem;
 }
 
+.hunts-element-pill--icon {
+  gap: 0;
+}
+
 .hunts-results-head {
   margin: var(--space-4) 0;
 }

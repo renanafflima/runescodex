@@ -237,11 +237,13 @@ describe('HuntsService', () => {
             isPrimary: true,
             recommendedCharm: null,
             creatureId: 'missing',
+            damageType: null,
           },
           {
             isPrimary: false,
             recommendedCharm: null,
             creatureId: 'c1',
+            damageType: 'PHYSICAL',
           },
         ],
       },
@@ -266,6 +268,7 @@ describe('HuntsService', () => {
         image: 'runescodex/creatures/Cyclops.gif',
         isPrimary: false,
         recommendedCharm: null,
+        damageType: 'PHYSICAL',
         bestiary: {
           hasEntry: false,
           category: null,
@@ -405,6 +408,61 @@ describe('HuntsService', () => {
     ]);
     expect(result.items[0].creatures).toHaveLength(2);
     expect(result.items[0].creatureCount).toBe(2);
+  });
+
+  it('includes HuntCreature damageType on list creatures for protection UI', async () => {
+    prisma.hunt.count.mockResolvedValue(1);
+    prisma.hunt.findMany.mockResolvedValue([
+      {
+        id: 'hunt-protect',
+        name: 'Mixed Damage Hunt',
+        slug: 'mixed-damage',
+        location: 'Edron',
+        subLocation: null,
+        difficulty: 'HARD',
+        respawn: null,
+        attention: null,
+        heroImage: null,
+        mapImage: null,
+        vocations: [],
+        creatures: [
+          {
+            isPrimary: true,
+            recommendedCharm: null,
+            killPerHour: null,
+            creatureId: 'c1',
+            damageType: 'FIRE',
+          },
+          {
+            isPrimary: false,
+            recommendedCharm: null,
+            killPerHour: null,
+            creatureId: 'c2',
+            damageType: 'FIRE',
+          },
+          {
+            isPrimary: false,
+            recommendedCharm: null,
+            killPerHour: null,
+            creatureId: 'c3',
+            damageType: 'DEATH',
+          },
+        ],
+      },
+    ]);
+    prisma.creature.findMany.mockResolvedValue([
+      { id: 'c1', name: 'Hellhound', slug: 'hellhound', image: 'a.gif', bestiaryEntry: null },
+      { id: 'c2', name: 'Fire Elemental', slug: 'fire-elemental', image: 'b.gif', bestiaryEntry: null },
+      { id: 'c3', name: 'Banshee', slug: 'banshee', image: 'c.gif', bestiaryEntry: null },
+    ]);
+
+    const result = await service.findAll({});
+
+    expect(result.items[0].creatures.map((row) => row.damageType)).toEqual([
+      'FIRE',
+      'FIRE',
+      'DEATH',
+    ]);
   });
 
   it('returns a hunt that has no vocation and no creatures', async () => {

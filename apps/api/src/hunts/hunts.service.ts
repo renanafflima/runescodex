@@ -66,6 +66,7 @@ const HUNT_LIST_INCLUDE = {
       recommendedCharm: true,
       killPerHour: true,
       creatureId: true,
+      damageType: true,
     },
     orderBy: HUNT_CREATURE_ORDER,
   },
@@ -173,6 +174,7 @@ export class HuntsService {
               isPrimary: item.isPrimary,
               recommendedCharm: item.recommendedCharm,
               killPerHour: item.killPerHour,
+              damageType: item.damageType,
               bestiary,
             },
           ];

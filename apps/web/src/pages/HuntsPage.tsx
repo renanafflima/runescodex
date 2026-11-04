@@ -437,9 +437,13 @@ export function HuntsPage() {
                             {defenses.length ? (
                               <span className="hunt-card__element-list">
                                 {defenses.map((defense) => (
-                                  <span className="hunts-element-pill" key={defense}>
-                                    <ElementIcon element={defense} size={14} />
-                                    {elementLabel(defense)}
+                                  <span
+                                    aria-label={elementLabel(defense)}
+                                    className="hunts-element-pill hunts-element-pill--icon"
+                                    key={defense}
+                                    title={elementLabel(defense)}
+                                  >
+                                    <ElementIcon element={defense} label={elementLabel(defense)} size={14} />
                                   </span>
                                 ))}
                               </span>

@@ -93,10 +93,10 @@ describe("HuntsPage card content", () => {
     const card = title.closest(".hunt-card") as HTMLElement;
     const protectionLabel = within(card).getByText("Proteção");
     const protectionList = protectionLabel.nextSibling as HTMLElement;
-    expect(within(protectionList).getByText("Physical")).toBeInTheDocument();
-    expect(within(protectionList).getByText("Energy")).toBeInTheDocument();
-    expect(within(protectionList).getByText("Death")).toBeInTheDocument();
-    expect(within(protectionList).getByText("Earth")).toBeInTheDocument();
+    expect(within(protectionList).getByAltText("Physical")).toBeInTheDocument();
+    expect(within(protectionList).getByAltText("Energy")).toBeInTheDocument();
+    expect(within(protectionList).getByAltText("Death")).toBeInTheDocument();
+    expect(within(protectionList).getByAltText("Earth")).toBeInTheDocument();
   });
 
   it("shows a dash for profit per hour when the hunt has no profit", async () => {
