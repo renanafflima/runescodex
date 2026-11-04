@@ -39,10 +39,7 @@ import { AdminDatabaseMigrationDiagnosticService } from './system/admin-database
     AdminLicensesController,
     AdminReferralsController,
     AdminMercadoPagoDiagnosticController,
-<<<<<<< Updated upstream
-=======
     AdminCheckoutAttemptController,
->>>>>>> Stashed changes
     AdminDatabaseMigrationDiagnosticController,
   ],
   providers: [
@@ -55,10 +52,7 @@ import { AdminDatabaseMigrationDiagnosticService } from './system/admin-database
     AdminTicketsService,
     AdminLicensesService,
     AdminMercadoPagoDiagnosticService,
-<<<<<<< Updated upstream
-=======
     AdminCheckoutAttemptService,
->>>>>>> Stashed changes
     AdminDatabaseMigrationDiagnosticService,
   ],
 })

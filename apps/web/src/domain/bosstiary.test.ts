@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   applyBossReview,
   bossImageUrl,
+  bossesForLevelBand,
   filterBosstiary,
+  formatMinutes,
   indexBossImages,
   type BosstiaryEntry,
 } from "./bosstiary";
@@ -16,10 +18,23 @@ function entry(overrides: Partial<BosstiaryEntry> = {}): BosstiaryEntry {
     source: "tibiawiki-candidate",
     party: null,
     recommendedLevel: null,
+    recommendedLevelSolo: null,
+    recommendedLevelParty: null,
     imageUrl: null,
     rewards: [],
     location: null,
+    locationRegion: null,
+    originCity: null,
     bossPoints: null,
+    officialCategory: null,
+    difficulty: null,
+    accessStatus: null,
+    accessRequirements: null,
+    howToReach: null,
+    cooldownSeconds: null,
+    estimatedCombatMinutes: null,
+    mechanics: null,
+    strategy: null,
     ...overrides,
   };
 }
@@ -68,6 +83,19 @@ describe("bosstiary filters", () => {
     );
     expect(reviewed[0]).toMatchObject({ party: "solo", recommendedLevel: 700 });
     expect(reviewed).toHaveLength(1);
+  });
+
+  it("groups reviewed bosses by party and level band", () => {
+    expect(bossesForLevelBand(catalog, "party", 500).map((item) => item.slug)).toEqual(["ghazbaran"]);
+    expect(
+      filterBosstiary(catalog, { query: "", party: "event", level: 300 }).map((item) => item.slug),
+    ).toEqual(["the-welter"]);
+  });
+
+  it("formats minutes for rotation cards", () => {
+    expect(formatMinutes(12)).toBe("12 min");
+    expect(formatMinutes(12.4)).toBe("12,4 min");
+    expect(formatMinutes(null)).toBeNull();
   });
 
   it("uses a real sprite file and skips a duplicate copy", () => {

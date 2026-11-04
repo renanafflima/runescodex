@@ -383,7 +383,7 @@ export function AdminBossesPage() {
           <tbody>
             {visible.map((entry) => (
               <tr key={entry.slug || entry.name}>
-                <td>{entry.slug ? <Link to={`/bosstiary?boss=${encodeURIComponent(entry.slug)}`}>{entry.name}</Link> : entry.name}</td>
+                <td>{entry.slug ? <Link to={`/bosstiary/${entry.slug}`}>{entry.name}</Link> : entry.name}</td>
                 <td>{entry.slug || "Sem identificador estável"}</td>
                 <td>{entry.location || "—"}</td>
                 <td>{bossPartyLabel(entry.party) ?? "Classificação pendente"}</td>

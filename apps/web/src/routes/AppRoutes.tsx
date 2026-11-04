@@ -26,6 +26,7 @@ import { BestiaryCreaturePage } from "../pages/BestiaryCreaturePage";
 import { BestiaryDetailPage } from "../pages/BestiaryDetailPage";
 import { BestiaryHuntsPage } from "../pages/BestiaryHuntsPage";
 import { BestiaryPage } from "../pages/BestiaryPage";
+import { BosstiaryBossPage } from "../pages/BosstiaryBossPage";
 import { BosstiaryPage } from "../pages/BosstiaryPage";
 import { ForumComposePage } from "../pages/ForumComposePage";
 import { ForumPage } from "../pages/ForumPage";
@@ -80,6 +81,7 @@ export function AppRoutes() {
           <Route path="hunts/:slug" element={<HuntDetailPage />} />
           <Route path="bestiary" element={<BestiaryPage />} />
           <Route path="bosstiary" element={<BosstiaryPage />} />
+          <Route path="bosstiary/:slug" element={<BosstiaryBossPage />} />
           <Route path="bestiary/:slug" element={<BestiaryCreaturePage />}>
             <Route index element={<BestiaryDetailPage />} />
             <Route path="hunts" element={<BestiaryHuntsPage />} />
