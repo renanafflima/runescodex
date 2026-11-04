@@ -68,10 +68,23 @@ export function loadBosstiaryCatalog(): BosstiaryCatalog {
       source: "tibiawiki-candidate",
       party: null,
       recommendedLevel: null,
+      recommendedLevelSolo: null,
+      recommendedLevelParty: null,
       imageUrl: bossImageUrl(name, slug, images),
       rewards: [],
       location: null,
+      locationRegion: null,
+      originCity: null,
       bossPoints: null,
+      officialCategory: null,
+      difficulty: null,
+      accessStatus: null,
+      accessRequirements: null,
+      howToReach: null,
+      cooldownSeconds: null,
+      estimatedCombatMinutes: null,
+      mechanics: null,
+      strategy: null,
     });
   }
 

@@ -6,6 +6,7 @@ import { AuditModule } from './audit/audit.module';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { BestiaryModule } from './bestiary/bestiary.module';
+import { BosstiaryModule } from './bosstiary/bosstiary.module';
 import { BillingModule } from './billing/billing.module';
 import { CharactersModule } from './characters/characters.module';
 import { ForumModule } from './forum/forum.module';
@@ -26,6 +27,7 @@ import { TicketsModule } from './tickets/tickets.module';
     CharactersModule,
     HuntsModule,
     BestiaryModule,
+    BosstiaryModule,
     ForumModule,
     RewardsModule,
     ReferralsModule,

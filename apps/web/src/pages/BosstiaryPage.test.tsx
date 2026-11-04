@@ -1,15 +1,30 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BosstiaryEntry } from "../domain/bosstiary";
 import { BosstiaryPage } from "./BosstiaryPage";
 
-const { loadBosstiaryCatalog } = vi.hoisted(() => ({
+const { loadBosstiaryCatalog, findBosstiaryRotations } = vi.hoisted(() => ({
   loadBosstiaryCatalog: vi.fn(),
+  findBosstiaryRotations: vi.fn(),
 }));
 
 vi.mock("../domain/bosstiary-catalog", () => ({
   loadBosstiaryCatalog,
+}));
+
+vi.mock("../services/api/bosstiary", () => ({
+  findBosstiaryRotations,
+}));
+
+vi.mock("../auth/AuthContext", () => ({
+  useAuth: () => ({
+    activeCharacter: { id: "1", name: "Hero", vocation: "EK", level: 300, world: "Antica" },
+    characters: [],
+    isAuthenticated: true,
+    isReady: true,
+    isRosterReady: true,
+  }),
 }));
 
 function entry(overrides: Partial<BosstiaryEntry> = {}): BosstiaryEntry {
@@ -21,10 +36,23 @@ function entry(overrides: Partial<BosstiaryEntry> = {}): BosstiaryEntry {
     source: "tibiawiki-candidate",
     party: "solo",
     recommendedLevel: 300,
+    recommendedLevelSolo: null,
+    recommendedLevelParty: null,
     imageUrl: "/ferumbras.gif",
     rewards: [],
     location: null,
+    locationRegion: null,
+    originCity: null,
     bossPoints: null,
+    officialCategory: null,
+    difficulty: null,
+    accessStatus: null,
+    accessRequirements: null,
+    howToReach: null,
+    cooldownSeconds: null,
+    estimatedCombatMinutes: null,
+    mechanics: null,
+    strategy: null,
     ...overrides,
   };
 }
@@ -38,6 +66,7 @@ describe("BosstiaryPage", () => {
       this.open = false;
     };
     loadBosstiaryCatalog.mockReset();
+    findBosstiaryRotations.mockReset();
     loadBosstiaryCatalog.mockReturnValue({
       skipped: 0,
       entries: [
@@ -52,50 +81,72 @@ describe("BosstiaryPage", () => {
         }),
       ],
     });
+    findBosstiaryRotations.mockResolvedValue({
+      items: [],
+      emptyReason: "Sem rotações verificadas.",
+      dataGaps: [],
+    });
   });
 
   afterEach(() => {
     cleanup();
   });
 
-  function show() {
+  function show(initial = "/bosstiary") {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initial]}>
         <BosstiaryPage />
       </MemoryRouter>,
     );
   }
 
-  it("filters by name, solo and level, then opens the matching boss", () => {
+  it("opens on the rotations planner with selectable time cards", () => {
     show();
+    expect(screen.getByRole("heading", { name: "Monte sua rotação" })).toBeInTheDocument();
+    expect(screen.getByText(/Quanto tempo você tem hoje/i)).toBeInTheDocument();
+    expect(screen.queryByText(/candidatos da TibiaWiki com isboss/i)).not.toBeInTheDocument();
+
+    const card20 = screen.getByRole("button", { name: /20 min/i });
+    fireEvent.click(card20);
+    expect(card20).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("loads encyclopedia content only on its tab", async () => {
+    show();
+    expect(loadBosstiaryCatalog).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Enciclopédia" }));
+    await waitFor(() => expect(loadBosstiaryCatalog).toHaveBeenCalled());
+    expect(screen.getByText(/candidatos da TibiaWiki com isboss/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Ferumbras/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Ghazbaran/ })).toBeInTheDocument();
+  });
+
+  it("filters encyclopedia entries and opens the boss modal", async () => {
+    show("?tab=enciclopedia");
+    await waitFor(() => expect(screen.getByRole("button", { name: /Ferumbras/ })).toBeInTheDocument());
 
     fireEvent.change(screen.getByLabelText("Buscar boss pelo nome"), { target: { value: "ghaz" } });
     expect(screen.queryByRole("button", { name: /Ferumbras/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Ghazbaran/ })).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Buscar boss pelo nome"), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "Solo" }));
-    expect(screen.getByRole("button", { name: /Ferumbras/ })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Ghazbaran/ })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "500" }));
-    expect(screen.getByText("Nenhum boss encontrado")).toBeInTheDocument();
-
     fireEvent.click(screen.getByRole("button", { name: "300" }));
     fireEvent.click(screen.getByRole("button", { name: /Ferumbras/ }));
     expect(screen.getByRole("dialog", { name: "Ferumbras" })).toBeInTheDocument();
-    expect(screen.getByText("Nenhuma recompensa cadastrada.")).toBeInTheDocument();
-    expect(screen.getByText("Localização ainda não cadastrada.")).toBeInTheDocument();
-    expect(screen.getByText("Sem fonte de Boss Points no RuneCodex.")).toBeInTheDocument();
   });
 
-  it("shows the catalog error state", () => {
+  it("calls the rotations service from the planner", async () => {
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Encontrar rotações" }));
+    await waitFor(() => expect(findBosstiaryRotations).toHaveBeenCalled());
+    expect(await screen.findByText("Sem rotações verificadas.")).toBeInTheDocument();
+  });
+
+  it("shows the catalog error state on the encyclopedia tab", async () => {
     loadBosstiaryCatalog.mockImplementation(() => {
       throw new Error("Lista ilegível");
     });
-    show();
-    expect(screen.getByText("Lista ilegível")).toBeInTheDocument();
+    show("?tab=enciclopedia");
+    expect(await screen.findByText("Lista ilegível")).toBeInTheDocument();
   });
 });

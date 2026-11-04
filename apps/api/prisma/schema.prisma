@@ -117,6 +117,8 @@ model User {
   referralReceived       ReferralAttribution?  @relation("ReferralReferred")
   referralRewardsEarned  ReferralReward[]      @relation("ReferralRewardEarner")
   referralRewardsConfirmed ReferralReward[]    @relation("ReferralRewardDeliveredBy")
+  bosstiaryComments      BosstiaryComment[]
+  bosstiaryCommentLikes  BosstiaryCommentLike[]
 }
 
 /// Active login. Logout deletes this row, so that token stops working.
@@ -1366,4 +1368,149 @@ model BillingEventReceipt {
   @@unique([provider, providerEventId])
   @@index([orderId])
   @@index([paymentId])
+}
+
+/// Solo or group recommendation for the Bosstiary. Independent from Hunt vocations.
+enum BosstiaryHuntMode {
+  SOLO
+  PARTY
+}
+
+/// Access is never assumed. UNKNOWN bosses stay out of automatic rotations.
+enum BosstiaryAccessStatus {
+  UNKNOWN
+  NONE
+  REQUIRED
+}
+
+enum BosstiaryRotationKind {
+  EXPRESS
+  PROGRESSION
+  ALTERNATIVE
+}
+
+/// Reviewed overlay for a Bosstiary slug. Not a Creature and not the TibiaWiki candidate list.
+/// Empty fields mean "not reviewed yet". Never infer Solo/PT, level, combat time or efficiency.
+model BosstiaryBoss {
+  id                     String                  @id @default(uuid())
+  slug                   String                  @unique
+  name                   String
+  officialCategory       String?
+  huntMode               BosstiaryHuntMode?
+  recommendedLevelSolo   Int?
+  recommendedLevelParty  Int?
+  difficulty             Difficulty?
+  locationName           String?
+  locationRegion         String?
+  originCity             String?
+  accessStatus           BosstiaryAccessStatus   @default(UNKNOWN)
+  accessRequirements     String?
+  howToReach             String?
+  cooldownSeconds        Int?
+  estimatedCombatMinutes Int?
+  bossPoints             Int?
+  mechanics              String?
+  strategy               String?
+  isActive               Boolean                 @default(true)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  vocations              BosstiaryBossVocation[]
+  rotationStops          BosstiaryRotationStop[]
+
+  @@index([isActive])
+  @@index([huntMode])
+  @@index([originCity])
+  @@index([isActive, huntMode, name])
+}
+
+model BosstiaryBossVocation {
+  id        String        @id @default(uuid())
+  bossId    String
+  vocation  Vocation
+  createdAt DateTime      @default(now())
+  boss      BosstiaryBoss @relation(fields: [bossId], references: [id], onDelete: Cascade)
+
+  @@unique([bossId, vocation])
+  @@index([vocation])
+}
+
+model BosstiaryTravelEdge {
+  id        String   @id @default(uuid())
+  fromCity  String
+  toCity    String
+  minutes   Int
+  method    String?
+  source    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([fromCity, toCity])
+  @@index([fromCity])
+}
+
+model BosstiaryRotation {
+  id               String                  @id @default(uuid())
+  slug             String                  @unique
+  name             String
+  kind             BosstiaryRotationKind
+  huntMode         BosstiaryHuntMode
+  recommendedLevel Int?
+  originCity       String?
+  reason           String?
+  isActive         Boolean                 @default(true)
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  stops            BosstiaryRotationStop[]
+
+  @@index([isActive, huntMode])
+}
+
+model BosstiaryRotationStop {
+  id            String             @id @default(uuid())
+  rotationId    String
+  bossId        String
+  position      Int
+  travelMinutes Int?
+  rotation      BosstiaryRotation  @relation(fields: [rotationId], references: [id], onDelete: Cascade)
+  boss          BosstiaryBoss      @relation(fields: [bossId], references: [id], onDelete: Restrict)
+
+  @@unique([rotationId, position])
+  @@unique([rotationId, bossId])
+  @@index([bossId])
+}
+
+model BosstiaryComment {
+  id        String   @id @default(uuid())
+  slug      String
+  userId    String
+  parentId  String?
+  content   String
+  isEdited  Boolean  @default(false)
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  BosstiaryComment?      @relation("BosstiaryCommentThread", fields: [parentId], references: [id], onDelete: Restrict)
+  replies BosstiaryComment[]     @relation("BosstiaryCommentThread")
+  likes   BosstiaryCommentLike[]
+
+  @@index([slug])
+  @@index([userId])
+  @@index([parentId])
+  @@index([createdAt])
+  @@index([slug, parentId, createdAt, id])
+}
+
+model BosstiaryCommentLike {
+  id        String   @id @default(uuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment BosstiaryComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([userId])
 }
