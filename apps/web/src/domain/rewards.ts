@@ -1,6 +1,10 @@
 import type { RewardCatalogItem, RewardMission } from "../services/api/rewards";
 
-const SUPPORTED_EVENTS = new Set(["FORUM_TOPIC_CREATED", "FORUM_COMMENT_CREATED"]);
+const SUPPORTED_EVENTS = new Set([
+  "FORUM_TOPIC_CREATED",
+  "FORUM_COMMENT_CREATED",
+  "BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED",
+]);
 const AD_MISSION_PATTERN = /an[uú]ncios?|advertis|rewarded|\bads?\b|propaganda/i;
 
 const MISSION_ART: Record<string, string> = {
@@ -144,4 +148,14 @@ const ACTION_MESSAGES: Record<string, string> = {
 
 export function rewardsActionMessage(message: string) {
   return ACTION_MESSAGES[message] ?? message;
+}
+
+export function missionActivityPath(eventType: string | null | undefined): string | null {
+  if (eventType === "FORUM_TOPIC_CREATED" || eventType === "FORUM_COMMENT_CREATED") {
+    return "/forum";
+  }
+  if (eventType === "BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED") {
+    return "/bosstiary";
+  }
+  return null;
 }

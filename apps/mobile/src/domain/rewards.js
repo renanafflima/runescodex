@@ -145,6 +145,7 @@ const DAY_MS = 86_400_000;
 export const MISSION_ACTIVITY_ROUTES = {
   FORUM_TOPIC_CREATED: "/(tabs)/forum",
   FORUM_COMMENT_CREATED: "/(tabs)/forum",
+  BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED: "/(tabs)/bosstiary",
 };
 
 export function missionActivityPath(eventType) {
