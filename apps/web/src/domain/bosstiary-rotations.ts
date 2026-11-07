@@ -1,10 +1,11 @@
 import type { VocationCode } from "./vocation";
 
-export type BosstiaryTab = "rotas" | "level" | "enciclopedia";
+export type BosstiaryTab = "comunidade" | "rotas" | "level" | "enciclopedia";
 
 export type BosstiaryHuntMode = "SOLO" | "PARTY";
 
 export const BOSSTIARY_TABS: Array<{ id: BosstiaryTab; label: string }> = [
+  { id: "comunidade", label: "Comunidade" },
   { id: "rotas", label: "Rotações" },
   { id: "level", label: "Boss por level" },
   { id: "enciclopedia", label: "Enciclopédia" },
@@ -93,8 +94,8 @@ export type BosstiaryRotationResult = {
 };
 
 export function parseBosstiaryTab(value: string | null): BosstiaryTab {
-  if (value === "level" || value === "enciclopedia") return value;
-  return "rotas";
+  if (value === "rotas" || value === "level" || value === "enciclopedia") return value;
+  return "comunidade";
 }
 
 export function huntModeLabel(mode: BosstiaryHuntMode) {

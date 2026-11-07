@@ -24,6 +24,7 @@ type ApiRequestOptions = {
   token?: string | null;
   auth?: boolean;
   signal?: AbortSignal;
+  headers?: Record<string, string>;
 };
 
 async function readResponseBody(response: Response) {
@@ -58,6 +59,14 @@ export async function apiRequest<T>(
 
   if (shouldSendToken) {
     headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  if (options.headers) {
+    for (const [name, value] of Object.entries(options.headers)) {
+      if (value) {
+        headers.set(name, value);
+      }
+    }
   }
 
   let body: BodyInit | undefined;

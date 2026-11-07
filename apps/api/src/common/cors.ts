@@ -27,7 +27,7 @@ export function corsOptions(env: NodeJS.ProcessEnv = process.env) {
   return {
     origin: resolveCorsOrigins(env),
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Authorization', 'Content-Type', 'Accept'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'Accept', 'Idempotency-Key'],
     credentials: true,
     optionsSuccessStatus: 204,
   };

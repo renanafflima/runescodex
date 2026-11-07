@@ -4,6 +4,7 @@ import { CatalogError, CatalogLoading } from "../components/catalog/CatalogState
 import { PageContainer } from "../components/layout/PageContainer";
 import { BossByLevelPanel } from "../components/bosstiary/BossByLevelPanel";
 import { EncyclopediaPanel } from "../components/bosstiary/EncyclopediaPanel";
+import { CommunityRotationsFeed } from "../components/bosstiary/CommunityRotationsFeed";
 import { RotationsPlanner } from "../components/bosstiary/RotationsPlanner";
 import { loadBosstiaryCatalog, type BosstiaryCatalog } from "../domain/bosstiary-catalog";
 import { BOSSTIARY_TABS, parseBosstiaryTab, type BosstiaryTab } from "../domain/bosstiary-rotations";
@@ -40,7 +41,7 @@ export function BosstiaryPage() {
 
   function setTab(next: BosstiaryTab) {
     const search = new URLSearchParams(params);
-    if (next === "rotas") search.delete("tab");
+    if (next === "comunidade") search.delete("tab");
     else search.set("tab", next);
     setParams(search, { replace: true });
   }
@@ -76,6 +77,8 @@ export function BosstiaryPage() {
             </button>
           ))}
         </nav>
+
+        {tab === "comunidade" ? <CommunityRotationsFeed /> : null}
 
         {tab === "rotas" ? <RotationsPlanner /> : null}
 

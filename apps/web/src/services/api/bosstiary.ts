@@ -51,6 +51,9 @@ export function listBosstiaryProfiles(query: {
   );
 }
 
+/** Reviewed Bosstiary bosses (searchable catalog for publish form). */
+export const listBosstiaryBosses = listBosstiaryProfiles;
+
 export async function listBosstiaryProfilesPage(
   query: Parameters<typeof listBosstiaryProfiles>[0] = {},
 ): Promise<PageResult<BosstiaryReviewedBoss>> {

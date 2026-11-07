@@ -4,9 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BosstiaryEntry } from "../domain/bosstiary";
 import { BosstiaryPage } from "./BosstiaryPage";
 
-const { loadBosstiaryCatalog, findBosstiaryRotations } = vi.hoisted(() => ({
+const { loadBosstiaryCatalog, findBosstiaryRotations, listCommunityRotations } = vi.hoisted(() => ({
   loadBosstiaryCatalog: vi.fn(),
   findBosstiaryRotations: vi.fn(),
+  listCommunityRotations: vi.fn(),
 }));
 
 vi.mock("../domain/bosstiary-catalog", () => ({
@@ -15,6 +16,18 @@ vi.mock("../domain/bosstiary-catalog", () => ({
 
 vi.mock("../services/api/bosstiary", () => ({
   findBosstiaryRotations,
+}));
+
+vi.mock("../services/api/community-rotations", () => ({
+  listCommunityRotations,
+  listCommunityRotationRanking: vi.fn(async () => []),
+  likeCommunityRotation: vi.fn(),
+  unlikeCommunityRotation: vi.fn(),
+}));
+
+vi.mock("../services/api/rewards", () => ({
+  getRewardsMe: vi.fn(async () => ({ wallet: { points: 0, gold: 0, diamond: 0 } })),
+  listRewardMissions: vi.fn(async () => []),
 }));
 
 vi.mock("../auth/AuthContext", () => ({
@@ -67,6 +80,14 @@ describe("BosstiaryPage", () => {
     };
     loadBosstiaryCatalog.mockReset();
     findBosstiaryRotations.mockReset();
+    listCommunityRotations.mockReset();
+    listCommunityRotations.mockResolvedValue({
+      items: [],
+      page: 1,
+      limit: 12,
+      total: 0,
+      hasMore: false,
+    });
     loadBosstiaryCatalog.mockReturnValue({
       skipped: 0,
       entries: [
@@ -100,12 +121,16 @@ describe("BosstiaryPage", () => {
     );
   }
 
-  it("opens on the rotations planner with selectable time cards", () => {
+  it("opens on the community feed by default", async () => {
     show();
-    expect(screen.getByRole("heading", { name: "Monte sua rotação" })).toBeInTheDocument();
-    expect(screen.getByText(/Quanto tempo você tem hoje/i)).toBeInTheDocument();
-    expect(screen.queryByText(/candidatos da TibiaWiki com isboss/i)).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Rotações da Comunidade" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Monte sua rotação" })).not.toBeInTheDocument();
+    expect(listCommunityRotations).toHaveBeenCalled();
+  });
 
+  it("shows the rotations planner on the rotas tab", () => {
+    show("?tab=rotas");
+    expect(screen.getByRole("heading", { name: "Monte sua rotação" })).toBeInTheDocument();
     const card20 = screen.getByRole("button", { name: /20 min/i });
     fireEvent.click(card20);
     expect(card20).toHaveAttribute("aria-pressed", "true");
@@ -136,7 +161,7 @@ describe("BosstiaryPage", () => {
   });
 
   it("calls the rotations service from the planner", async () => {
-    show();
+    show("?tab=rotas");
     fireEvent.click(screen.getByRole("button", { name: "Encontrar rotações" }));
     await waitFor(() => expect(findBosstiaryRotations).toHaveBeenCalled());
     expect(await screen.findByText("Sem rotações verificadas.")).toBeInTheDocument();
