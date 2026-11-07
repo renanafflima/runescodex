@@ -1,8 +1,11 @@
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { AccountDevices } from "./AccountDevices";
 import { AccountReferrals } from "./AccountReferrals";
 import { AccountTickets } from "./AccountTickets";
+import { ProfileFeaturedBestiary } from "../components/profile/ProfileFeaturedBestiary";
+import { ProfileJourneyPanel } from "../components/profile/ProfileJourneyPanel";
+import { ProfileStatsGrid } from "../components/profile/ProfileStatsGrid";
 import { GoogleSignInButton } from "../components/auth/GoogleSignInButton";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Section } from "../components/layout/Section";
@@ -12,12 +15,14 @@ import { Input, Select } from "../components/ui/FormControls";
 import { Icon } from "../components/ui/Icon";
 import { Modal } from "../components/ui/Modal";
 import { Toast } from "../components/ui/Toast";
-import { CatalogEmpty, CatalogLoading } from "../components/catalog/CatalogState";
+import { CatalogEmpty, CatalogError, CatalogLoading } from "../components/catalog/CatalogState";
 import { EMBLEM_CRITERION, PROFILE_EMBLEMS, type ProfileEmblem } from "../domain/profile-emblems";
+import { emblemProgressLabel, isEmblemUnlocked } from "../domain/profile-summary";
 import { initialsFrom } from "../domain/format";
 import { VOCATIONS } from "../domain/vocation";
 import { assetUrl } from "../lib/assets";
 import { describeApiError } from "../services/api/errors";
+import { getProfileMe, type ProfileMeResponse } from "../services/api/profile";
 import type { PremiumAccess, Character } from "../services/api/types";
 import type { CharacterPayload } from "../services/api/characters";
 
@@ -68,6 +73,28 @@ export function ProfilePage() {
     title: string;
     tone: "info" | "success" | "error";
   } | null>(null);
+  const [profileSummary, setProfileSummary] = useState<ProfileMeResponse | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  const reloadProfileSummary = useCallback(async () => {
+    setProfileLoading(true);
+    setProfileError(null);
+    try {
+      const summary = await getProfileMe();
+      setProfileSummary(summary);
+    } catch (error) {
+      setProfileSummary(null);
+      setProfileError(describeApiError(error));
+    } finally {
+      setProfileLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    void reloadProfileSummary();
+  }, [status, reloadProfileSummary]);
 
   if (status === "loading") {
     return (
@@ -166,7 +193,8 @@ export function ProfilePage() {
     }
   }
 
-  const memberSince = membershipDate(user?.createdAt);
+  const memberSince = membershipDate(profileSummary?.memberSince || user?.createdAt);
+  const emblemCriteriaPending = profileSummary?.emblems.criteriaStatus === "PENDING";
 
   return (
     <div className="profile-page">
@@ -223,6 +251,28 @@ export function ProfilePage() {
             <span>Cadastro</span>
           </div>
         </section>
+
+        {profileLoading && !profileSummary ? (
+          <CatalogLoading label="Carregando jornada e estatísticas" />
+        ) : null}
+
+        {profileError ? (
+          <CatalogError
+            description={profileError}
+            onRetry={() => void reloadProfileSummary()}
+            title="Não foi possível carregar o resumo da jornada"
+          />
+        ) : null}
+
+        {profileSummary ? (
+          <>
+            <ProfileJourneyPanel summary={profileSummary} />
+            <div className="profile-bottom-grid">
+              <ProfileStatsGrid summary={profileSummary} />
+              <ProfileFeaturedBestiary featured={profileSummary.bestiary.featured} />
+            </div>
+          </>
+        ) : null}
 
         <Section
           actions={
@@ -290,25 +340,37 @@ export function ProfilePage() {
 
         <Section
           className="profile-emblems"
-          description="Os emblemas oficiais permanecem fechados até o servidor receber uma regra de desbloqueio aprovada."
-          eyebrow="Jornada"
-          title="Conquistas"
+          description={
+            emblemCriteriaPending
+              ? "Os emblemas oficiais permanecem fechados até o servidor receber uma regra de desbloqueio aprovada."
+              : "Conquistas desbloqueadas de acordo com o servidor."
+          }
+          eyebrow="Conquistas"
+          title="Minhas conquistas"
         >
-          <p className="profile-emblems__count">0 / {PROFILE_EMBLEMS.length} conquistadas</p>
+          <p className="profile-emblems__count">
+            {profileSummary
+              ? emblemProgressLabel(profileSummary.emblems)
+              : `0 / ${PROFILE_EMBLEMS.length} conquistadas`}
+          </p>
           <div className="emblem-gallery">
-            {PROFILE_EMBLEMS.map((item) => (
-              <button
-                className="emblem emblem--locked"
-                key={item.id}
-                onClick={() => setEmblem(item)}
-                type="button"
-              >
-                <span className="emblem__art">
-                  <img alt="" src={item.image} />
-                </span>
-                <span className="emblem__name">{item.name}</span>
-              </button>
-            ))}
+            {PROFILE_EMBLEMS.map((item) => {
+              const unlocked =
+                profileSummary !== null && isEmblemUnlocked(profileSummary.emblems, item.id);
+              return (
+                <button
+                  className={unlocked ? "emblem emblem--earned" : "emblem emblem--locked"}
+                  key={item.id}
+                  onClick={() => setEmblem(item)}
+                  type="button"
+                >
+                  <span className="emblem__art">
+                    <img alt="" src={item.image} />
+                  </span>
+                  <span className="emblem__name">{item.name}</span>
+                </button>
+              );
+            })}
           </div>
         </Section>
 
@@ -446,9 +508,17 @@ export function ProfilePage() {
         {emblem ? (
           <div className="emblem-detail">
             <img alt="" src={emblem.image} />
-            <p>Estado atual: não conquistada.</p>
-            <p>{EMBLEM_CRITERION}</p>
-            <p>Não há progresso nem data de conquista, porque nenhuma métrica foi aprovada.</p>
+            {profileSummary && isEmblemUnlocked(profileSummary.emblems, emblem.id) ? (
+              <p>Estado atual: conquistada.</p>
+            ) : (
+              <>
+                <p>Estado atual: não conquistada.</p>
+                <p>{EMBLEM_CRITERION}</p>
+                {emblemCriteriaPending ? (
+                  <p>Não há progresso nem data de conquista, porque nenhuma métrica foi aprovada.</p>
+                ) : null}
+              </>
+            )}
           </div>
         ) : null}
       </Modal>

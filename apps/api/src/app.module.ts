@@ -10,6 +10,7 @@ import { BosstiaryModule } from './bosstiary/bosstiary.module';
 import { BillingModule } from './billing/billing.module';
 import { CharactersModule } from './characters/characters.module';
 import { ForumModule } from './forum/forum.module';
+import { ProfileModule } from './profile/profile.module';
 import { HuntsModule } from './hunts/hunts.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReferralsModule } from './referrals/referrals.module';
@@ -25,6 +26,7 @@ import { TicketsModule } from './tickets/tickets.module';
     AuthModule,
     BillingModule,
     CharactersModule,
+    ProfileModule,
     HuntsModule,
     BestiaryModule,
     BosstiaryModule,

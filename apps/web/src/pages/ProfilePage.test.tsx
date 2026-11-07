@@ -1,6 +1,14 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { activeProfileMe, emptyProfileMe } from "./ProfilePage.test.fixtures";
 import { ProfilePage } from "./ProfilePage";
+
+const profileApi = vi.hoisted(() => ({
+  getProfileMe: vi.fn(),
+}));
+
+vi.mock("../services/api/profile", () => profileApi);
 
 const auth = vi.hoisted(() => ({
   user: {
@@ -18,7 +26,7 @@ const auth = vi.hoisted(() => ({
   },
   characters: [] as Array<{ id: string; name: string; vocation: string; level: number; world: string }>,
   activeCharacter: null as { id: string; name: string; vocation: string; level: number; world: string } | null,
-  status: "ready" as "ready" | "loading",
+  status: "authenticated" as "authenticated" | "loading",
   logout: vi.fn(),
   linkGoogle: vi.fn(),
   createCharacter: vi.fn(),
@@ -96,11 +104,21 @@ vi.mock("../services/api/tickets", () => ({
   evidenceFileError: () => "",
 }));
 
+function renderProfile() {
+  return render(
+    <MemoryRouter>
+      <ProfilePage />
+    </MemoryRouter>,
+  );
+}
+
 describe("ProfilePage", () => {
   beforeEach(() => {
-    auth.status = "ready";
+    auth.status = "authenticated";
     auth.characters = [];
     auth.activeCharacter = null;
+    profileApi.getProfileMe.mockReset();
+    profileApi.getProfileMe.mockResolvedValue(emptyProfileMe);
     HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
       this.open = true;
     };
@@ -115,12 +133,12 @@ describe("ProfilePage", () => {
 
   it("shows a loading state before the account is ready", () => {
     auth.status = "loading";
-    render(<ProfilePage />);
+    renderProfile();
     expect(screen.getByText("Carregando perfil")).toBeInTheDocument();
   });
 
   it("renders the authenticated account, locked emblems and the two-device limit", async () => {
-    render(<ProfilePage />);
+    renderProfile();
 
     expect(screen.getByRole("heading", { name: "ada@runescodex.com" })).toBeInTheDocument();
     expect(screen.getByText(/Cadastro em/)).toBeInTheDocument();
@@ -128,8 +146,11 @@ describe("ProfilePage", () => {
     expect(screen.getByRole("heading", { name: "Nenhum personagem" })).toBeInTheDocument();
     expect(document.querySelector(".profile-hero__scene")).toBeTruthy();
     expect(await screen.findByText("Equipamentos vinculados: 2 de 2")).toBeInTheDocument();
+    await waitFor(() => expect(profileApi.getProfileMe).toHaveBeenCalled());
+    expect(await screen.findByRole("heading", { name: "Jornada do Aventureiro" })).toBeInTheDocument();
+    expect(screen.getByText(/Jornada em construção/i)).toBeInTheDocument();
     expect(screen.getByText("0 / 12 conquistadas")).toBeInTheDocument();
-    expect(screen.queryByText(/Desbloqueada/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/conquistada\./i)).not.toBeInTheDocument();
     expect(document.querySelectorAll(".emblem--locked")).toHaveLength(12);
 
     fireEvent.click(screen.getByRole("button", { name: "Primeiros Passos" }));
@@ -145,7 +166,7 @@ describe("ProfilePage", () => {
     const active = auth.characters[0];
     if (!active) throw new Error("Personagem ausente");
     auth.activeCharacter = active;
-    render(<ProfilePage />);
+    renderProfile();
 
     expect(screen.getAllByText("Arvandor").length).toBeGreaterThan(0);
     expect(screen.getByText("Nyxara")).toBeInTheDocument();
@@ -153,5 +174,66 @@ describe("ProfilePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Definir como principal" }));
     expect(auth.setActiveCharacter).toHaveBeenCalledWith("char-2");
     expect(await screen.findByText("Equipamentos vinculados: 2 de 2")).toBeInTheDocument();
+  });
+
+  it("shows journey loading then empty stats for a user without activities", async () => {
+    let resolve: (value: typeof emptyProfileMe) => void = () => undefined;
+    profileApi.getProfileMe.mockImplementation(
+      () =>
+        new Promise((next) => {
+          resolve = next;
+        }),
+    );
+    renderProfile();
+    expect(screen.getByText("Carregando jornada e estatísticas")).toBeInTheDocument();
+    resolve(emptyProfileMe);
+    expect(await screen.findByText("Nenhuma criatura em destaque")).toBeInTheDocument();
+    expect(screen.getAllByText("0").length).toBeGreaterThan(5);
+  });
+
+  it("renders API-driven stats and featured bestiary", async () => {
+    profileApi.getProfileMe.mockResolvedValue(activeProfileMe);
+    renderProfile();
+
+    expect(await screen.findByText("40")).toBeInTheDocument();
+    expect(screen.getByText("Hunts visualizadas")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Dragon" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Abrir no Bestiário" })).toHaveAttribute(
+      "href",
+      "/bestiary/dragon",
+    );
+    expect(screen.getByText("67")).toBeInTheDocument();
+  });
+
+  it("shows a retryable error when the profile API fails", async () => {
+    profileApi.getProfileMe.mockRejectedValueOnce(new Error("network"));
+    profileApi.getProfileMe.mockResolvedValueOnce(emptyProfileMe);
+    renderProfile();
+
+    expect(
+      await screen.findByText("Não foi possível carregar o resumo da jornada"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    await waitFor(() => expect(profileApi.getProfileMe).toHaveBeenCalledTimes(2));
+    expect(await screen.findByRole("heading", { name: "Jornada do Aventureiro" })).toBeInTheDocument();
+  });
+
+  it("keeps emblems locked while criteriaStatus is PENDING, even if ids are present", async () => {
+    profileApi.getProfileMe.mockResolvedValue({
+      ...emptyProfileMe,
+      emblems: {
+        criteriaStatus: "PENDING",
+        catalogTotal: 12,
+        unlockedCount: 1,
+        unlockedIds: ["primeiros-passos"],
+      },
+    });
+    renderProfile();
+
+    expect(await screen.findByText("0 / 12 conquistadas")).toBeInTheDocument();
+    expect(document.querySelectorAll(".emblem--earned")).toHaveLength(0);
+    expect(document.querySelectorAll(".emblem--locked")).toHaveLength(12);
+    fireEvent.click(screen.getByRole("button", { name: "Primeiros Passos" }));
+    expect(await screen.findByText(/Estado atual: não conquistada/i)).toBeInTheDocument();
   });
 });
