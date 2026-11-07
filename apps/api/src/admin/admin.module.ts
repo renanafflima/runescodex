@@ -25,6 +25,8 @@ import { AdminMercadoPagoDiagnosticController } from './billing/admin-mercado-pa
 import { AdminMercadoPagoDiagnosticService } from './billing/admin-mercado-pago-diagnostic.service';
 import { AdminDatabaseMigrationDiagnosticController } from './system/admin-database-migration-diagnostic.controller';
 import { AdminDatabaseMigrationDiagnosticService } from './system/admin-database-migration-diagnostic.service';
+import { AdminMigrationRecoveryController } from './system/admin-migration-recovery.controller';
+import { AdminMigrationRecoveryService } from './system/admin-migration-recovery.service';
 
 @Module({
   imports: [AuthModule, TicketsModule, ReferralsModule],
@@ -41,6 +43,7 @@ import { AdminDatabaseMigrationDiagnosticService } from './system/admin-database
     AdminMercadoPagoDiagnosticController,
     AdminCheckoutAttemptController,
     AdminDatabaseMigrationDiagnosticController,
+    AdminMigrationRecoveryController,
   ],
   providers: [
     AdminGuard,
@@ -54,6 +57,7 @@ import { AdminDatabaseMigrationDiagnosticService } from './system/admin-database
     AdminMercadoPagoDiagnosticService,
     AdminCheckoutAttemptService,
     AdminDatabaseMigrationDiagnosticService,
+    AdminMigrationRecoveryService,
   ],
 })
 export class AdminModule {}

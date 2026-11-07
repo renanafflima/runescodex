@@ -18,6 +18,7 @@
     "prisma:seed": "prisma db seed",
     "prisma:validate": "prisma validate",
     "promote:admin": "tsx scripts/promote-admin.ts",
+    "migrations:regularize-production": "tsx scripts/regularize-production-migrations.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
