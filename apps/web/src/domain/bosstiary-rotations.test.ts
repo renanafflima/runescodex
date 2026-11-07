@@ -2,12 +2,13 @@ import { describe, expect, it } from "vitest";
 import { BOSSTIARY_TIME_OPTIONS, parseBosstiaryTab } from "./bosstiary-rotations";
 
 describe("bosstiary rotations domain", () => {
-  it("defaults to rotas and accepts known tabs", () => {
-    expect(parseBosstiaryTab(null)).toBe("rotas");
-    expect(parseBosstiaryTab("")).toBe("rotas");
+  it("defaults to comunidade and accepts known tabs", () => {
+    expect(parseBosstiaryTab(null)).toBe("comunidade");
+    expect(parseBosstiaryTab("")).toBe("comunidade");
+    expect(parseBosstiaryTab("rotas")).toBe("rotas");
     expect(parseBosstiaryTab("enciclopedia")).toBe("enciclopedia");
     expect(parseBosstiaryTab("level")).toBe("level");
-    expect(parseBosstiaryTab("unknown")).toBe("rotas");
+    expect(parseBosstiaryTab("unknown")).toBe("comunidade");
   });
 
   it("exposes the four approved time cards", () => {
