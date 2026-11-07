@@ -27,6 +27,17 @@ export const REWARD_MISSIONS = [
     active: false,
   },
   {
+    title: "Publique uma Rotação",
+    description: "Compartilhe uma rotação de bosses no Bosstiário com a comunidade.",
+    category: "COMMUNITY",
+    period: "WEEKLY",
+    target: 1,
+    pointsReward: 80,
+    imageKey: "missionHunts",
+    eventType: "BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED",
+    active: true,
+  },
+  {
     title: "Poste no Fórum",
     description: "Crie um tópico útil no fórum da comunidade.",
     category: "COMMUNITY",
