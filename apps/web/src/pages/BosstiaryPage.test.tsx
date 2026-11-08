@@ -126,6 +126,15 @@ describe("BosstiaryPage", () => {
     expect(await screen.findByRole("heading", { name: "Rotações da Comunidade" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Monte sua rotação" })).not.toBeInTheDocument();
     expect(listCommunityRotations).toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Comunidade" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("renders four section cards with distinct artwork", () => {
+    show();
+    const nav = screen.getByRole("navigation", { name: "Seções do Bosstiário" });
+    expect(nav.querySelectorAll("img")).toHaveLength(4);
+    const sources = [...nav.querySelectorAll("img")].map((img) => img.getAttribute("src"));
+    expect(new Set(sources).size).toBe(4);
   });
 
   it("shows the rotations planner on the rotas tab", () => {

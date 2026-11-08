@@ -4,11 +4,11 @@ export type BosstiaryTab = "comunidade" | "rotas" | "level" | "enciclopedia";
 
 export type BosstiaryHuntMode = "SOLO" | "PARTY";
 
-export const BOSSTIARY_TABS: Array<{ id: BosstiaryTab; label: string }> = [
-  { id: "comunidade", label: "Comunidade" },
-  { id: "rotas", label: "Rotações" },
-  { id: "level", label: "Boss por level" },
-  { id: "enciclopedia", label: "Enciclopédia" },
+export const BOSSTIARY_TABS: Array<{ id: BosstiaryTab; label: string; image: string }> = [
+  { id: "comunidade", label: "Comunidade", image: "/images/bosstiary/nav-comunidade.jpg" },
+  { id: "rotas", label: "Rotações", image: "/images/bosstiary/nav-rotacoes.jpg" },
+  { id: "level", label: "Boss por level", image: "/images/bosstiary/nav-boss-level.jpg" },
+  { id: "enciclopedia", label: "Enciclopédia", image: "/images/bosstiary/nav-enciclopedia.jpg" },
 ];
 
 export const BOSSTIARY_TIME_OPTIONS = [
