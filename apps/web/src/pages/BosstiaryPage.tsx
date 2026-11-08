@@ -65,17 +65,22 @@ export function BosstiaryPage() {
 
       <PageContainer className="catalog-body bosstiary-body" size="wide">
         <nav aria-label="Seções do Bosstiário" className="bosstiary-tabs">
-          {BOSSTIARY_TABS.map((item) => (
-            <button
-              aria-current={tab === item.id ? "page" : undefined}
-              className={`bosstiary-tabs__tab${tab === item.id ? " bosstiary-tabs__tab--active" : ""}`}
-              key={item.id}
-              onClick={() => setTab(item.id)}
-              type="button"
-            >
-              {item.label}
-            </button>
-          ))}
+          {BOSSTIARY_TABS.map((item) => {
+            const active = tab === item.id;
+            return (
+              <button
+                aria-current={active ? "page" : undefined}
+                className={`bosstiary-tabs__tab${active ? " bosstiary-tabs__tab--active" : ""}`}
+                key={item.id}
+                onClick={() => setTab(item.id)}
+                type="button"
+              >
+                <img alt="" className="bosstiary-tabs__art" src={item.image} />
+                <span className="bosstiary-tabs__shade" aria-hidden="true" />
+                <span className="bosstiary-tabs__label">{item.label}</span>
+              </button>
+            );
+          })}
         </nav>
 
         {tab === "comunidade" ? <CommunityRotationsFeed /> : null}

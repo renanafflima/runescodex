@@ -3594,40 +3594,119 @@
 }
 
 .bosstiary-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  padding: var(--space-1);
-  border: 1px solid var(--color-line-strong);
-  border-radius: var(--radius-lg);
-  background: rgb(255 255 255 / 3%);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  max-width: 100%;
 }
 
 .bosstiary-tabs__tab {
-  flex: 1 1 10rem;
-  padding: var(--space-3) var(--space-4);
-  color: var(--color-text-soft);
-  font-weight: 600;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 6.5rem;
+  padding: 0;
+  border: 1px solid rgb(217 173 63 / 42%);
+  border-radius: 1rem;
+  background: #07111d;
+  color: var(--color-gold-pale);
+  text-align: left;
   cursor: pointer;
+  isolation: isolate;
   transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
+}
+
+.bosstiary-tabs__art {
+  display: block;
+  width: 100%;
+  height: 6.5rem;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.02);
+  transition: transform 0.35s ease;
+}
+
+.bosstiary-tabs__shade {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 62%;
+  background: linear-gradient(transparent, rgb(2 7 14 / 96%));
+  pointer-events: none;
+}
+
+.bosstiary-tabs__label {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.55rem;
+  left: 0.7rem;
+  z-index: 1;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #f7f8fb;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 70%);
+  pointer-events: none;
+}
+
+.bosstiary-tabs__tab:hover .bosstiary-tabs__art,
+.bosstiary-tabs__tab:focus-visible .bosstiary-tabs__art {
+  transform: scale(1.08);
 }
 
 .bosstiary-tabs__tab:hover {
-  color: var(--color-text);
-  background: rgb(255 255 255 / 4%);
+  border-color: rgb(240 207 112 / 70%);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 28%);
+}
+
+.bosstiary-tabs__tab:focus-visible {
+  outline: 2px solid var(--color-gold-light);
+  outline-offset: 3px;
 }
 
 .bosstiary-tabs__tab--active {
-  color: var(--color-gold-light);
-  background: rgb(158 116 25 / 16%);
   border-color: var(--color-gold);
-  box-shadow: inset 0 0 0 1px rgb(240 207 112 / 12%);
+  box-shadow:
+    0 0 0 1px rgb(240 207 112 / 35%),
+    0 10px 24px rgb(0 0 0 / 32%);
+}
+
+.bosstiary-tabs__tab--active .bosstiary-tabs__label {
+  color: var(--color-gold-light);
+}
+
+@media (min-width: 40rem) {
+  .bosstiary-tabs__tab {
+    min-height: 8.5rem;
+  }
+
+  .bosstiary-tabs__art {
+    height: 8.5rem;
+  }
+
+  .bosstiary-tabs__label {
+    font-size: 0.95rem;
+    bottom: 0.7rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .bosstiary-tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .bosstiary-tabs__tab {
+    min-height: 9.5rem;
+  }
+
+  .bosstiary-tabs__art {
+    height: 9.5rem;
+  }
 }
 
 .bosstiary-section-title h2 {
