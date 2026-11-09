@@ -33,7 +33,7 @@ export const COMMUNITY_DURATION_FILTERS: Array<{ id: CommunityDurationFilter; la
 
 export const COMMUNITY_SORT_OPTIONS: Array<{ id: CommunityRotationSort; label: string }> = [
   { id: "RECENT", label: "Mais recentes" },
-  { id: "LIKES", label: "Mais curtidas" },
+  { id: "LIKES", label: "Mais populares" },
   { id: "COMMENTS", label: "Mais comentadas" },
 ];
 

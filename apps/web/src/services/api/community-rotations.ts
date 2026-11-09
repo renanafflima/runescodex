@@ -41,7 +41,12 @@ export type CommunityRotationCard = {
   status: CommunityRotationStatus;
   createdAt: string;
   updatedAt: string;
-  author: { id: string; name: string | null };
+  author: {
+    id: string;
+    name: string | null;
+    vocation: string | null;
+    level: number | null;
+  };
   bosses: CommunityRotationBossStop[];
   likesCount: number;
   favoritesCount: number;
@@ -49,6 +54,7 @@ export type CommunityRotationCard = {
   likedByMe: boolean;
   favoritedByMe: boolean;
   testedByAuthor: boolean;
+  testedByMe: boolean;
   featured: boolean;
 };
 

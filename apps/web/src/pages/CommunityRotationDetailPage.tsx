@@ -15,6 +15,7 @@ import {
 import { useLatestRequest } from "../hooks/useLatestRequest";
 import { describeApiError } from "../services/api/errors";
 import {
+  createCommunityRotationTest,
   favoriteCommunityRotation,
   getCommunityRotation,
   likeCommunityRotation,
@@ -31,6 +32,7 @@ export function CommunityRotationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [socialBusy, setSocialBusy] = useState("");
+  const [shareHint, setShareHint] = useState("");
 
   const load = useCallback(async () => {
     const current = requests.start();
@@ -79,6 +81,34 @@ export function CommunityRotationDetailPage() {
       setError(describeApiError(err));
     } finally {
       setSocialBusy("");
+    }
+  }
+
+  async function markWorked() {
+    if (!rotation || !isAuthenticated || socialBusy || rotation.testedByMe) return;
+    setSocialBusy("test");
+    try {
+      await createCommunityRotationTest(rotation.id, {});
+      setRotation((current) => (current ? { ...current, testedByMe: true } : current));
+    } catch (err) {
+      setError(describeApiError(err));
+    } finally {
+      setSocialBusy("");
+    }
+  }
+
+  async function shareRotation() {
+    if (!rotation) return;
+    const url = `${window.location.origin}/bosstiary/community/${rotation.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: rotation.title, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShareHint("Link copiado.");
+    } catch {
+      setShareHint("");
     }
   }
 
@@ -144,6 +174,19 @@ export function CommunityRotationDetailPage() {
                 variant="ghost"
               >
                 {rotation.favoritedByMe ? "Favoritada" : "Favoritar"} · {rotation.favoritesCount}
+              </Button>
+              <Button
+                aria-pressed={rotation.testedByMe}
+                disabled={!isAuthenticated || rotation.testedByMe || socialBusy === "test"}
+                loading={socialBusy === "test"}
+                onClick={() => void markWorked()}
+                type="button"
+                variant="ghost"
+              >
+                Funcionou pra mim
+              </Button>
+              <Button onClick={() => void shareRotation()} type="button" variant="ghost">
+                {shareHint || "Compartilhar"}
               </Button>
             </div>
           </header>

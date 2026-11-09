@@ -3,20 +3,30 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { CatalogError, CatalogLoading } from "../components/catalog/CatalogState";
 import { PageContainer } from "../components/layout/PageContainer";
 import { BossByLevelPanel } from "../components/bosstiary/BossByLevelPanel";
+import { BosstiaryProgressPanel } from "../components/bosstiary/BosstiaryProgressPanel";
 import { EncyclopediaPanel } from "../components/bosstiary/EncyclopediaPanel";
 import { CommunityRotationsFeed } from "../components/bosstiary/CommunityRotationsFeed";
+import { PartyPanel } from "../components/bosstiary/PartyPanel";
 import { RotationsPlanner } from "../components/bosstiary/RotationsPlanner";
 import { loadBosstiaryCatalog, type BosstiaryCatalog } from "../domain/bosstiary-catalog";
-import { BOSSTIARY_TABS, parseBosstiaryTab, type BosstiaryTab } from "../domain/bosstiary-rotations";
+import {
+  BOSSTIARY_TABS,
+  COMMUNITY_INNER_VIEWS,
+  parseBosstiaryTab,
+  parseCommunityInnerView,
+  type BosstiaryTab,
+  type CommunityInnerView,
+} from "../domain/bosstiary-rotations";
 
 export function BosstiaryPage() {
   const [params, setParams] = useSearchParams();
   const bossSlug = params.get("boss");
   const tab = parseBosstiaryTab(params.get("tab"));
+  const communityView = parseCommunityInnerView(params.get("tab"), params.get("view"));
   const [catalog, setCatalog] = useState<BosstiaryCatalog | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const needsCatalog = tab === "enciclopedia" || tab === "level";
+  const needsCatalog = tab === "enciclopedia" || (tab === "comunidade" && communityView === "level");
 
   function load() {
     setLoading(true);
@@ -41,8 +51,17 @@ export function BosstiaryPage() {
 
   function setTab(next: BosstiaryTab) {
     const search = new URLSearchParams(params);
+    search.delete("view");
     if (next === "comunidade") search.delete("tab");
     else search.set("tab", next);
+    setParams(search, { replace: true });
+  }
+
+  function setCommunityView(next: CommunityInnerView) {
+    const search = new URLSearchParams(params);
+    search.delete("tab");
+    if (next === "feed") search.delete("view");
+    else search.set("view", next);
     setParams(search, { replace: true });
   }
 
@@ -57,8 +76,9 @@ export function BosstiaryPage() {
           <span className="eyebrow">Bosstiário</span>
           <h1 id="bosstiary-title">Bosstiário</h1>
           <p>
-            Monte rotações de boss com dados revisados, explore faixas por level e consulte a
-            enciclopédia de candidatos — separada do Bestiário do RuneCodex.
+            Planeje rotações com a comunidade, registre seu progresso pessoal e consulte a
+            enciclopédia revisada — sem misturar dados oficiais do Tibia com recomendações do
+            RuneCodex.
           </p>
         </PageContainer>
       </section>
@@ -70,6 +90,7 @@ export function BosstiaryPage() {
             return (
               <button
                 aria-current={active ? "page" : undefined}
+                aria-label={item.label}
                 className={`bosstiary-tabs__tab${active ? " bosstiary-tabs__tab--active" : ""}`}
                 key={item.id}
                 onClick={() => setTab(item.id)}
@@ -77,25 +98,50 @@ export function BosstiaryPage() {
               >
                 <img alt="" className="bosstiary-tabs__art" src={item.image} />
                 <span className="bosstiary-tabs__shade" aria-hidden="true" />
-                <span className="bosstiary-tabs__label">{item.label}</span>
+                <span className="bosstiary-tabs__copy">
+                  <span className="bosstiary-tabs__kicker">{item.kicker}</span>
+                  <span className="bosstiary-tabs__label">{item.label}</span>
+                </span>
               </button>
             );
           })}
         </nav>
 
-        {tab === "comunidade" ? <CommunityRotationsFeed /> : null}
+        {tab === "comunidade" ? (
+          <>
+            <nav aria-label="Área da comunidade" className="bosstiary-community-subnav">
+              {COMMUNITY_INNER_VIEWS.map((item) => {
+                const active = communityView === item.id;
+                return (
+                  <button
+                    aria-current={active ? "page" : undefined}
+                    className={`bosstiary-community-subnav__tab${active ? " is-active" : ""}`}
+                    key={item.id}
+                    onClick={() => setCommunityView(item.id)}
+                    type="button"
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
 
-        {tab === "rotas" ? <RotationsPlanner /> : null}
-
-        {tab === "level" ? (
-          loading && !catalog ? (
-            <CatalogLoading label="Carregando Bosstiário" />
-          ) : error && !catalog ? (
-            <CatalogError description={error} onRetry={load} />
-          ) : (
-            <BossByLevelPanel entries={entries} />
-          )
+            {communityView === "feed" ? <CommunityRotationsFeed /> : null}
+            {communityView === "planner" ? <RotationsPlanner /> : null}
+            {communityView === "party" ? <PartyPanel /> : null}
+            {communityView === "level" ? (
+              loading && !catalog ? (
+                <CatalogLoading label="Carregando Bosstiário" />
+              ) : error && !catalog ? (
+                <CatalogError description={error} onRetry={load} />
+              ) : (
+                <BossByLevelPanel entries={entries} />
+              )
+            ) : null}
+          </>
         ) : null}
+
+        {tab === "progresso" ? <BosstiaryProgressPanel /> : null}
 
         {tab === "enciclopedia" ? (
           <EncyclopediaPanel

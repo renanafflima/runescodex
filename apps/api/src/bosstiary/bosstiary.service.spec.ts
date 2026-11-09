@@ -63,6 +63,48 @@ describe('BosstiaryService', () => {
     expect(result.items[0].facts.accessStatus.kind).toBe('pending');
   });
 
+  it('searches reviewed bosses by partial name', async () => {
+    prisma.bosstiaryBoss.count.mockResolvedValue(1);
+    prisma.bosstiaryBoss.findMany.mockResolvedValue([
+      {
+        id: 'boss-1',
+        slug: 'grand-master-oberon',
+        name: 'Grand Master Oberon',
+        officialCategory: 'Archfoe',
+        huntMode: BosstiaryHuntMode.SOLO,
+        recommendedLevelSolo: 300,
+        recommendedLevelParty: null,
+        difficulty: null,
+        locationName: null,
+        locationRegion: null,
+        originCity: null,
+        accessStatus: BosstiaryAccessStatus.UNKNOWN,
+        accessRequirements: null,
+        howToReach: null,
+        cooldownSeconds: null,
+        estimatedCombatMinutes: null,
+        bossPoints: null,
+        mechanics: null,
+        strategy: null,
+        vocations: [],
+      },
+    ]);
+    await service.findAll({ search: 'oberon' });
+    expect(prisma.bosstiaryBoss.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              OR: expect.arrayContaining([
+                { name: { contains: 'oberon', mode: 'insensitive' } },
+              ]),
+            }),
+          ]),
+        }),
+      }),
+    );
+  });
+
   it('throws when a reviewed profile does not exist', async () => {
     prisma.bosstiaryBoss.findFirst.mockResolvedValue(null);
     await expect(service.findBySlug('ferumbras')).rejects.toBeInstanceOf(NotFoundException);

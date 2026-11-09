@@ -126,6 +126,15 @@ model User {
   communityRotationCommentLikes CommunityRotationCommentLike[]
   communityRotationTests CommunityRotationTest[]
   communityRotationPublishIdempotencies CommunityRotationPublishIdempotency[]
+  bosstiaryProgressActivities BosstiaryProgressActivity[]
+  bosstiaryBossChecklists     BosstiaryBossChecklist[]
+  partiesCreated              Party[]                    @relation("PartyCreator")
+  partyMemberships            PartyMember[]
+  partyInvitesSent            PartyInvitation[]          @relation("PartyInviteSender")
+  partyInvitesReceived        PartyInvitation[]          @relation("PartyInvitee")
+  huntSessionsCreated         HuntSession[]              @relation("HuntSessionCreator")
+  huntSessionParticipations   HuntSessionParticipant[]
+  appNotifications            AppNotification[]
 }
 
 /// Active login. Logout deletes this row, so that token stops working.
@@ -1424,6 +1433,8 @@ model BosstiaryBoss {
   vocations              BosstiaryBossVocation[]
   rotationStops          BosstiaryRotationStop[]
   communityRotationBosses CommunityRotationBoss[]
+  progressActivities     BosstiaryProgressActivity[]
+  checklistEntries       BosstiaryBossChecklist[]
 
   @@index([isActive])
   @@index([huntMode])
@@ -1565,6 +1576,8 @@ model CommunityRotation {
   comments  CommunityRotationComment[]
   tests     CommunityRotationTest[]
   publishIdempotency CommunityRotationPublishIdempotency?
+  progressActivities BosstiaryProgressActivity[]
+  huntSessions       HuntSession[]
 
   @@index([status, createdAt])
   @@index([status, recommendedLevel, huntMode, plannedDurationMinutes])
@@ -1685,6 +1698,240 @@ model CommunityRotationTest {
   rotation CommunityRotation @relation(fields: [rotationId], references: [id], onDelete: Cascade)
   user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([rotationId, userId])
   @@index([rotationId, createdAt])
   @@index([userId])
+}
+
+enum BosstiaryActivityKind {
+  BOSS_KILL
+  DROP
+}
+
+/// PRIVATE: owner only. PUBLIC: owner plus future public surfaces. GROUP: active members of the linked Party.
+enum BosstiaryVisibility {
+  PRIVATE
+  PUBLIC
+  GROUP
+}
+
+/// Personal hunt diary. Independent from BosstiaryBossChecklist current state.
+model BosstiaryProgressActivity {
+  id              String                 @id @default(uuid())
+  userId          String
+  kind            BosstiaryActivityKind
+  bossId          String?
+  bossName        String
+  rotationId      String?
+  rotationTitle   String?
+  itemName        String?
+  itemQuantity    Int?
+  note            String?
+  visibility      BosstiaryVisibility    @default(PRIVATE)
+  occurredAt      DateTime
+  partyId         String?
+  partySessionId  String?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  boss         BosstiaryBoss?      @relation(fields: [bossId], references: [id], onDelete: SetNull)
+  rotation     CommunityRotation?  @relation(fields: [rotationId], references: [id], onDelete: SetNull)
+  party        Party?              @relation(fields: [partyId], references: [id], onDelete: SetNull)
+  huntSession  HuntSession?        @relation(fields: [partySessionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, occurredAt])
+  @@index([userId, kind, occurredAt])
+  @@index([bossId])
+  @@index([rotationId])
+  @@index([userId, visibility])
+  @@index([partyId, visibility, occurredAt])
+  @@index([partySessionId, occurredAt])
+}
+
+/// Current defeated/pending state per user and reviewed boss. History rows are never deleted from here.
+model BosstiaryBossChecklist {
+  id              String         @id @default(uuid())
+  userId          String
+  bossId          String
+  defeated        Boolean        @default(false)
+  lastDefeatedAt  DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  boss BosstiaryBoss @relation(fields: [bossId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bossId])
+  @@index([userId, defeated])
+}
+
+enum PartyStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum PartyMemberRole {
+  LEADER
+  OFFICER
+  MEMBER
+}
+
+enum PartyMemberStatus {
+  ACTIVE
+  LEFT
+  REMOVED
+}
+
+enum PartyInvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELLED
+}
+
+enum HuntSessionStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum HuntSessionParticipantStatus {
+  INVITED
+  CONFIRMED
+  LEFT
+}
+
+enum AppNotificationKind {
+  PARTY_INVITE_RECEIVED
+  PARTY_INVITE_ACCEPTED
+  PARTY_INVITE_DECLINED
+  PARTY_MEMBER_ADDED
+  PARTY_MEMBER_REMOVED
+  HUNT_SESSION_CREATED
+  HUNT_SESSION_INVITED
+  HUNT_SESSION_STARTED
+  HUNT_SESSION_COMPLETED
+}
+
+model Party {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  createdById String
+  status      PartyStatus @default(ACTIVE)
+  isPrivate   Boolean     @default(true)
+  archivedAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  createdBy    User              @relation("PartyCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  members      PartyMember[]
+  invitations  PartyInvitation[]
+  sessions     HuntSession[]
+  activities   BosstiaryProgressActivity[]
+
+  @@index([createdById, createdAt])
+  @@index([status, createdAt])
+}
+
+model PartyMember {
+  id        String            @id @default(uuid())
+  partyId   String
+  userId    String
+  role      PartyMemberRole   @default(MEMBER)
+  status    PartyMemberStatus @default(ACTIVE)
+  joinedAt  DateTime          @default(now())
+  leftAt    DateTime?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  party Party @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([partyId, userId])
+  @@index([userId, status])
+  @@index([partyId, status])
+}
+
+model PartyInvitation {
+  id               String                 @id @default(uuid())
+  partyId          String
+  inviterId        String
+  emailNormalized  String
+  inviteeUserId    String?
+  status           PartyInvitationStatus  @default(PENDING)
+  expiresAt        DateTime
+  respondedAt      DateTime?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  party   Party @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  inviter User  @relation("PartyInviteSender", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee User? @relation("PartyInvitee", fields: [inviteeUserId], references: [id], onDelete: SetNull)
+
+  @@index([inviteeUserId, status, createdAt])
+  @@index([emailNormalized, status])
+  @@index([partyId, status, createdAt])
+  @@index([inviterId, createdAt])
+}
+
+model HuntSession {
+  id             String            @id @default(uuid())
+  partyId        String
+  createdById    String
+  rotationId     String?
+  rotationTitle  String?
+  title          String
+  description    String?
+  plannedAt      DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  status         HuntSessionStatus @default(PLANNED)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  party        Party                     @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  createdBy    User                      @relation("HuntSessionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  rotation     CommunityRotation?        @relation(fields: [rotationId], references: [id], onDelete: SetNull)
+  participants HuntSessionParticipant[]
+  activities   BosstiaryProgressActivity[]
+
+  @@index([partyId, createdAt])
+  @@index([partyId, status])
+  @@index([rotationId])
+}
+
+model HuntSessionParticipant {
+  id        String                       @id @default(uuid())
+  sessionId String
+  userId    String
+  status    HuntSessionParticipantStatus @default(CONFIRMED)
+  createdAt DateTime                     @default(now())
+  updatedAt DateTime                     @updatedAt
+
+  session HuntSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([userId, status])
+}
+
+model AppNotification {
+  id        String               @id @default(uuid())
+  userId    String
+  kind      AppNotificationKind
+  title     String
+  body      String
+  partyId   String?
+  sessionId String?
+  readAt    DateTime?
+  createdAt DateTime             @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
 }

@@ -12,6 +12,7 @@ import { BillingService } from '../billing/billing.service';
 import { PendingLicenseGrantService } from '../billing/pending-license-grant.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeviceService } from './device.service';
+import { PartyService } from '../bosstiary/party.service';
 import { ReferralService } from '../referrals/referral.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -67,6 +68,7 @@ export class AuthService {
     private readonly devices: DeviceService,
     @Optional() private readonly referrals?: ReferralService,
     @Optional() private readonly pendingGrants?: PendingLicenseGrantService,
+    @Optional() private readonly parties?: PartyService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -102,6 +104,7 @@ export class AuthService {
 
     await this.attachReferral(user.id, dto.referralCode);
     await this.claimPendingGrants(user.id, user.email);
+    await this.attachPartyInvites(user.id, user.email);
     const deviceId = await this.devices.claim(user.id, dto.device);
     return {
       user: await this.presentUser(user),
@@ -124,6 +127,7 @@ export class AuthService {
     }
 
     await this.claimPendingGrants(user.id, user.email);
+    await this.attachPartyInvites(user.id, user.email);
     const deviceId = await this.devices.claim(user.id, dto.device);
     return {
       user: await this.presentUser(user),
@@ -149,6 +153,7 @@ export class AuthService {
       }
       this.logger.log('auth.google.stage=linked_user');
       await this.claimPendingGrants(linked.id, linked.email);
+      await this.attachPartyInvites(linked.id, linked.email);
       return this.sessionFor(linked, device);
     }
 
@@ -178,6 +183,7 @@ export class AuthService {
       this.logger.log('auth.google.stage=created_user');
       await this.attachReferral(user.id, referralCode);
       await this.claimPendingGrants(user.id, user.email);
+      await this.attachPartyInvites(user.id, user.email);
       return {
         ...(await this.sessionFor(user, device)),
         accountCreated: true,
@@ -360,6 +366,15 @@ export class AuthService {
       this.logger.warn(
         `auth.pending_grant.skipped ${loggedErrorSummary(error)}`,
       );
+    }
+  }
+
+  private async attachPartyInvites(userId: string, email: string) {
+    if (!this.parties) return;
+    try {
+      await this.parties.attachInvitesForAuthenticatedUser(userId, email);
+    } catch (error) {
+      this.logger.warn(`auth.party_invite.skipped ${loggedErrorSummary(error)}`);
     }
   }
 

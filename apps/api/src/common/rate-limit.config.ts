@@ -7,6 +7,8 @@ export const RATE_LIMITS = {
   bosstiaryCommentWrite: { limit: 20, windowMs: 60_000 },
   communityRotationWrite: { limit: 12, windowMs: 60_000 },
   communityRotationSocial: { limit: 40, windowMs: 60_000 },
+  bosstiaryProgressWrite: { limit: 30, windowMs: 60_000 },
+  partyWrite: { limit: 20, windowMs: 60_000 },
   huntUpdateRequestWrite: { limit: 20, windowMs: 60_000 },
   ticketWrite: { limit: 20, windowMs: 60_000 },
   analyticsWrite: { limit: 60, windowMs: 60_000 },
