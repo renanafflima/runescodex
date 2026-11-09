@@ -8,14 +8,12 @@ const {
   listBosstiaryProgressRotations,
   listBosstiaryProgressChecklist,
   createBosstiaryProgressActivity,
-  listBosstiaryBosses,
 } = vi.hoisted(() => ({
   getBosstiaryProgressSummary: vi.fn(),
   listBosstiaryProgressActivities: vi.fn(),
   listBosstiaryProgressRotations: vi.fn(),
   listBosstiaryProgressChecklist: vi.fn(),
   createBosstiaryProgressActivity: vi.fn(),
-  listBosstiaryBosses: vi.fn(),
 }));
 
 vi.mock("../../services/api/bosstiary-progress", () => ({
@@ -29,8 +27,21 @@ vi.mock("../../services/api/bosstiary-progress", () => ({
   updateBosstiaryProgressChecklist: vi.fn(),
 }));
 
-vi.mock("../../services/api/bosstiary", () => ({
-  listBosstiaryBosses,
+vi.mock("../../domain/bosstiary-catalog", () => ({
+  loadBosstiaryCatalog: () => ({
+    skipped: 0,
+    entries: [
+      {
+        name: "Grand Master Oberon",
+        slug: "grand-master-oberon",
+        imageUrl: null,
+      },
+    ],
+  }),
+  searchBosstiaryCatalog: (
+    entries: Array<{ name: string; slug: string }>,
+    query: string,
+  ) => entries.filter((entry) => entry.name.toLowerCase().includes(query.toLowerCase())),
 }));
 
 vi.mock("../../services/api/parties", () => ({
@@ -53,7 +64,6 @@ describe("BosstiaryProgressPanel", () => {
     listBosstiaryProgressRotations.mockReset();
     listBosstiaryProgressChecklist.mockReset();
     createBosstiaryProgressActivity.mockReset();
-    listBosstiaryBosses.mockReset();
     getBosstiaryProgressSummary.mockResolvedValue({
       bossesDefeated: 3,
       dropsRegistered: 2,
@@ -76,13 +86,6 @@ describe("BosstiaryProgressPanel", () => {
       total: 0,
       hasMore: false,
     });
-    listBosstiaryBosses.mockResolvedValue({
-      items: [{ id: "boss-1", name: "Grand Master Oberon", slug: "grand-master-oberon" }],
-      page: 1,
-      limit: 8,
-      total: 1,
-      hasMore: false,
-    });
     createBosstiaryProgressActivity.mockResolvedValue({ id: "act-1" });
   });
 
@@ -96,15 +99,15 @@ describe("BosstiaryProgressPanel", () => {
     expect(screen.getByText("3 / 6")).toBeInTheDocument();
     expect(screen.getByText("12")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("Boss"), { target: { value: "Oberon" } });
-    await waitFor(() => expect(listBosstiaryBosses).toHaveBeenCalled());
+    fireEvent.change(screen.getByLabelText("Boss"), { target: { value: "ob" } });
     fireEvent.click(await screen.findByRole("button", { name: /Grand Master Oberon/ }));
     fireEvent.click(screen.getByRole("button", { name: "Salvar registro" }));
     await waitFor(() =>
       expect(createBosstiaryProgressActivity).toHaveBeenCalledWith(
         expect.objectContaining({
           kind: "BOSS_KILL",
-          bossId: "boss-1",
+          slug: "grand-master-oberon",
+          bossName: "Grand Master Oberon",
         }),
       ),
     );

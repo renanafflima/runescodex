@@ -77,6 +77,7 @@ export type CommunityRotationSocialState = {
 
 export type CommunityRotationBossInput = {
   bossId?: string;
+  slug?: string;
   bossName?: string;
   position: number;
   notes?: string;

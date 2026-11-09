@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadBosstiaryCatalog } from "./bosstiary-catalog";
+import { loadBosstiaryCatalog, searchBosstiaryCatalog } from "./bosstiary-catalog";
 
 describe("bosstiary candidate catalog", () => {
   it("keeps TibiaWiki candidates unclassified until an editorial review exists", () => {
@@ -22,5 +22,12 @@ describe("bosstiary candidate catalog", () => {
     expect(ferumbras?.sourceUrl.startsWith("https://www.tibiawiki.com.br/wiki/")).toBe(true);
     expect(typeof ferumbras?.imageUrl).toBe("string");
     expect(catalog.entries.filter((entry) => entry.imageUrl).length).toBeGreaterThan(300);
+  });
+
+  it("finds official bosses by a partial case-insensitive name", () => {
+    const catalog = loadBosstiaryCatalog();
+    const hits = searchBosstiaryCatalog(catalog.entries, "ob", 8);
+    expect(hits.some((entry) => entry.name === "Grand Master Oberon")).toBe(true);
+    expect(searchBosstiaryCatalog(catalog.entries, "o", 8)).toEqual([]);
   });
 });

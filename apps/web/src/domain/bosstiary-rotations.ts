@@ -119,11 +119,10 @@ export function parseBosstiaryTab(value: string | null): BosstiaryTab {
 }
 
 export const COMMUNITY_INNER_VIEWS: Array<{
-  id: CommunityInnerView;
+  id: Exclude<CommunityInnerView, "planner">;
   label: string;
 }> = [
   { id: "feed", label: "Rotações publicadas" },
-  { id: "planner", label: "Planejador" },
   { id: "level", label: "Recomendações por level" },
   { id: "party", label: "Minhas Partys" },
 ];
@@ -132,7 +131,7 @@ export function parseCommunityInnerView(
   tabParam: string | null,
   view: string | null,
 ): CommunityInnerView {
-  if (tabParam === "rotas" || view === "planner") return "planner";
+  if (tabParam === "rotas" || view === "planner") return "feed";
   if (tabParam === "level" || view === "level") return "level";
   if (view === "party") return "party";
   return "feed";

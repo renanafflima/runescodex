@@ -51,6 +51,9 @@ export function describeApiError(error: unknown) {
       }
       return "Você não tem permissão para esta ação.";
     }
+    if (error.status === 503 && error.message && !/internal server error/i.test(error.message)) {
+      return error.message;
+    }
     if (error.status === 500 || error.status === 503) {
       return "Erro temporário no servidor. Tente novamente.";
     }

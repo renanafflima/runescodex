@@ -7,7 +7,6 @@ import { BosstiaryProgressPanel } from "../components/bosstiary/BosstiaryProgres
 import { EncyclopediaPanel } from "../components/bosstiary/EncyclopediaPanel";
 import { CommunityRotationsFeed } from "../components/bosstiary/CommunityRotationsFeed";
 import { PartyPanel } from "../components/bosstiary/PartyPanel";
-import { RotationsPlanner } from "../components/bosstiary/RotationsPlanner";
 import { loadBosstiaryCatalog, type BosstiaryCatalog } from "../domain/bosstiary-catalog";
 import {
   BOSSTIARY_TABS,
@@ -126,8 +125,7 @@ export function BosstiaryPage() {
               })}
             </nav>
 
-            {communityView === "feed" ? <CommunityRotationsFeed /> : null}
-            {communityView === "planner" ? <RotationsPlanner /> : null}
+            {communityView === "feed" || communityView === "planner" ? <CommunityRotationsFeed /> : null}
             {communityView === "party" ? <PartyPanel /> : null}
             {communityView === "level" ? (
               loading && !catalog ? (

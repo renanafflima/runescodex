@@ -19,9 +19,9 @@ describe("bosstiary rotations domain", () => {
 
   it("maps old rotation and level URLs to community inner views", () => {
     expect(parseCommunityInnerView(null, null)).toBe("feed");
-    expect(parseCommunityInnerView("rotas", null)).toBe("planner");
+    expect(parseCommunityInnerView("rotas", null)).toBe("feed");
     expect(parseCommunityInnerView("level", null)).toBe("level");
-    expect(parseCommunityInnerView(null, "planner")).toBe("planner");
+    expect(parseCommunityInnerView(null, "planner")).toBe("feed");
     expect(parseCommunityInnerView(null, "level")).toBe("level");
     expect(parseCommunityInnerView(null, "party")).toBe("party");
   });

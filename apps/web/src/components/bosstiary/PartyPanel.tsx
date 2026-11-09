@@ -63,17 +63,21 @@ export function PartyPanel() {
     setLoading(true);
     setError("");
     try {
-      const [mine, inbox, outbox, inboxNotes] = await Promise.all([
+      const [mine, inbox, outbox, inboxNotes] = await Promise.allSettled([
         listMyParties(),
         listReceivedPartyInvites(),
         listSentPartyInvites(),
         listPartyNotifications(),
       ]);
       if (!current()) return;
-      setParties(mine.items);
-      setReceived(inbox.items);
-      setSent(outbox.items);
-      setNotifications(inboxNotes.items);
+      if (mine.status === "fulfilled") setParties(mine.value.items);
+      if (inbox.status === "fulfilled") setReceived(inbox.value.items);
+      if (outbox.status === "fulfilled") setSent(outbox.value.items);
+      if (inboxNotes.status === "fulfilled") setNotifications(inboxNotes.value.items);
+      const failed = [mine, inbox, outbox, inboxNotes].find((item) => item.status === "rejected");
+      if (failed?.status === "rejected") {
+        setError(describeApiError(failed.reason));
+      }
     } catch (err) {
       if (!current()) return;
       setError(describeApiError(err));

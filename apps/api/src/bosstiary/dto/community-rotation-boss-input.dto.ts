@@ -22,6 +22,14 @@ export class CommunityRotationBossInputDto {
   @IsUUID()
   bossId?: string;
 
+  /** Slug do catálogo oficial (TibiaWiki / BosstiaryBoss). A API resolve o id quando o perfil existe. */
+  @IsOptional()
+  @Transform(({ value }) => trimOptional(value))
+  @IsString()
+  @MinLength(2)
+  @MaxLength(96)
+  slug?: string;
+
   @ValidateIf((item) => !item.bossId)
   @Transform(({ value }) => trimOptional(value))
   @IsString()

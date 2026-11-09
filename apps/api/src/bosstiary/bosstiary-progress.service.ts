@@ -336,6 +336,7 @@ export class BosstiaryProgressService {
     dto: {
       kind: BosstiaryActivityKind;
       bossId?: string | null;
+      slug?: string | null;
       bossName?: string | null;
       rotationId?: string | null;
       itemName?: string | null;
@@ -354,6 +355,15 @@ export class BosstiaryProgressService {
       }
       bossId = boss.id;
       bossName = boss.name;
+    } else if (dto.slug?.trim()) {
+      const boss = await this.prisma.bosstiaryBoss.findFirst({
+        where: { slug: dto.slug.trim(), isActive: true },
+        select: { id: true, name: true },
+      });
+      if (boss) {
+        bossId = boss.id;
+        bossName = boss.name;
+      }
     }
     if (!bossName) {
       throw new BadRequestException('Informe um boss do catálogo ou um nome.');

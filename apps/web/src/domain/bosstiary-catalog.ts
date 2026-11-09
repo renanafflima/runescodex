@@ -43,6 +43,25 @@ function isCandidate(value: unknown): value is {
   );
 }
 
+export function searchBosstiaryCatalog(
+  entries: BosstiaryEntry[],
+  query: string,
+  limit = 8,
+) {
+  const needle = query.trim().toLocaleLowerCase("pt-BR");
+  if (needle.length < 2) return [];
+  const hits: BosstiaryEntry[] = [];
+  for (const entry of entries) {
+    const name = entry.name.toLocaleLowerCase("pt-BR");
+    const slug = entry.slug.toLocaleLowerCase("pt-BR");
+    if (name.includes(needle) || slug.includes(needle)) {
+      hits.push(entry);
+      if (hits.length >= limit) break;
+    }
+  }
+  return hits;
+}
+
 export function loadBosstiaryCatalog(): BosstiaryCatalog {
   if (!Array.isArray(extracted)) {
     throw new Error("A lista de bosses extraída não é uma lista.");

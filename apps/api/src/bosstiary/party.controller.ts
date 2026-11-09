@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/decorators/current-user.decorator';
@@ -16,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PremiumGuard } from '../billing/premium.guard';
 import { RATE_LIMITS } from '../common/rate-limit.config';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
+import { missingSchemaInterceptor } from '../common/missing-schema';
 import { BosstiaryProgressService } from './bosstiary-progress.service';
 import {
   AddSessionParticipantDto,
@@ -33,6 +35,11 @@ import { PartyService } from './party.service';
 
 @Controller('bosstiary/parties')
 @UseGuards(JwtAuthGuard, PremiumGuard)
+@UseInterceptors(
+  missingSchemaInterceptor(
+    'As tabelas de Party ainda não estão aplicadas neste banco. A migration de Party precisa ser publicada antes desta tela funcionar.',
+  ),
+)
 export class PartyController {
   constructor(
     private readonly parties: PartyService,

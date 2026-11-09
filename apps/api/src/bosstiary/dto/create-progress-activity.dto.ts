@@ -43,6 +43,13 @@ export class CreateProgressActivityDto {
   @Transform(({ value }) => trimOptional(value))
   @IsString()
   @MinLength(2)
+  @MaxLength(96)
+  slug?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimOptional(value))
+  @IsString()
+  @MinLength(2)
   @MaxLength(PROGRESS_NAME_MAX)
   bossName?: string;
 

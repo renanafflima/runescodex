@@ -73,6 +73,7 @@ export async function listBosstiaryProgressActivities(query: {
 export function createBosstiaryProgressActivity(payload: {
   kind: BosstiaryActivityKind;
   bossId?: string;
+  slug?: string;
   bossName?: string;
   rotationId?: string;
   partyId?: string;

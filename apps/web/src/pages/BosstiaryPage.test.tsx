@@ -194,12 +194,11 @@ describe("BosstiaryPage", () => {
     expect(screen.queryByRole("button", { name: /^Rotações$/ })).not.toBeInTheDocument();
   });
 
-  it("keeps planner and level as community inner views", () => {
+  it("hides the planner and keeps level inside the community area", async () => {
     show("?tab=rotas");
-    expect(screen.getByRole("heading", { name: "Monte sua rotação" })).toBeInTheDocument();
-    const card20 = screen.getByRole("button", { name: /20 min/i });
-    fireEvent.click(card20);
-    expect(card20).toHaveAttribute("aria-pressed", "true");
+    expect(await screen.findByRole("heading", { name: "Rotações da Comunidade" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Planejador" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Monte sua rotação" })).not.toBeInTheDocument();
   });
 
   it("opens recommendations by level from the community area", async () => {
@@ -233,11 +232,10 @@ describe("BosstiaryPage", () => {
     expect(screen.getByRole("dialog", { name: "Ferumbras" })).toBeInTheDocument();
   });
 
-  it("calls the rotations service from the planner", async () => {
+  it("does not open the planner from a legacy view query", async () => {
     show("?view=planner");
-    fireEvent.click(screen.getByRole("button", { name: "Encontrar rotações" }));
-    await waitFor(() => expect(findBosstiaryRotations).toHaveBeenCalled());
-    expect(await screen.findByText("Sem rotações verificadas.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Rotações da Comunidade" })).toBeInTheDocument();
+    expect(findBosstiaryRotations).not.toHaveBeenCalled();
   });
 
   it("shows personal progress from live summary data", async () => {
