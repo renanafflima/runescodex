@@ -177,26 +177,57 @@ export class CommunityRotationsService {
     dto: CreateCommunityRotationDto,
     idempotencyKeyRaw?: string,
   ) {
-    const bosses = await this.validateBosses(dto.bosses);
-    const idempotencyKey =
+    const bosses = await this.validateBosses(await this.resolveCatalogBosses(dto.bosses));
+    let idempotencyKey =
       sanitizeCommunityRotationIdempotencyKey(idempotencyKeyRaw);
     const requestHash = hashCommunityRotationCreatePayload(dto);
 
     if (idempotencyKey) {
-      const cached = await this.findIdempotentCreate(
-        userId,
-        idempotencyKey,
-        requestHash,
-      );
-      if (cached) {
-        return cached;
+      try {
+        const cached = await this.findIdempotentCreate(
+          userId,
+          idempotencyKey,
+          requestHash,
+        );
+        if (cached) {
+          return cached;
+        }
+      } catch (error) {
+        if (!isMissingIdempotencyStore(error)) {
+          throw error;
+        }
+        idempotencyKey = null;
       }
     }
 
-    const status = CommunityRotationStatus.PUBLISHED;
-
     try {
-      const row = await this.prisma.$transaction(async (tx) => {
+      return await this.persistRotation(userId, dto, bosses, idempotencyKey ?? undefined, requestHash);
+    } catch (error) {
+      if (idempotencyKey && isMissingIdempotencyStore(error)) {
+        return this.persistRotation(userId, dto, bosses, undefined, requestHash);
+      }
+      if (idempotencyKey && isUniqueViolation(error)) {
+        const cached = await this.findIdempotentCreate(
+          userId,
+          idempotencyKey,
+          requestHash,
+        );
+        if (cached) {
+          return cached;
+        }
+      }
+      throw error;
+    }
+  }
+
+  private async persistRotation(
+    userId: string,
+    dto: CreateCommunityRotationDto,
+    bosses: Awaited<ReturnType<CommunityRotationsService['validateBosses']>>,
+    idempotencyKey: string | undefined,
+    requestHash: string,
+  ) {
+    const row = await this.prisma.$transaction(async (tx) => {
         if (idempotencyKey) {
           await this.lockPublishIdempotency(tx, userId, idempotencyKey);
           const prior = await tx.communityRotationPublishIdempotency.findUnique(
@@ -236,15 +267,13 @@ export class CommunityRotationsService {
             observedTotalMinutes: dto.observedTotalMinutes ?? null,
             combatMinutes: dto.combatMinutes ?? null,
             travelMinutes: dto.travelMinutes ?? null,
-            status,
+            status: CommunityRotationStatus.PUBLISHED,
             bosses: { create: bosses },
           },
           include: ROTATION_INCLUDE,
         });
 
-        if (status === CommunityRotationStatus.PUBLISHED) {
-          await this.recordPublishReward(tx, userId, created.id);
-        }
+        await this.recordPublishReward(tx, userId, created.id);
 
         if (idempotencyKey) {
           await tx.communityRotationPublishIdempotency.create({
@@ -260,20 +289,7 @@ export class CommunityRotationsService {
         return created;
       });
 
-      return this.cardFromRow(row, userId);
-    } catch (error) {
-      if (idempotencyKey && isUniqueViolation(error)) {
-        const cached = await this.findIdempotentCreate(
-          userId,
-          idempotencyKey,
-          requestHash,
-        );
-        if (cached) {
-          return cached;
-        }
-      }
-      throw error;
-    }
+    return this.cardFromRow(row, userId);
   }
 
   async update(id: string, userId: string, dto: UpdateCommunityRotationDto) {
@@ -281,7 +297,7 @@ export class CommunityRotationsService {
     const bosses =
       dto.bosses === undefined
         ? undefined
-        : await this.validateBosses(dto.bosses);
+        : await this.validateBosses(await this.resolveCatalogBosses(dto.bosses));
 
     const row = await this.prisma.$transaction(async (tx) => {
       if (bosses !== undefined) {
@@ -507,6 +523,35 @@ export class CommunityRotationsService {
       ];
     }
     return [{ createdAt: 'desc' }, { id: 'desc' }];
+  }
+
+  private async resolveCatalogBosses(bosses: CommunityRotationBossInputDto[]) {
+    const slugs = [
+      ...new Set(
+        bosses
+          .map((item) => item.slug?.trim())
+          .filter((value): value is string => Boolean(value)),
+      ),
+    ];
+    if (slugs.length === 0) {
+      return bosses;
+    }
+    const rows = await this.prisma.bosstiaryBoss.findMany({
+      where: { slug: { in: slugs }, isActive: true },
+      select: { id: true, slug: true, name: true },
+    });
+    const bySlug = new Map(rows.map((row) => [row.slug, row]));
+    return bosses.map((item) => {
+      const match = item.slug ? bySlug.get(item.slug.trim()) : undefined;
+      if (!match) {
+        return item;
+      }
+      return {
+        ...item,
+        bossId: match.id,
+        bossName: match.name,
+      };
+    });
   }
 
   private async validateBosses(bosses: CommunityRotationBossInputDto[]) {
@@ -821,6 +866,14 @@ function emptyEngagement(): EngagementState {
     authorTested: new Set(),
     testedByMe: new Set(),
   };
+}
+
+function isMissingIdempotencyStore(error: unknown) {
+  if (!error || typeof error !== 'object' || !('code' in error)) {
+    return false;
+  }
+  const code = (error as { code?: string }).code;
+  return code === 'P2021' || code === 'P2022';
 }
 
 function isUniqueViolation(error: unknown) {

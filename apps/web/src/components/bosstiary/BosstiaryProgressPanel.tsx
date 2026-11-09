@@ -7,25 +7,22 @@ import { Input, Select, Textarea } from "../ui/FormControls";
 import { Pagination } from "../ui/Pagination";
 import { useLatestRequest } from "../../hooks/useLatestRequest";
 import { describeApiError } from "../../services/api/errors";
-import { listBosstiaryBosses, type BosstiaryReviewedBoss } from "../../services/api/bosstiary";
-import { readPage } from "../../services/api/page";
+import { loadBosstiaryCatalog, searchBosstiaryCatalog } from "../../domain/bosstiary-catalog";
+import type { BosstiaryEntry } from "../../domain/bosstiary";
 import {
   createBosstiaryProgressActivity,
   deleteBosstiaryProgressActivity,
   getBosstiaryProgressSummary,
   listBosstiaryProgressActivities,
   listBosstiaryProgressChecklist,
-  listBosstiaryProgressRotations,
   updateBosstiaryProgressActivity,
   updateBosstiaryProgressChecklist,
   type BosstiaryActivityKind,
   type BosstiaryChecklistItem,
   type BosstiaryProgressActivity,
-  type BosstiaryProgressRotationOption,
   type BosstiaryProgressSummary,
   type BosstiaryVisibility,
 } from "../../services/api/bosstiary-progress";
-import { listHuntSessions, listMyParties, type HuntSession, type PartySummary } from "../../services/api/parties";
 
 const SEARCH_DEBOUNCE_MS = 300;
 type ProgressView = "mine" | "all" | "party";
@@ -69,20 +66,18 @@ export function BosstiaryProgressPanel() {
   const [view, setView] = useState<ProgressView>("mine");
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [activities, setActivities] = useState<BosstiaryProgressActivity[]>([]);
-  const [rotations, setRotations] = useState<BosstiaryProgressRotationOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [kind, setKind] = useState<BosstiaryActivityKind>("BOSS_KILL");
   const [occurredAt, setOccurredAt] = useState(todayInput);
   const [note, setNote] = useState("");
   const [visibility, setVisibility] = useState<BosstiaryVisibility>("PRIVATE");
-  const [rotationId, setRotationId] = useState("");
   const [itemName, setItemName] = useState("");
   const [itemQuantity, setItemQuantity] = useState("1");
   const [bossSearch, setBossSearch] = useState("");
   const [bossQuery, setBossQuery] = useState("");
-  const [bossHits, setBossHits] = useState<BosstiaryReviewedBoss[]>([]);
-  const [selectedBoss, setSelectedBoss] = useState<BosstiaryReviewedBoss | null>(null);
+  const [bossHits, setBossHits] = useState<BosstiaryEntry[]>([]);
+  const [selectedBoss, setSelectedBoss] = useState<BosstiaryEntry | null>(null);
   const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState("");
   const [checklist, setChecklist] = useState<BosstiaryChecklistItem[]>([]);
@@ -97,11 +92,6 @@ export function BosstiaryProgressPanel() {
   const [dropSearch, setDropSearch] = useState("");
   const [dropFrom, setDropFrom] = useState("");
   const [dropTo, setDropTo] = useState("");
-  const [partyId, setPartyId] = useState("");
-  const [huntSessionId, setHuntSessionId] = useState("");
-  const [parties, setParties] = useState<PartySummary[]>([]);
-  const [sessions, setSessions] = useState<HuntSession[]>([]);
-
   useEffect(() => {
     const timer = window.setTimeout(() => setBossQuery(bossSearch.trim()), SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
@@ -120,34 +110,25 @@ export function BosstiaryProgressPanel() {
       setBossHits([]);
       return;
     }
-    const current = requests.start();
-    void listBosstiaryBosses({ search: bossQuery, limit: 8 })
-      .then((body) => {
-        if (!current()) return;
-        setBossHits(readPage<BosstiaryReviewedBoss>(body).items);
-      })
-      .catch(() => {
-        if (!current()) return;
-        setBossHits([]);
-      });
-  }, [bossQuery, requests]);
+    try {
+      setBossHits(searchBosstiaryCatalog(loadBosstiaryCatalog().entries, bossQuery, 8));
+    } catch {
+      setBossHits([]);
+    }
+  }, [bossQuery]);
 
   const loadMine = useCallback(async () => {
     const current = requests.start();
     setLoading(true);
     setError("");
     try {
-      const [nextSummary, nextActivities, nextRotations, nextParties] = await Promise.all([
+      const [nextSummary, nextActivities] = await Promise.all([
         getBosstiaryProgressSummary(),
         listBosstiaryProgressActivities({ limit: 20 }),
-        listBosstiaryProgressRotations(),
-        listMyParties(),
       ]);
       if (!current()) return;
       setSummary(nextSummary);
       setActivities(nextActivities.items);
-      setRotations(nextRotations);
-      setParties(nextParties.items);
     } catch (err) {
       if (!current()) return;
       setError(describeApiError(err));
@@ -183,15 +164,6 @@ export function BosstiaryProgressPanel() {
     else if (view === "all") void loadChecklist();
   }, [view, loadMine, loadChecklist]);
 
-  useEffect(() => {
-    if (!partyId) {
-      setSessions([]);
-      setHuntSessionId("");
-      return;
-    }
-    void listHuntSessions(partyId).then((result) => setSessions(result.items)).catch(() => setSessions([]));
-  }, [partyId]);
-
   const drops = useMemo(() => {
     return activities.filter((row) => {
       if (row.kind !== "DROP") return false;
@@ -207,16 +179,17 @@ export function BosstiaryProgressPanel() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (!selectedBoss) {
+      setFormError("Selecione um boss do catálogo oficial.");
+      return;
+    }
     setFormError("");
     setPending(true);
     try {
       await createBosstiaryProgressActivity({
         kind,
-        bossId: selectedBoss?.id,
-        bossName: selectedBoss ? undefined : bossSearch.trim() || undefined,
-        rotationId: rotationId || undefined,
-        partyId: partyId || undefined,
-        huntSessionId: huntSessionId || undefined,
+        slug: selectedBoss?.slug,
+        bossName: selectedBoss?.name ?? (bossSearch.trim() || undefined),
         itemName: kind === "DROP" ? itemName.trim() : undefined,
         itemQuantity: kind === "DROP" ? Number(itemQuantity) : undefined,
         note: note.trim() || undefined,
@@ -348,16 +321,16 @@ export function BosstiaryProgressPanel() {
               {bossHits.length > 0 && !selectedBoss ? (
                 <ul className="bosstiary-progress-suggest">
                   {bossHits.map((boss) => (
-                    <li key={boss.id}>
+                    <li key={boss.slug}>
                       <button
                         onClick={() => {
                           setSelectedBoss(boss);
-                          setBossSearch(boss.name);
+                          setBossSearch("");
                           setBossHits([]);
                         }}
                         type="button"
                       >
-                        <CatalogImage alt="" name={boss.name} src={null} />
+                        <CatalogImage alt="" name={boss.name} src={boss.imageUrl} />
                         <span>{boss.name}</span>
                       </button>
                     </li>
@@ -382,36 +355,6 @@ export function BosstiaryProgressPanel() {
                   <Input label="Quantidade" min={1} onChange={(event) => setItemQuantity(event.target.value)} type="number" value={itemQuantity} />
                 </div>
               ) : null}
-              <Select
-                label="Party (opcional)"
-                onChange={(event) => {
-                  setPartyId(event.target.value);
-                  setHuntSessionId("");
-                }}
-                options={[
-                  { value: "", label: "Sem party" },
-                  ...parties.map((item) => ({ value: item.id, label: item.name })),
-                ]}
-                value={partyId}
-              />
-              <Select
-                label="Sessão de hunt (opcional)"
-                onChange={(event) => setHuntSessionId(event.target.value)}
-                options={[
-                  { value: "", label: "Sem sessão" },
-                  ...sessions.map((item) => ({ value: item.id, label: item.title })),
-                ]}
-                value={huntSessionId}
-              />
-              <Select
-                label="Rotação (opcional)"
-                onChange={(event) => setRotationId(event.target.value)}
-                options={[
-                  { value: "", label: "Sem rotação" },
-                  ...rotations.map((rotation) => ({ value: rotation.id, label: rotation.title })),
-                ]}
-                value={rotationId}
-              />
               <Select
                 label="Visibilidade"
                 onChange={(event) => setVisibility(event.target.value as BosstiaryVisibility)}

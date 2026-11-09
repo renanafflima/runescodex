@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { CatalogImage } from "../catalog/CatalogImage";
 import { Button } from "../ui/Button";
@@ -11,12 +11,11 @@ import {
   COMMUNITY_TITLE_MAX,
   type CommunityRecommendedLevel,
 } from "../../domain/bosstiary-community";
+import { loadBosstiaryCatalog, searchBosstiaryCatalog } from "../../domain/bosstiary-catalog";
+import type { BosstiaryEntry } from "../../domain/bosstiary";
 import { huntModeLabel, type BosstiaryHuntMode } from "../../domain/bosstiary-rotations";
 import { normalizeVocation, VOCATION_LABEL, VOCATIONS, type VocationCode } from "../../domain/vocation";
-import { useLatestRequest } from "../../hooks/useLatestRequest";
 import { describeApiError } from "../../services/api/errors";
-import { listBosstiaryBosses, type BosstiaryReviewedBoss } from "../../services/api/bosstiary";
-import { readPage } from "../../services/api/page";
 import {
   createCommunityRotation,
   type CommunityRotationBossInput,
@@ -25,9 +24,9 @@ import {
 
 type DraftBoss = {
   key: string;
-  bossId?: string;
   bossName: string;
   slug?: string;
+  manual?: boolean;
   imageUrl?: string | null;
   notes: string;
 };
@@ -51,27 +50,21 @@ export function CommunityRotationPublishModal({
   open,
 }: CommunityRotationPublishModalProps) {
   const { activeCharacter } = useAuth();
-  const requests = useLatestRequest();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [accessRequirements, setAccessRequirements] = useState("");
-  const [additionalInfo, setAdditionalInfo] = useState("");
   const [recommendedLevel, setRecommendedLevel] = useState<CommunityRecommendedLevel>("L300");
   const [huntMode, setHuntMode] = useState<BosstiaryHuntMode>("SOLO");
   const [plannedDuration, setPlannedDuration] = useState<(typeof COMMUNITY_PLANNED_DURATIONS)[number]>(30);
   const [vocation, setVocation] = useState<VocationCode>(
     () => normalizeVocation(activeCharacter?.vocation) ?? "EK",
   );
-  const [characterLevel, setCharacterLevel] = useState(() => String(activeCharacter?.level ?? ""));
-  const [partySize, setPartySize] = useState("");
   const [observedTotal, setObservedTotal] = useState("");
   const [combatMinutes, setCombatMinutes] = useState("");
   const [travelMinutes, setTravelMinutes] = useState("");
   const [bosses, setBosses] = useState<DraftBoss[]>([]);
   const [bossSearch, setBossSearch] = useState("");
   const [bossQuery, setBossQuery] = useState("");
-  const [bossHits, setBossHits] = useState<BosstiaryReviewedBoss[]>([]);
-  const [bossLoading, setBossLoading] = useState(false);
+  const [bossHits, setBossHits] = useState<BosstiaryEntry[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const publishIdempotencyKey = useRef<string | null>(null);
@@ -81,41 +74,25 @@ export function CommunityRotationPublishModal({
     return () => window.clearTimeout(timer);
   }, [bossSearch]);
 
-  const loadBosses = useCallback(async () => {
-    const current = requests.start();
-    setBossLoading(true);
-    try {
-      const result = readPage<BosstiaryReviewedBoss>(
-        await listBosstiaryBosses({
-          search: bossQuery || undefined,
-          limit: 12,
-        }),
-      );
-      if (!current()) return;
-      setBossHits(result.items);
-    } catch {
-      if (current()) setBossHits([]);
-    } finally {
-      if (current()) setBossLoading(false);
-    }
-  }, [bossQuery, requests]);
-
   useEffect(() => {
-    if (!open) return;
-    void loadBosses();
-  }, [loadBosses, open]);
+    if (!open || bossQuery.length < 2) {
+      setBossHits([]);
+      return;
+    }
+    try {
+      setBossHits(searchBosstiaryCatalog(loadBosstiaryCatalog().entries, bossQuery, 8));
+    } catch {
+      setBossHits([]);
+    }
+  }, [bossQuery, open]);
 
   function reset() {
     setTitle("");
     setDescription("");
-    setAccessRequirements("");
-    setAdditionalInfo("");
     setRecommendedLevel("L300");
     setHuntMode("SOLO");
     setPlannedDuration(30);
     setVocation(normalizeVocation(activeCharacter?.vocation) ?? "EK");
-    setCharacterLevel(String(activeCharacter?.level ?? ""));
-    setPartySize("");
     setObservedTotal("");
     setCombatMinutes("");
     setTravelMinutes("");
@@ -130,19 +107,19 @@ export function CommunityRotationPublishModal({
     onClose();
   }
 
-  function addBoss(hit: BosstiaryReviewedBoss) {
+  function addBoss(hit: BosstiaryEntry) {
     setBosses((current) => [
       ...current,
       {
         key: newBossKey(),
-        bossId: hit.id,
         bossName: hit.name,
         slug: hit.slug,
-        imageUrl: null,
+        imageUrl: hit.imageUrl,
         notes: "",
       },
     ]);
     setBossSearch("");
+    setBossQuery("");
   }
 
   function addCustomBoss() {
@@ -153,7 +130,7 @@ export function CommunityRotationPublishModal({
     }
     setBosses((current) => [
       ...current,
-      { key: newBossKey(), bossName: name, notes: "" },
+      { key: newBossKey(), bossName: name, manual: true, notes: "" },
     ]);
     setBossSearch("");
     setError("");
@@ -196,7 +173,8 @@ export function CommunityRotationPublishModal({
     }
     const bossPayload: CommunityRotationBossInput[] = bosses.map((stop, index) => ({
       position: index + 1,
-      ...(stop.bossId ? { bossId: stop.bossId } : { bossName: stop.bossName }),
+      bossName: stop.bossName,
+      ...(stop.slug ? { slug: stop.slug } : {}),
       ...(stop.notes.trim() ? { notes: stop.notes.trim() } : {}),
     }));
 
@@ -208,19 +186,11 @@ export function CommunityRotationPublishModal({
       bosses: bossPayload,
     };
     const desc = description.trim();
-    const access = accessRequirements.trim();
-    const extra = additionalInfo.trim();
     if (desc) payload.description = desc;
-    if (access) payload.accessRequirements = access;
-    if (extra) payload.additionalInfo = extra;
     payload.vocation = vocation;
-    const level = optionalInt(characterLevel);
-    const party = optionalInt(partySize);
     const observed = optionalInt(observedTotal);
     const combat = optionalInt(combatMinutes);
     const travel = optionalInt(travelMinutes);
-    if (level) payload.characterLevel = level;
-    if (party) payload.partySize = party;
     if (observed) payload.observedTotalMinutes = observed;
     if (combat) payload.combatMinutes = combat;
     if (travel !== undefined) payload.travelMinutes = travel;
@@ -317,22 +287,6 @@ export function CommunityRotationPublishModal({
           value={description}
         />
 
-        <Textarea
-          label="Requisitos de acesso"
-          maxLength={COMMUNITY_TEXT_MAX}
-          onChange={(e) => setAccessRequirements(e.target.value)}
-          rows={2}
-          value={accessRequirements}
-        />
-
-        <Textarea
-          label="Informações adicionais"
-          maxLength={COMMUNITY_TEXT_MAX}
-          onChange={(e) => setAdditionalInfo(e.target.value)}
-          rows={2}
-          value={additionalInfo}
-        />
-
         <fieldset className="bosstiary-community-publish__stats">
           <legend>Dados da sua run (opcional)</legend>
           <div className="bosstiary-community-publish__grid">
@@ -341,18 +295,6 @@ export function CommunityRotationPublishModal({
               onChange={(e) => setVocation(e.target.value as VocationCode)}
               options={VOCATIONS.map((code) => ({ value: code, label: VOCATION_LABEL[code] }))}
               value={vocation}
-            />
-            <Input
-              inputMode="numeric"
-              label="Level do personagem"
-              onChange={(e) => setCharacterLevel(e.target.value)}
-              value={characterLevel}
-            />
-            <Input
-              inputMode="numeric"
-              label="Tamanho do grupo"
-              onChange={(e) => setPartySize(e.target.value)}
-              value={partySize}
             />
             <Input
               inputMode="numeric"
@@ -378,7 +320,7 @@ export function CommunityRotationPublishModal({
         <section className="bosstiary-community-publish__bosses" aria-labelledby="community-boss-picker">
           <div className="bosstiary-community-publish__bosses-head">
             <h3 id="community-boss-picker">Ordem dos bosses</h3>
-            <p>Busque no Bosstiário revisado ou adicione um nome manual.</p>
+            <p>Busque no catálogo oficial de bosses. O nome manual fica separado dos resultados.</p>
           </div>
           <div className="bosstiary-community-publish__boss-search">
             <Input
@@ -391,20 +333,19 @@ export function CommunityRotationPublishModal({
               Adicionar nome
             </Button>
           </div>
-          {bossLoading ? <p className="bosstiary-community-publish__hint">Buscando bosses…</p> : null}
           {bossHits.length ? (
-            <ul className="bosstiary-community-publish__boss-hits">
+            <ul className="bosstiary-community-publish__boss-hits" role="listbox">
               {bossHits.map((hit) => (
-                <li key={hit.id}>
+                <li key={hit.slug}>
                   <button onClick={() => addBoss(hit)} type="button">
-                    <CatalogImage alt="" name={hit.name} />
+                    <CatalogImage alt="" name={hit.name} src={hit.imageUrl ?? undefined} />
                     <span>{hit.name}</span>
                   </button>
                 </li>
               ))}
             </ul>
-          ) : bossQuery ? (
-            <p className="bosstiary-community-publish__hint">Nenhum boss revisado encontrado para esta busca.</p>
+          ) : bossQuery.length >= 2 ? (
+            <p className="bosstiary-community-publish__hint">Nenhum boss do catálogo encontrado. Use “Adicionar nome” só se o boss não estiver na lista.</p>
           ) : null}
 
           {bosses.length === 0 ? (
@@ -415,7 +356,10 @@ export function CommunityRotationPublishModal({
                 <li key={stop.key}>
                   <span className="bosstiary-community-publish__boss-pos">{index + 1}</span>
                   <div className="bosstiary-community-publish__boss-main">
-                    <strong>{stop.bossName}</strong>
+                    <strong>
+                      {stop.bossName}
+                      {stop.manual ? " · nome manual" : ""}
+                    </strong>
                     <Input
                       label="Notas deste stop"
                       onChange={(e) =>

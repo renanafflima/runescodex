@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/decorators/current-user.decorator';
@@ -16,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PremiumGuard } from '../billing/premium.guard';
 import { RATE_LIMITS } from '../common/rate-limit.config';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
+import { missingSchemaInterceptor } from '../common/missing-schema';
 import { BosstiaryProgressService } from './bosstiary-progress.service';
 import {
   CreateProgressActivityDto,
@@ -27,6 +29,11 @@ import {
 
 @Controller('bosstiary/progress')
 @UseGuards(JwtAuthGuard, PremiumGuard)
+@UseInterceptors(
+  missingSchemaInterceptor(
+    'As tabelas de Meu Progresso ainda não estão aplicadas neste banco. A migration do diário precisa ser publicada antes de salvar registros.',
+  ),
+)
 export class BosstiaryProgressController {
   constructor(private readonly progress: BosstiaryProgressService) {}
 
