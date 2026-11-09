@@ -38,7 +38,7 @@ const ROTATION_INCLUDE = {
   user: {
     select: {
       id: true,
-      activeCharacter: { select: { name: true } },
+      activeCharacter: { select: { name: true, vocation: true, level: true } },
     },
   },
   bosses: {
@@ -64,6 +64,7 @@ type EngagementState = {
   liked: Set<string>;
   favorited: Set<string>;
   authorTested: Set<string>;
+  testedByMe: Set<string>;
 };
 
 @Injectable()
@@ -399,20 +400,34 @@ export class CommunityRotationsService {
     dto: CreateCommunityRotationTestDto,
   ) {
     const rotation = await this.requirePublished(id);
-    const created = await this.prisma.communityRotationTest.create({
-      data: {
-        rotationId: rotation.id,
-        userId,
-        vocation: dto.vocation ?? null,
-        characterLevel: dto.characterLevel ?? null,
-        partySize: dto.partySize ?? null,
-        combatMinutes: dto.combatMinutes ?? null,
-        travelMinutes: dto.travelMinutes ?? null,
-        totalMinutes: dto.totalMinutes ?? null,
-        notes: dto.notes ?? null,
-      },
+    const already = await this.prisma.communityRotationTest.findFirst({
+      where: { rotationId: rotation.id, userId },
+      select: { id: true },
     });
-    return this.serializeTest(created);
+    if (already) {
+      throw new ConflictException('Você já avaliou esta rotação.');
+    }
+    try {
+      const created = await this.prisma.communityRotationTest.create({
+        data: {
+          rotationId: rotation.id,
+          userId,
+          vocation: dto.vocation ?? null,
+          characterLevel: dto.characterLevel ?? null,
+          partySize: dto.partySize ?? null,
+          combatMinutes: dto.combatMinutes ?? null,
+          travelMinutes: dto.travelMinutes ?? null,
+          totalMinutes: dto.totalMinutes ?? null,
+          notes: dto.notes ?? null,
+        },
+      });
+      return this.serializeTest(created);
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ConflictException('Você já avaliou esta rotação.');
+      }
+      throw error;
+    }
   }
 
   async listTests(id: string, query: PageQueryDto) {
@@ -459,6 +474,16 @@ export class CommunityRotationsService {
             user: {
               activeCharacter: {
                 name: { contains: search, mode: 'insensitive' },
+              },
+            },
+          },
+          {
+            bosses: {
+              some: {
+                OR: [
+                  { bossName: { contains: search, mode: 'insensitive' } },
+                  { boss: { name: { contains: search, mode: 'insensitive' } } },
+                ],
               },
             },
           },
@@ -625,9 +650,13 @@ export class CommunityRotationsService {
       where: { rotationId: { in: rotationIds } },
       select: { rotationId: true, userId: true },
     });
+    const testedByMe = new Set<string>();
     for (const test of authorTestsRows) {
       if (authorByRotation.get(test.rotationId) === test.userId) {
         authorTested.add(test.rotationId);
+      }
+      if (test.userId === userId) {
+        testedByMe.add(test.rotationId);
       }
     }
 
@@ -635,6 +664,7 @@ export class CommunityRotationsService {
       liked: new Set(likes.map((row) => row.rotationId)),
       favorited: new Set(favorites.map((row) => row.rotationId)),
       authorTested,
+      testedByMe,
     };
   }
 
@@ -703,6 +733,8 @@ export class CommunityRotationsService {
       author: {
         id: row.user.id,
         name: row.user.activeCharacter?.name ?? null,
+        vocation: row.user.activeCharacter?.vocation ?? null,
+        level: row.user.activeCharacter?.level ?? null,
       },
       bosses: row.bosses.map((stop) => {
         const slug = stop.boss?.slug ?? null;
@@ -724,6 +756,7 @@ export class CommunityRotationsService {
       likedByMe: engagement.liked.has(row.id),
       favoritedByMe: engagement.favorited.has(row.id),
       testedByAuthor: engagement.authorTested.has(row.id),
+      testedByMe: engagement.testedByMe.has(row.id),
       featured,
     };
   }
@@ -786,6 +819,7 @@ function emptyEngagement(): EngagementState {
     liked: new Set(),
     favorited: new Set(),
     authorTested: new Set(),
+    testedByMe: new Set(),
   };
 }
 

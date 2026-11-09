@@ -1,11 +1,18 @@
 import {
   BILLING_CHECKOUT_ATTEMPT_INDEXES,
   BOSSTIARY_ENUMS,
+  BOSSTIARY_PROGRESS_ENUMS,
+  BOSSTIARY_PROGRESS_INDEXES,
+  BOSSTIARY_PROGRESS_TABLES,
   BOSSTIARY_TABLES,
   COMMUNITY_ENUMS,
   COMMUNITY_PUBLISH_IDEMPOTENCY_INDEXES,
+  COMMUNITY_ROTATION_TEST_UNIQUE_INDEX,
   COMMUNITY_TABLES,
   MIGRATION_RECOVERY_ALLOWLIST,
+  PARTY_ENUMS,
+  PARTY_HUNT_INDEXES,
+  PARTY_HUNT_TABLES,
   type MigrationRecoveryStepName,
 } from './admin-migration-recovery.constants';
 
@@ -140,6 +147,57 @@ async function assessCommunityPublishIdempotencyComplete(
   for (const indexName of COMMUNITY_PUBLISH_IDEMPOTENCY_INDEXES) {
     details[`index:${indexName}`] = await probe.indexExists(indexName);
   }
+  const ok = Object.values(details).every(Boolean);
+  return { ok, details };
+}
+
+async function assessBosstiaryProgressComplete(
+  probe: MigrationRecoveryProbe,
+): Promise<{ ok: boolean; details: Record<string, boolean> }> {
+  const details: Record<string, boolean> = {};
+  for (const name of BOSSTIARY_PROGRESS_ENUMS) {
+    details[`enum:${name}`] = await probe.enumExists(name);
+  }
+  for (const name of BOSSTIARY_PROGRESS_TABLES) {
+    details[`table:${name}`] = await probe.tableExists(name);
+  }
+  for (const name of BOSSTIARY_PROGRESS_INDEXES) {
+    details[`index:${name}`] = await probe.indexExists(name);
+  }
+  details['column:BosstiaryProgressActivity.partySessionId'] =
+    await probe.columnExists('BosstiaryProgressActivity', 'partySessionId');
+  const ok = Object.values(details).every(Boolean);
+  return { ok, details };
+}
+
+async function assessCommunityRotationTestUniqueComplete(
+  probe: MigrationRecoveryProbe,
+): Promise<{ ok: boolean; details: Record<string, boolean> }> {
+  const details: Record<string, boolean> = {
+    communityRotationTestTable: await probe.tableExists('CommunityRotationTest'),
+    uniqueRotationUser: await probe.indexExists(COMMUNITY_ROTATION_TEST_UNIQUE_INDEX),
+  };
+  const ok = Object.values(details).every(Boolean);
+  return { ok, details };
+}
+
+async function assessPartyHuntSessionsComplete(
+  probe: MigrationRecoveryProbe,
+): Promise<{ ok: boolean; details: Record<string, boolean> }> {
+  const details: Record<string, boolean> = {};
+  for (const name of PARTY_ENUMS) {
+    details[`enum:${name}`] = await probe.enumExists(name);
+  }
+  for (const name of PARTY_HUNT_TABLES) {
+    details[`table:${name}`] = await probe.tableExists(name);
+  }
+  for (const name of PARTY_HUNT_INDEXES) {
+    details[`index:${name}`] = await probe.indexExists(name);
+  }
+  details['column:BosstiaryProgressActivity.partyId'] = await probe.columnExists(
+    'BosstiaryProgressActivity',
+    'partyId',
+  );
   const ok = Object.values(details).every(Boolean);
   return { ok, details };
 }
@@ -335,6 +393,113 @@ export async function assessRecoveryStep(
         readyForResolveOnly: true,
         blockedReasons,
         details,
+      };
+    }
+    case '20261109180000_add_bosstiary_progress': {
+      const progress = await assessBosstiaryProgressComplete(probe);
+      if (progress.ok) {
+        return {
+          step,
+          migrationInHistory: false,
+          readyForDdl: false,
+          readyForResolveOnly: true,
+          blockedReasons,
+          details: progress.details,
+        };
+      }
+      const diary = progress.details['table:BosstiaryProgressActivity'];
+      if (!diary) {
+        return {
+          step,
+          migrationInHistory: false,
+          readyForDdl: true,
+          readyForResolveOnly: false,
+          blockedReasons,
+          details: progress.details,
+        };
+      }
+      blockedReasons.push(
+        'Bosstiary progress objects are partially present; complete DDL before resolve.',
+      );
+      return {
+        step,
+        migrationInHistory: false,
+        readyForDdl: false,
+        readyForResolveOnly: false,
+        blockedReasons,
+        details: progress.details,
+      };
+    }
+    case '20261109190000_unique_community_rotation_test': {
+      const uniq = await assessCommunityRotationTestUniqueComplete(probe);
+      if (uniq.ok) {
+        return {
+          step,
+          migrationInHistory: false,
+          readyForDdl: false,
+          readyForResolveOnly: true,
+          blockedReasons,
+          details: uniq.details,
+        };
+      }
+      if (!uniq.details.uniqueRotationUser) {
+        return {
+          step,
+          migrationInHistory: false,
+          readyForDdl: true,
+          readyForResolveOnly: false,
+          blockedReasons: [
+            ...blockedReasons,
+            ...(uniq.details.communityRotationTestTable
+              ? []
+              : ['CommunityRotationTest table is missing.']),
+          ],
+          details: uniq.details,
+        };
+      }
+      blockedReasons.push('CommunityRotationTest unique index state is unexpected.');
+      return {
+        step,
+        migrationInHistory: false,
+        readyForDdl: false,
+        readyForResolveOnly: false,
+        blockedReasons,
+        details: uniq.details,
+      };
+    }
+    case '20261109200000_add_party_hunt_sessions': {
+      const party = await assessPartyHuntSessionsComplete(probe);
+      if (party.ok) {
+        return {
+          step,
+          migrationInHistory: false,
+          readyForDdl: false,
+          readyForResolveOnly: true,
+          blockedReasons,
+          details: party.details,
+        };
+      }
+      const partyTable = party.details['table:Party'];
+      if (!partyTable) {
+        return {
+          step,
+          migrationInHistory: false,
+          readyForDdl: true,
+          readyForResolveOnly: false,
+          blockedReasons,
+          details: party.details,
+        };
+      }
+      blockedReasons.push(
+        'Party/hunt session objects are partially present; complete DDL before resolve.',
+      );
+      return {
+        step,
+        migrationInHistory: false,
+        readyForDdl: false,
+        readyForResolveOnly: false,
+        blockedReasons,
+        details: party.details,
       };
     }
     default: {

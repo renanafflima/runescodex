@@ -24,7 +24,10 @@ export function BossByLevelPanel({ entries }: BossByLevelPanelProps) {
     <section className="bosstiary-by-level" aria-labelledby="level-title">
       <div className="bosstiary-section-title">
         <h2 id="level-title">Boss por level</h2>
-        <p>{journey?.blurb ?? "Recomendações editoriais do RuneCodex por faixa de level."}</p>
+        <p>
+          {journey?.blurb ?? "Recomendações editoriais do RuneCodex por faixa de level."} Estes
+          valores são editoriais e não substituem um level mínimo oficial do Tibia.
+        </p>
       </div>
 
       <div className="chip-row" aria-label="Faixa de level">

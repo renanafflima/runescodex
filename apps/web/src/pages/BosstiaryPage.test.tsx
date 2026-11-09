@@ -4,10 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BosstiaryEntry } from "../domain/bosstiary";
 import { BosstiaryPage } from "./BosstiaryPage";
 
-const { loadBosstiaryCatalog, findBosstiaryRotations, listCommunityRotations } = vi.hoisted(() => ({
+const {
+  loadBosstiaryCatalog,
+  findBosstiaryRotations,
+  listCommunityRotations,
+  getBosstiaryProgressSummary,
+} = vi.hoisted(() => ({
   loadBosstiaryCatalog: vi.fn(),
   findBosstiaryRotations: vi.fn(),
   listCommunityRotations: vi.fn(),
+  getBosstiaryProgressSummary: vi.fn(),
 }));
 
 vi.mock("../domain/bosstiary-catalog", () => ({
@@ -16,6 +22,7 @@ vi.mock("../domain/bosstiary-catalog", () => ({
 
 vi.mock("../services/api/bosstiary", () => ({
   findBosstiaryRotations,
+  listBosstiaryBosses: vi.fn(async () => ({ items: [], page: 1, limit: 8, total: 0, hasMore: false })),
 }));
 
 vi.mock("../services/api/community-rotations", () => ({
@@ -23,6 +30,46 @@ vi.mock("../services/api/community-rotations", () => ({
   listCommunityRotationRanking: vi.fn(async () => []),
   likeCommunityRotation: vi.fn(),
   unlikeCommunityRotation: vi.fn(),
+  favoriteCommunityRotation: vi.fn(),
+  unfavoriteCommunityRotation: vi.fn(),
+  createCommunityRotation: vi.fn(),
+  createCommunityRotationTest: vi.fn(),
+}));
+
+vi.mock("../services/api/parties", () => ({
+  listMyParties: vi.fn(async () => ({ items: [], page: 1, limit: 20, total: 0, hasMore: false })),
+  listReceivedPartyInvites: vi.fn(async () => ({ items: [], page: 1, limit: 20, total: 0, hasMore: false })),
+  listSentPartyInvites: vi.fn(async () => ({ items: [], page: 1, limit: 20, total: 0, hasMore: false })),
+  listPartyNotifications: vi.fn(async () => ({ items: [], page: 1, limit: 20, total: 0, hasMore: false })),
+  listHuntSessions: vi.fn(async () => ({ items: [], page: 1, limit: 20, total: 0, hasMore: false })),
+  markPartyNotificationRead: vi.fn(),
+  cancelPartyInvite: vi.fn(),
+  cancelHuntSession: vi.fn(),
+  transferPartyLeader: vi.fn(),
+  createParty: vi.fn(),
+}));
+
+vi.mock("../services/api/bosstiary-progress", () => ({
+  getBosstiaryProgressSummary,
+  listBosstiaryProgressActivities: vi.fn(async () => ({
+    items: [],
+    page: 1,
+    limit: 20,
+    total: 0,
+    hasMore: false,
+  })),
+  listBosstiaryProgressRotations: vi.fn(async () => []),
+  listBosstiaryProgressChecklist: vi.fn(async () => ({
+    items: [],
+    page: 1,
+    limit: 20,
+    total: 0,
+    hasMore: false,
+  })),
+  createBosstiaryProgressActivity: vi.fn(),
+  updateBosstiaryProgressActivity: vi.fn(),
+  deleteBosstiaryProgressActivity: vi.fn(),
+  updateBosstiaryProgressChecklist: vi.fn(),
 }));
 
 vi.mock("../services/api/rewards", () => ({
@@ -81,12 +128,20 @@ describe("BosstiaryPage", () => {
     loadBosstiaryCatalog.mockReset();
     findBosstiaryRotations.mockReset();
     listCommunityRotations.mockReset();
+    getBosstiaryProgressSummary.mockReset();
     listCommunityRotations.mockResolvedValue({
       items: [],
       page: 1,
       limit: 12,
       total: 0,
       hasMore: false,
+    });
+    getBosstiaryProgressSummary.mockResolvedValue({
+      bossesDefeated: 0,
+      dropsRegistered: 0,
+      activitiesRegistered: 0,
+      bossesTracked: 0,
+      bossesCataloged: 0,
     });
     loadBosstiaryCatalog.mockReturnValue({
       skipped: 0,
@@ -129,15 +184,17 @@ describe("BosstiaryPage", () => {
     expect(screen.getByRole("button", { name: "Comunidade" })).toHaveAttribute("aria-current", "page");
   });
 
-  it("renders four section cards with distinct artwork", () => {
+  it("renders three section cards with distinct artwork", () => {
     show();
     const nav = screen.getByRole("navigation", { name: "Seções do Bosstiário" });
-    expect(nav.querySelectorAll("img")).toHaveLength(4);
+    expect(nav.querySelectorAll("img")).toHaveLength(3);
     const sources = [...nav.querySelectorAll("img")].map((img) => img.getAttribute("src"));
-    expect(new Set(sources).size).toBe(4);
+    expect(new Set(sources).size).toBe(3);
+    expect(screen.getByRole("button", { name: /Meu Progresso/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Rotações$/ })).not.toBeInTheDocument();
   });
 
-  it("shows the rotations planner on the rotas tab", () => {
+  it("keeps planner and level as community inner views", () => {
     show("?tab=rotas");
     expect(screen.getByRole("heading", { name: "Monte sua rotação" })).toBeInTheDocument();
     const card20 = screen.getByRole("button", { name: /20 min/i });
@@ -145,11 +202,18 @@ describe("BosstiaryPage", () => {
     expect(card20).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("opens recommendations by level from the community area", async () => {
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Recomendações por level" }));
+    await waitFor(() => expect(loadBosstiaryCatalog).toHaveBeenCalled());
+    expect(screen.getByRole("heading", { name: "Boss por level" })).toBeInTheDocument();
+  });
+
   it("loads encyclopedia content only on its tab", async () => {
     show();
     expect(loadBosstiaryCatalog).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Enciclopédia" }));
+    fireEvent.click(screen.getByRole("button", { name: /Enciclopédia/i }));
     await waitFor(() => expect(loadBosstiaryCatalog).toHaveBeenCalled());
     expect(screen.getByText(/candidatos da TibiaWiki com isboss/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Ferumbras/ })).toBeInTheDocument();
@@ -170,10 +234,17 @@ describe("BosstiaryPage", () => {
   });
 
   it("calls the rotations service from the planner", async () => {
-    show("?tab=rotas");
+    show("?view=planner");
     fireEvent.click(screen.getByRole("button", { name: "Encontrar rotações" }));
     await waitFor(() => expect(findBosstiaryRotations).toHaveBeenCalled());
     expect(await screen.findByText("Sem rotações verificadas.")).toBeInTheDocument();
+  });
+
+  it("shows personal progress from live summary data", async () => {
+    show("?tab=progresso");
+    expect(await screen.findByRole("heading", { name: "Meu Progresso" })).toBeInTheDocument();
+    await waitFor(() => expect(getBosstiaryProgressSummary).toHaveBeenCalled());
+    expect(screen.getByText("Bosses derrotados")).toBeInTheDocument();
   });
 
   it("shows the catalog error state on the encyclopedia tab", async () => {

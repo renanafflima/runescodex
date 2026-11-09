@@ -28,9 +28,12 @@ import { useLatestRequest } from "../../hooks/useLatestRequest";
 import { assetUrl } from "../../lib/assets";
 import { describeApiError } from "../../services/api/errors";
 import {
+  createCommunityRotationTest,
+  favoriteCommunityRotation,
   likeCommunityRotation,
   listCommunityRotationRanking,
   listCommunityRotations,
+  unfavoriteCommunityRotation,
   unlikeCommunityRotation,
   type CommunityDurationFilter,
   type CommunityLevelFilter,
@@ -144,6 +147,10 @@ export function CommunityRotationsFeed() {
     );
   }, [missions]);
 
+  function applySocial(cardId: string, patch: Partial<CommunityRotationCard>) {
+    setItems((current) => current.map((item) => (item.id === cardId ? { ...item, ...patch } : item)));
+  }
+
   async function toggleLike(card: CommunityRotationCard) {
     if (!isAuthenticated || socialBusy) return;
     const key = `like:${card.id}`;
@@ -152,17 +159,43 @@ export function CommunityRotationsFeed() {
       const state = card.likedByMe
         ? await unlikeCommunityRotation(card.id)
         : await likeCommunityRotation(card.id);
-      setItems((current) =>
-        current.map((item) =>
-          item.id === card.id
-            ? {
-                ...item,
-                likedByMe: state.likedByMe,
-                likesCount: state.likesCount,
-              }
-            : item,
-        ),
-      );
+      applySocial(card.id, {
+        likedByMe: state.likedByMe,
+        likesCount: state.likesCount,
+      });
+    } catch (err) {
+      setError(describeApiError(err));
+    } finally {
+      setSocialBusy("");
+    }
+  }
+
+  async function toggleFavorite(card: CommunityRotationCard) {
+    if (!isAuthenticated || socialBusy) return;
+    const key = `fav:${card.id}`;
+    setSocialBusy(key);
+    try {
+      const state = card.favoritedByMe
+        ? await unfavoriteCommunityRotation(card.id)
+        : await favoriteCommunityRotation(card.id);
+      applySocial(card.id, {
+        favoritedByMe: state.favoritedByMe,
+        favoritesCount: state.favoritesCount,
+      });
+    } catch (err) {
+      setError(describeApiError(err));
+    } finally {
+      setSocialBusy("");
+    }
+  }
+
+  async function markWorked(card: CommunityRotationCard) {
+    if (!isAuthenticated || socialBusy || card.testedByMe) return;
+    const key = `test:${card.id}`;
+    setSocialBusy(key);
+    try {
+      await createCommunityRotationTest(card.id, {});
+      applySocial(card.id, { testedByMe: true });
     } catch (err) {
       setError(describeApiError(err));
     } finally {
@@ -197,7 +230,7 @@ export function CommunityRotationsFeed() {
                 <span className="sr-only">Buscar rotações</span>
                 <SearchInput
                   onChange={(event) => setSearchDraft(event.target.value)}
-                  placeholder="Buscar por título ou descrição..."
+                  placeholder="Buscar por título, descrição ou boss..."
                   value={searchDraft}
                 />
               </label>
@@ -248,14 +281,25 @@ export function CommunityRotationsFeed() {
                       className={`bosstiary-community-card${card.featured ? " bosstiary-community-card--featured" : ""}`}
                     >
                       {card.featured ? <span className="bosstiary-community-card__badge">Destaque semanal</span> : null}
-                      <header className="bosstiary-community-card__head">
-                        <Link className="bosstiary-community-card__title" to={`/bosstiary/community/${card.id}`}>
-                          {card.title}
-                        </Link>
-                        <p className="bosstiary-community-card__meta">
-                          {authorLabel(card.author.name)} · {formatCommunityWhen(card.createdAt)}
-                        </p>
+                      <header className="bosstiary-community-card__author">
+                        <span aria-hidden="true" className="bosstiary-community-card__avatar">
+                          {authorLabel(card.author.name).slice(0, 1).toUpperCase()}
+                        </span>
+                        <div>
+                          <strong>{authorLabel(card.author.name)}</strong>
+                          <p className="bosstiary-community-card__meta">
+                            {[card.author.level, card.author.vocation, communityHuntModeLabel(card.huntMode)]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        </div>
+                        <time className="bosstiary-community-card__when" dateTime={card.createdAt}>
+                          {formatCommunityWhen(card.createdAt)}
+                        </time>
                       </header>
+                      <Link className="bosstiary-community-card__title" to={`/bosstiary/community/${card.id}`}>
+                        {card.title}
+                      </Link>
                       <ul className="bosstiary-community-card__bosses" aria-label="Bosses na rotação">
                         {card.bosses.slice(0, 5).map((stop) => (
                           <li key={stop.id}>
@@ -263,7 +307,9 @@ export function CommunityRotationsFeed() {
                           </li>
                         ))}
                       </ul>
-                      <p className="bosstiary-community-card__stops">{communityBossSummary(card)}</p>
+                      <p className="bosstiary-community-card__stops">
+                        {communityBossSummary(card)} · {card.bosses.length} bosses
+                      </p>
                       <dl className="bosstiary-community-card__stats">
                         <div>
                           <dt>Level</dt>
@@ -281,12 +327,13 @@ export function CommunityRotationsFeed() {
                       {card.testedByAuthor ? (
                         <p className="bosstiary-community-card__tested">Testada pelo autor</p>
                       ) : null}
-                      <footer className="bosstiary-community-card__foot">
+                      <footer className="bosstiary-community-card__foot bosstiary-community-card__actions">
                         <Button
                           aria-pressed={card.likedByMe}
                           disabled={!isAuthenticated || socialBusy === `like:${card.id}`}
                           loading={socialBusy === `like:${card.id}`}
                           onClick={() => void toggleLike(card)}
+                          size="sm"
                           type="button"
                           variant="ghost"
                         >
@@ -295,6 +342,28 @@ export function CommunityRotationsFeed() {
                         <Link className="bosstiary-community-card__comments" to={`/bosstiary/community/${card.id}`}>
                           Comentários · {card.commentsCount}
                         </Link>
+                        <Button
+                          aria-pressed={card.favoritedByMe}
+                          disabled={!isAuthenticated || socialBusy === `fav:${card.id}`}
+                          loading={socialBusy === `fav:${card.id}`}
+                          onClick={() => void toggleFavorite(card)}
+                          size="sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          {card.favoritedByMe ? "Favoritada" : "Favoritar"}
+                        </Button>
+                        <Button
+                          aria-pressed={card.testedByMe}
+                          disabled={!isAuthenticated || card.testedByMe || socialBusy === `test:${card.id}`}
+                          loading={socialBusy === `test:${card.id}`}
+                          onClick={() => void markWorked(card)}
+                          size="sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          Funcionou pra mim
+                        </Button>
                       </footer>
                     </article>
                   </li>

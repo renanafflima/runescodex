@@ -358,6 +358,27 @@ export class AdminMigrationRecoveryService {
           push,
         );
         return;
+      case '20261109180000_add_bosstiary_progress':
+        await this.applyMigrationFileSql(
+          client,
+          '20261109180000_add_bosstiary_progress',
+          push,
+        );
+        return;
+      case '20261109190000_unique_community_rotation_test':
+        await this.applyMigrationFileSql(
+          client,
+          '20261109190000_unique_community_rotation_test',
+          push,
+        );
+        return;
+      case '20261109200000_add_party_hunt_sessions':
+        await this.applyMigrationFileSql(
+          client,
+          '20261109200000_add_party_hunt_sessions',
+          push,
+        );
+        return;
       default:
         throw new BadRequestException(
           `Step ${step} does not support DDL through recovery API.`,
@@ -495,6 +516,19 @@ export class AdminMigrationRecoveryService {
         );
       }
       push('info', 'Post-DDL CommunityRotationSort enum absence verified.');
+      return;
+    }
+    if (
+      step === '20261109180000_add_bosstiary_progress' ||
+      step === '20261109190000_unique_community_rotation_test' ||
+      step === '20261109200000_add_party_hunt_sessions'
+    ) {
+      if (!reassessed.readyForResolveOnly) {
+        throw new BadRequestException(
+          `${step} did not reach the expected physical state after DDL.`,
+        );
+      }
+      push('info', `Post-DDL ${step} verified.`);
       return;
     }
     if (!reassessed.readyForResolveOnly) {

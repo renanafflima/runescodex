@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { BosstiaryModule } from '../bosstiary/bosstiary.module';
 import { ReferralsModule } from '../referrals/referrals.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -13,6 +14,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 @Module({
   imports: [
     forwardRef(() => ReferralsModule),
+    forwardRef(() => BosstiaryModule),
     PassportModule,
     JwtModule.registerAsync({
       useFactory: () => {

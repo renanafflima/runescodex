@@ -1,14 +1,34 @@
 import type { VocationCode } from "./vocation";
 
-export type BosstiaryTab = "comunidade" | "rotas" | "level" | "enciclopedia";
+export type BosstiaryTab = "comunidade" | "progresso" | "enciclopedia";
+export type CommunityInnerView = "feed" | "planner" | "level" | "party";
 
 export type BosstiaryHuntMode = "SOLO" | "PARTY";
 
-export const BOSSTIARY_TABS: Array<{ id: BosstiaryTab; label: string; image: string }> = [
-  { id: "comunidade", label: "Comunidade", image: "/images/bosstiary/nav-comunidade.jpg" },
-  { id: "rotas", label: "Rotações", image: "/images/bosstiary/nav-rotacoes.jpg" },
-  { id: "level", label: "Boss por level", image: "/images/bosstiary/nav-boss-level.jpg" },
-  { id: "enciclopedia", label: "Enciclopédia", image: "/images/bosstiary/nav-enciclopedia.jpg" },
+export const BOSSTIARY_TABS: Array<{
+  id: BosstiaryTab;
+  label: string;
+  kicker: string;
+  image: string;
+}> = [
+  {
+    id: "comunidade",
+    label: "Comunidade",
+    kicker: "Planeje e compartilhe",
+    image: "/images/bosstiary/nav-comunidade.jpg",
+  },
+  {
+    id: "progresso",
+    label: "Meu Progresso",
+    kicker: "Acompanhe suas conquistas",
+    image: "/images/bosstiary/nav-rotacoes.jpg",
+  },
+  {
+    id: "enciclopedia",
+    label: "Enciclopédia",
+    kicker: "Conheça cada boss",
+    image: "/images/bosstiary/nav-enciclopedia.jpg",
+  },
 ];
 
 export const BOSSTIARY_TIME_OPTIONS = [
@@ -94,8 +114,28 @@ export type BosstiaryRotationResult = {
 };
 
 export function parseBosstiaryTab(value: string | null): BosstiaryTab {
-  if (value === "rotas" || value === "level" || value === "enciclopedia") return value;
+  if (value === "progresso" || value === "enciclopedia") return value;
   return "comunidade";
+}
+
+export const COMMUNITY_INNER_VIEWS: Array<{
+  id: CommunityInnerView;
+  label: string;
+}> = [
+  { id: "feed", label: "Rotações publicadas" },
+  { id: "planner", label: "Planejador" },
+  { id: "level", label: "Recomendações por level" },
+  { id: "party", label: "Minhas Partys" },
+];
+
+export function parseCommunityInnerView(
+  tabParam: string | null,
+  view: string | null,
+): CommunityInnerView {
+  if (tabParam === "rotas" || view === "planner") return "planner";
+  if (tabParam === "level" || view === "level") return "level";
+  if (view === "party") return "party";
+  return "feed";
 }
 
 export function huntModeLabel(mode: BosstiaryHuntMode) {

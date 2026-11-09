@@ -103,6 +103,72 @@ describe('assessRecoveryStep', () => {
     );
   });
 
+  it('requires ddl for bosstiary progress when tables are missing', async () => {
+    const applied = new Set([
+      '20261103000000_hunt_vocation_multiple_level_ranges',
+      '20261103120000_hunt_update_request_vocation_range',
+      '20261103143000_billing_checkout_attempt',
+      '20261104090000_add_bosstiary',
+      '20261107120000_add_community_rotations',
+      '20261107143000_community_rotation_publish_idempotency',
+      '20261107143500_drop_community_rotation_sort_enum',
+    ]);
+    const result = await assessRecoveryStep(
+      probeFrom({ tables: { BosstiaryProgressActivity: false } }),
+      '20261109180000_add_bosstiary_progress',
+      applied,
+    );
+    expect(result.readyForDdl).toBe(true);
+  });
+
+  it('allows resolve-only for party hunt when physical objects exist', async () => {
+    const applied = new Set([
+      '20261103000000_hunt_vocation_multiple_level_ranges',
+      '20261103120000_hunt_update_request_vocation_range',
+      '20261103143000_billing_checkout_attempt',
+      '20261104090000_add_bosstiary',
+      '20261107120000_add_community_rotations',
+      '20261107143000_community_rotation_publish_idempotency',
+      '20261107143500_drop_community_rotation_sort_enum',
+      '20261109180000_add_bosstiary_progress',
+      '20261109190000_unique_community_rotation_test',
+    ]);
+    const result = await assessRecoveryStep(
+      probeFrom({
+        enums: {
+          PartyStatus: true,
+          PartyMemberRole: true,
+          PartyMemberStatus: true,
+          PartyInvitationStatus: true,
+          HuntSessionStatus: true,
+          HuntSessionParticipantStatus: true,
+          AppNotificationKind: true,
+        },
+        tables: {
+          Party: true,
+          PartyMember: true,
+          PartyInvitation: true,
+          HuntSession: true,
+          HuntSessionParticipant: true,
+          AppNotification: true,
+        },
+        indexes: {
+          PartyMember_partyId_userId_key: true,
+          PartyInvitation_party_email_pending_key: true,
+          HuntSessionParticipant_sessionId_userId_key: true,
+          BosstiaryProgressActivity_partyId_visibility_occurredAt_idx: true,
+        },
+        columns: {
+          'BosstiaryProgressActivity.partyId': true,
+        },
+      }),
+      '20261109200000_add_party_hunt_sessions',
+      applied,
+    );
+    expect(result.readyForResolveOnly).toBe(true);
+    expect(result.readyForDdl).toBe(false);
+  });
+
   it('treats CommunityRotationSort drop as ddl when enum still exists', async () => {
     const applied = new Set([
       '20261103000000_hunt_vocation_multiple_level_ranges',

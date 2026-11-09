@@ -4071,19 +4071,33 @@
   pointer-events: none;
 }
 
-.bosstiary-tabs__label {
+.bosstiary-tabs__copy {
   position: absolute;
   right: 0.7rem;
-  bottom: 0.55rem;
+  bottom: 0.5rem;
   left: 0.7rem;
   z-index: 1;
-  font-family: var(--font-display);
-  font-size: 0.82rem;
+  display: grid;
+  gap: 0.12rem;
+  pointer-events: none;
+}
+
+.bosstiary-tabs__kicker {
+  font-size: 0.62rem;
   font-weight: 700;
-  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f0cf70;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 70%);
+}
+
+.bosstiary-tabs__label {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.15;
   color: #f7f8fb;
   text-shadow: 0 1px 8px rgb(0 0 0 / 70%);
-  pointer-events: none;
 }
 
 .bosstiary-tabs__tab:hover .bosstiary-tabs__art,
@@ -4121,15 +4135,22 @@
     height: 8.5rem;
   }
 
+  .bosstiary-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .bosstiary-tabs__kicker {
+    font-size: 0.68rem;
+  }
+
   .bosstiary-tabs__label {
-    font-size: 0.95rem;
-    bottom: 0.7rem;
+    font-size: 1.05rem;
   }
 }
 
 @media (min-width: 64rem) {
   .bosstiary-tabs {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .bosstiary-tabs__tab {
@@ -5590,8 +5611,253 @@
   }
 }
 
-@media (min-width: 80rem) {
-  .bosstiary-community-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+.bosstiary-community-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.35rem;
+  border: 1px solid rgb(217 173 63 / 22%);
+  border-radius: 0.85rem;
+  background: rgb(8 12 20 / 72%);
+}
+
+.bosstiary-community-subnav__tab {
+  min-height: 2.3rem;
+  padding: 0.4rem 0.85rem;
+  border: 0;
+  border-radius: 0.65rem;
+  background: transparent;
+  color: var(--color-text-soft);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bosstiary-community-subnav__tab.is-active,
+.bosstiary-community-subnav__tab[aria-current="page"] {
+  background: rgb(217 173 63 / 16%);
+  color: var(--color-gold-light);
+}
+
+.bosstiary-community-card__author {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+.bosstiary-community-card__avatar {
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  border: 1px solid rgb(217 173 63 / 35%);
+  background: rgb(12 18 28 / 90%);
+  color: var(--color-gold-light);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.bosstiary-community-card__author strong {
+  display: block;
+  color: #f7f8fb;
+  font-size: 0.92rem;
+}
+
+.bosstiary-community-card__when {
+  color: var(--color-text-soft);
+  font-size: 0.75rem;
+}
+
+.bosstiary-community-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.bosstiary-progress-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.bosstiary-progress-stat {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgb(217 173 63 / 18%);
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, rgb(16 22 34 / 92%), rgb(8 11 18 / 96%));
+}
+
+.bosstiary-progress-stat strong {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  color: var(--color-gold-light);
+}
+
+.bosstiary-progress-stat small {
+  color: var(--color-text-soft);
+}
+
+.bosstiary-progress-subtabs {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.3rem;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 0.8rem;
+  background: rgb(6 10 16 / 70%);
+}
+
+.bosstiary-progress-subtab {
+  flex: 1;
+  min-height: 2.3rem;
+  border: 0;
+  border-radius: 0.6rem;
+  background: transparent;
+  color: var(--color-text-soft);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bosstiary-progress-subtab.is-active {
+  background: rgb(217 173 63 / 16%);
+  color: var(--color-gold-light);
+}
+
+.bosstiary-progress-mine {
+  display: grid;
+  gap: 1rem;
+}
+
+.bosstiary-progress-panel {
+  padding: 1rem 1.05rem 1.15rem;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 1rem;
+  background: linear-gradient(165deg, rgb(18 22 32 / 95%), rgb(10 12 18 / 98%));
+}
+
+.bosstiary-progress-panel__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.bosstiary-progress-panel__head h3 {
+  margin: 0 0 0.25rem;
+  color: var(--color-gold-pale);
+}
+
+.bosstiary-progress-panel__head p,
+.bosstiary-progress-form__error {
+  margin: 0;
+  color: var(--color-text-soft);
+}
+
+.bosstiary-progress-form,
+.bosstiary-progress-suggest,
+.bosstiary-activity-list,
+.bosstiary-drops-grid,
+.bosstiary-check-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bosstiary-progress-form__row {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.bosstiary-progress-suggest {
+  margin-top: -0.35rem;
+  border: 1px solid rgb(217 173 63 / 18%);
+  border-radius: 0.75rem;
+  background: rgb(8 12 20 / 94%);
+  overflow: hidden;
+}
+
+.bosstiary-progress-suggest button {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 0;
+  background: transparent;
+  color: #f7f8fb;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bosstiary-progress-suggest button:hover {
+  background: rgb(217 173 63 / 10%);
+}
+
+.bosstiary-progress-suggest img,
+.bosstiary-check-list__art {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+}
+
+.bosstiary-activity-list li,
+.bosstiary-check-list li,
+.bosstiary-drops-grid li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-top: 1px solid rgb(255 255 255 / 6%);
+}
+
+.bosstiary-activity-list li:first-child,
+.bosstiary-check-list li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.bosstiary-activity-list p,
+.bosstiary-check-list p,
+.bosstiary-drops-grid p {
+  margin: 0.2rem 0 0;
+  color: var(--color-text-soft);
+  font-size: 0.86rem;
+}
+
+.bosstiary-progress-toolbar {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.bosstiary-check-list li {
+  grid-template-columns: 2.2rem minmax(0, 1fr) auto;
+}
+
+@media (min-width: 52rem) {
+  .bosstiary-progress-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .bosstiary-progress-mine {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bosstiary-progress-panel--wide {
+    grid-column: 1 / -1;
+  }
+
+  .bosstiary-progress-form__row,
+  .bosstiary-progress-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bosstiary-drops-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

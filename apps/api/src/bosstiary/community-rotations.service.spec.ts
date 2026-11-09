@@ -93,6 +93,8 @@ describe('CommunityRotationsService', () => {
     },
     communityRotationTest: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
     },
     bosstiaryBoss: {
       findMany: jest.fn(),
@@ -115,6 +117,7 @@ describe('CommunityRotationsService', () => {
     prisma.communityRotationLike.findMany.mockResolvedValue([]);
     prisma.communityRotationFavorite.findMany.mockResolvedValue([]);
     prisma.communityRotationTest.findMany.mockResolvedValue([]);
+    prisma.communityRotationTest.findFirst.mockResolvedValue(null);
     prisma.creature.findMany.mockResolvedValue([]);
     prisma.user.findUnique.mockResolvedValue({ role: 'USER' });
     prisma.communityRotation.count.mockResolvedValue(0);
@@ -289,5 +292,19 @@ describe('CommunityRotationsService', () => {
     expect(ranking[0].id).toBe('rotation-2');
     expect(ranking[0].weeklyLikes).toBe(5);
     expect(ranking[0].featured).toBe(true);
+  });
+
+  it('rejects a second evaluation from the same user', async () => {
+    prisma.communityRotation.findFirst.mockResolvedValue({
+      id: 'rotation-1',
+      userId: 'user-1',
+      status: CommunityRotationStatus.PUBLISHED,
+    });
+    prisma.communityRotationTest.findFirst.mockResolvedValue({ id: 'test-1' });
+
+    await expect(service.createTest('rotation-1', 'user-2', {})).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(prisma.communityRotationTest.create).not.toHaveBeenCalled();
   });
 });

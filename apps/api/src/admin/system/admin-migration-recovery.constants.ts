@@ -15,6 +15,9 @@ export const MIGRATION_RECOVERY_ALLOWLIST = [
   '20261107120000_add_community_rotations',
   '20261107143000_community_rotation_publish_idempotency',
   '20261107143500_drop_community_rotation_sort_enum',
+  '20261109180000_add_bosstiary_progress',
+  '20261109190000_unique_community_rotation_test',
+  '20261109200000_add_party_hunt_sessions',
 ] as const;
 
 export type MigrationRecoveryStepName =
@@ -68,4 +71,50 @@ export const BILLING_CHECKOUT_ATTEMPT_INDEXES = [
 export const COMMUNITY_PUBLISH_IDEMPOTENCY_INDEXES = [
   'CommunityRotationPublishIdempotency_userId_idempotencyKey_key',
   'CommunityRotationPublishIdempotency_rotationId_key',
+] as const;
+
+/** Meu Progresso diary + checklist (depends on BosstiaryBoss + CommunityRotation). */
+export const BOSSTIARY_PROGRESS_ENUMS = [
+  'BosstiaryActivityKind',
+  'BosstiaryVisibility',
+] as const;
+
+export const BOSSTIARY_PROGRESS_TABLES = [
+  'BosstiaryProgressActivity',
+  'BosstiaryBossChecklist',
+] as const;
+
+export const BOSSTIARY_PROGRESS_INDEXES = [
+  'BosstiaryProgressActivity_userId_occurredAt_idx',
+  'BosstiaryProgressActivity_userId_kind_occurredAt_idx',
+  'BosstiaryBossChecklist_userId_bossId_key',
+] as const;
+
+export const COMMUNITY_ROTATION_TEST_UNIQUE_INDEX =
+  'CommunityRotationTest_rotationId_userId_key';
+
+export const PARTY_ENUMS = [
+  'PartyStatus',
+  'PartyMemberRole',
+  'PartyMemberStatus',
+  'PartyInvitationStatus',
+  'HuntSessionStatus',
+  'HuntSessionParticipantStatus',
+  'AppNotificationKind',
+] as const;
+
+export const PARTY_HUNT_TABLES = [
+  'Party',
+  'PartyMember',
+  'PartyInvitation',
+  'HuntSession',
+  'HuntSessionParticipant',
+  'AppNotification',
+] as const;
+
+export const PARTY_HUNT_INDEXES = [
+  'PartyMember_partyId_userId_key',
+  'PartyInvitation_party_email_pending_key',
+  'HuntSessionParticipant_sessionId_userId_key',
+  'BosstiaryProgressActivity_partyId_visibility_occurredAt_idx',
 ] as const;
