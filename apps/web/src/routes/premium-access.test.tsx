@@ -32,7 +32,10 @@ vi.mock("../pages/HuntDetailPage", () => ({
   HuntDetailPage: () => <h1>Hunt protegida</h1>,
 }));
 vi.mock("../pages/BestiaryPage", () => ({
-  BestiaryPage: () => <h1>Bestiário protegido</h1>,
+  BestiaryPage: () => <h1>Bestiário autenticado</h1>,
+}));
+vi.mock("../pages/CharmGuideDetailPage", () => ({
+  CharmGuideDetailPage: () => <h1>Guia de Charms</h1>,
 }));
 vi.mock("../pages/BosstiaryPage", () => ({
   BosstiaryPage: () => <h1>Bosstiário protegido</h1>,
@@ -103,10 +106,10 @@ describe("Web premium routes", () => {
     for (const path of [
       "/hunts",
       "/hunts/cyclops",
-      "/bestiary",
       "/bosstiary",
       "/bestiary/rat",
       "/bestiary/rat/hunts",
+      "/bestiary/guides/new",
       "/forum",
       "/forum/new",
       "/forum/11111111-1111-4111-8111-111111111111",
@@ -117,6 +120,12 @@ describe("Web premium routes", () => {
       expect(screen.getByRole("heading", { name: "Acesso Premium" })).toBeInTheDocument();
       expect(screen.getByText(/Pagamento pendente/i)).toBeInTheDocument();
     }
+
+    show("/bestiary");
+    expect(screen.getByRole("heading", { name: "Bestiário autenticado" })).toBeInTheDocument();
+
+    show("/bestiary/guides/11111111-1111-4111-8111-111111111111");
+    expect(screen.getByRole("heading", { name: "Guia de Charms" })).toBeInTheDocument();
   });
 
   it("opens a protected route when premium is active", () => {

@@ -27,6 +27,7 @@ const GROUPS = [
     items: [
       { to: "/admin/hunts", label: "Hunts" },
       { to: "/admin/bestiary", label: "Bestiário" },
+      { to: "/admin/charm-guides", label: "Guias de Charms" },
       { to: "/admin/bosses", label: "Bosses" },
     ],
   },
@@ -57,6 +58,7 @@ const CRUMBS: Record<string, string> = {
   tickets: "Chamados",
   hunts: "Hunts",
   bestiary: "Bestiário",
+  "charm-guides": "Guias de Charms",
   bosses: "Bosses",
   forum: "Fórum",
   users: "Usuários",

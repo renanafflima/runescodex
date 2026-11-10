@@ -8,11 +8,14 @@ import { BestiaryHuntsPage } from "./BestiaryHuntsPage";
 import { BestiaryPage } from "./BestiaryPage";
 import { HuntsPage } from "./HuntsPage";
 
-const { listBestiaryPage, listHuntsPage, getBestiaryBySlug } = vi.hoisted(() => ({
-  listBestiaryPage: vi.fn(),
-  listHuntsPage: vi.fn(),
-  getBestiaryBySlug: vi.fn(),
-}));
+const { listBestiaryPage, listHuntsPage, getBestiaryBySlug, getCharmGuideCategories, listCharmGuides } =
+  vi.hoisted(() => ({
+    listBestiaryPage: vi.fn(),
+    listHuntsPage: vi.fn(),
+    getBestiaryBySlug: vi.fn(),
+    getCharmGuideCategories: vi.fn(),
+    listCharmGuides: vi.fn(),
+  }));
 
 const auth = vi.hoisted(() => ({
   isAuthenticated: false,
@@ -20,6 +23,7 @@ const auth = vi.hoisted(() => ({
   isRosterReady: true,
   characters: [] as Array<{ id: string; name: string; vocation: string; level: number; world: string }>,
   activeCharacter: null as { id: string; name: string; vocation: string; level: number; world: string } | null,
+  user: null as { premium?: { access: boolean } } | null,
   setActiveCharacter: vi.fn(),
 }));
 
@@ -34,6 +38,11 @@ vi.mock("../services/api/bestiary", () => ({
 
 vi.mock("../services/api/hunts", () => ({
   listHuntsPage,
+}));
+
+vi.mock("../services/api/charm-guides", () => ({
+  getCharmGuideCategories,
+  listCharmGuides,
 }));
 
 function pageResult<T>(items: T[], extras: { page?: number; hasMore?: boolean; total?: number } = {}) {
@@ -57,6 +66,22 @@ function renderBestiaryCreature(path: string) {
       </Routes>
     </MemoryRouter>,
   );
+}
+
+async function openCreaturesTab() {
+  fireEvent.click(screen.getByRole("button", { name: /Todas as Criaturas/i }));
+}
+
+function stubCharmGuides() {
+  getCharmGuideCategories.mockResolvedValue({
+    categories: [
+      { cpCategory: "CP_100", targetPoints: 100, label: "Fácil", guideCount: 0 },
+      { cpCategory: "CP_200", targetPoints: 200, label: "Médio", guideCount: 0 },
+      { cpCategory: "CP_300", targetPoints: 300, label: "Avançado", guideCount: 0 },
+      { cpCategory: "CP_500", targetPoints: 500, label: "Desafiador", guideCount: 0 },
+    ],
+  });
+  listCharmGuides.mockResolvedValue(pageResult([]));
 }
 
 const darkTorturer = {
@@ -88,8 +113,12 @@ describe("catalog pages distinguish empty data from API errors", () => {
   beforeEach(() => {
     listBestiaryPage.mockReset();
     listHuntsPage.mockReset();
+    getCharmGuideCategories.mockReset();
+    listCharmGuides.mockReset();
+    stubCharmGuides();
     auth.isAuthenticated = false;
     auth.activeCharacter = null;
+    auth.user = { premium: { access: true } };
   });
 
   afterEach(() => {
@@ -107,6 +136,7 @@ describe("catalog pages distinguish empty data from API errors", () => {
       </MemoryRouter>,
     );
 
+    await openCreaturesTab();
     expect(await screen.findByRole("alert")).toHaveTextContent("Erro temporário no servidor");
     expect(screen.queryByText("Nenhuma criatura encontrada")).not.toBeInTheDocument();
   });
@@ -120,6 +150,7 @@ describe("catalog pages distinguish empty data from API errors", () => {
       </MemoryRouter>,
     );
 
+    await openCreaturesTab();
     expect(await screen.findByText("Nenhuma criatura encontrada")).toBeInTheDocument();
     expect(screen.getByText(/Não há criaturas para este filtro/i)).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -157,9 +188,13 @@ describe("catalog pages distinguish empty data from API errors", () => {
 describe("catalog pages load a single page", () => {
   beforeEach(() => {
     listBestiaryPage.mockReset();
+    getCharmGuideCategories.mockReset();
+    listCharmGuides.mockReset();
+    stubCharmGuides();
     listHuntsPage.mockReset();
     auth.activeCharacter = { id: "char-1", name: "Arvandor", vocation: "EK", level: 400, world: "Belobra" };
     auth.isAuthenticated = true;
+    auth.user = { premium: { access: true } };
   });
 
   afterEach(() => {
@@ -307,6 +342,7 @@ describe("catalog pages load a single page", () => {
       </MemoryRouter>,
     );
 
+    await openCreaturesTab();
     expect(await screen.findByRole("heading", { name: "Dark Torturer" })).toBeInTheDocument();
     expect(listHuntsPage).not.toHaveBeenCalled();
     expect(listBestiaryPage).toHaveBeenCalledTimes(1);
@@ -329,6 +365,7 @@ describe("catalog pages load a single page", () => {
         <BestiaryPage />
       </MemoryRouter>,
     );
+    await openCreaturesTab();
     expect(await screen.findByRole("heading", { name: "Dark Torturer" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Hard" }));
     fireEvent.change(screen.getByPlaceholderText("Buscar criatura, local ou grupo"), {
@@ -366,6 +403,7 @@ describe("catalog pages load a single page", () => {
         <BestiaryPage />
       </MemoryRouter>,
     );
+    await openCreaturesTab();
     expect(await screen.findByRole("heading", { name: "Dark Torturer" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Carregar mais" }));
     expect(await screen.findByRole("heading", { name: "Hellhound" })).toBeInTheDocument();
@@ -381,6 +419,7 @@ describe("catalog pages load a single page", () => {
         <BestiaryPage />
       </MemoryRouter>,
     );
+    await openCreaturesTab();
     await waitFor(() => {
       expect(listBestiaryPage).toHaveBeenLastCalledWith(
         expect.objectContaining({ vocation: "RP", level: 150, page: 1, limit: 50 }),
@@ -406,7 +445,7 @@ describe("bestiary evolution and hunts screens", () => {
   it("opens the evolution path with the selected creature and real hunts", async () => {
     renderBestiaryCreature("/bestiary/dark-torturer");
 
-    expect(await screen.findByRole("heading", { level: 2, name: "Dark Torturer" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Dark Torturer", level: 2 })).toBeInTheDocument();
     expect(screen.getByText("Rota recomendada")).toBeInTheDocument();
     expect(screen.getByText("Roshamuul Prison -2")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ir para a hunt" })).toHaveAttribute(
@@ -431,7 +470,7 @@ describe("bestiary evolution and hunts screens", () => {
         </Routes>
       </MemoryRouter>,
     );
-    expect(await screen.findByRole("heading", { level: 2, name: "Dark Torturer" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Dark Torturer", level: 2 })).toBeInTheDocument();
     expect(getBestiaryBySlug).toHaveBeenCalledTimes(1);
     expect(listHuntsPage).toHaveBeenCalledTimes(1);
 
@@ -445,7 +484,7 @@ describe("bestiary evolution and hunts screens", () => {
         </Routes>
       </MemoryRouter>,
     );
-    expect(await screen.findByRole("heading", { level: 2, name: "Dark Torturer" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Dark Torturer", level: 2 })).toBeInTheDocument();
     expect(getBestiaryBySlug).toHaveBeenCalledTimes(1);
     expect(listHuntsPage).toHaveBeenCalledTimes(1);
   });
@@ -453,7 +492,7 @@ describe("bestiary evolution and hunts screens", () => {
   it("keeps the selected creature when opening all hunts", async () => {
     renderBestiaryCreature("/bestiary/dark-torturer/hunts");
 
-    expect(await screen.findByRole("heading", { level: 2, name: "Dark Torturer" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Dark Torturer", level: 2 })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Todas as hunts do Dark Torturer" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ir para a hunt →" })).toHaveAttribute(
       "href",

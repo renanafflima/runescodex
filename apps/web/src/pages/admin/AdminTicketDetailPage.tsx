@@ -168,6 +168,25 @@ export function AdminTicketDetailPage() {
                   {ticket.creature.experience !== null ? ` · XP ${ticket.creature.experience}` : ""}
                 </p>
               ) : null}
+              {ticket.charmGuide ? (
+                <div>
+                  <h2>Guia de Charm Points</h2>
+                  <p>
+                    <Link to={`/admin/charm-guides?guide=${ticket.charmGuide.id}`}>
+                      {ticket.charmGuide.title}
+                    </Link>{" "}
+                    · {ticket.charmGuide.cpCategory} · {ticket.charmGuide.status} ·{" "}
+                    {ticket.charmGuide.totalCharmPoints} CP · {ticket.charmGuide.stepCount} etapas
+                  </p>
+                  <p>
+                    Autor: {ticket.charmGuide.user.activeCharacter?.name || "—"} · enviado em{" "}
+                    {formatAdminDate(ticket.charmGuide.createdAt)}
+                  </p>
+                  <p>
+                    <Link to={`/bestiary/guides/${ticket.charmGuide.id}`}>Abrir guia público →</Link>
+                  </p>
+                </div>
+              ) : null}
               <h2>Conversa</h2>
               <div className="admin-thread">
                 {ticket.messages.length === 0 ? <p className="admin-note">Nenhuma mensagem ainda.</p> : null}

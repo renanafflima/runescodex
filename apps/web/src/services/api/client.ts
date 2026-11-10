@@ -54,6 +54,11 @@ export async function apiRequest<T>(
   }
 
   const headers = new Headers({ Accept: "application/json" });
+  if (options.headers) {
+    for (const [key, value] of Object.entries(options.headers)) {
+      headers.set(key, value);
+    }
+  }
   const token = options.token === undefined ? getAccessToken() : options.token || "";
   const shouldSendToken = options.auth !== false && Boolean(token);
 
