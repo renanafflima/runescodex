@@ -2,10 +2,8 @@
  * TEMPORARY: admin-only controlled migration recovery for production Neon.
  * Remove after _prisma_migrations is aligned. Never runs migrate deploy wholesale.
  */
-import { execFile } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { promisify } from 'node:util';
 import {
   ConflictException,
   ForbiddenException,
@@ -41,9 +39,8 @@ import {
   pgTableExists,
   type MigrationRecoveryPgSession,
 } from './admin-migration-recovery.pg-session';
+import { execPrismaCli } from './admin-migration-recovery.prisma-cli';
 import type { Client } from 'pg';
-
-const execFileAsync = promisify(execFile);
 
 export type MigrationRecoveryLogEntry = {
   at: string;
@@ -544,18 +541,13 @@ export class AdminMigrationRecoveryService {
     push: (level: MigrationRecoveryLogEntry['level'], message: string) => void,
   ) {
     push('info', 'Recording migration in Prisma history (resolve --applied).');
-    const cwd = this.migrationsRoot().replace(/[/\\]migrations$/, '');
     try {
-      await execFileAsync(
-        'npx',
-        ['prisma', 'migrate', 'resolve', '--applied', step],
-        {
-          cwd,
-          env: process.env,
-          timeout: 120_000,
-          maxBuffer: 1024 * 1024,
-        },
-      );
+      await execPrismaCli(['migrate', 'resolve', '--applied', step], {
+        cwd: process.cwd(),
+        env: process.env,
+        timeout: 120_000,
+        maxBuffer: 1024 * 1024,
+      });
     } catch (error) {
       throw new ServiceUnavailableException(loggedErrorSummary(error));
     }

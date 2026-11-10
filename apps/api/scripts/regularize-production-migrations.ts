@@ -10,10 +10,8 @@ import 'dotenv/config';
 import { databaseHost, resolveAppEnv } from '../src/common/database-target';
 import { MIGRATION_RECOVERY_ALLOWLIST } from '../src/admin/system/admin-migration-recovery.constants';
 import { AdminMigrationRecoveryService } from '../src/admin/system/admin-migration-recovery.service';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
-const execFileAsync = promisify(execFile);
+import { execPrismaCli } from '../src/admin/system/admin-migration-recovery.prisma-cli';
+import { runAllowlistedRecoverySteps } from '../src/admin/system/regularize-production-migrations.runner';
 
 function assertProductionTarget() {
   const appEnv = resolveAppEnv(process.env);
@@ -44,7 +42,7 @@ function assertProductionTarget() {
 }
 
 async function migrateStatus() {
-  await execFileAsync('npx', ['prisma', 'migrate', 'status'], {
+  await execPrismaCli(['migrate', 'status'], {
     cwd: process.cwd(),
     env: process.env,
     timeout: 120_000,
@@ -55,17 +53,47 @@ async function migrateStatus() {
 async function main() {
   assertProductionTarget();
   const service = new AdminMigrationRecoveryService({} as never);
+
+  const diagnostic = await service.diagnostic();
+  const applied = new Set(diagnostic.appliedMigrations);
+
+  const { events, allOk } = await runAllowlistedRecoverySteps(
+    MIGRATION_RECOVERY_ALLOWLIST,
+    applied,
+    (step) => service.executeStep(step),
+  );
+
   const results: Array<{ step: string; ok: boolean; nextStep: string | null }> =
     [];
 
-  for (const step of MIGRATION_RECOVERY_ALLOWLIST) {
-    const view = await service.executeStep(step);
-    results.push({ step, ok: view.ok, nextStep: view.nextStep });
-    console.log(JSON.stringify({ event: 'step-complete', step, ok: view.ok }));
-    if (!view.ok) {
+  for (const event of events) {
+    if (event.event === 'step-skipped') {
+      console.log(
+        JSON.stringify({
+          event: 'step-skipped',
+          step: event.step,
+          reason: event.reason,
+        }),
+      );
+      continue;
+    }
+    results.push({
+      step: event.step,
+      ok: event.ok,
+      nextStep: event.nextStep,
+    });
+    console.log(
+      JSON.stringify({ event: 'step-complete', step: event.step, ok: event.ok }),
+    );
+    if (!event.ok) {
       process.exitCode = 1;
       return;
     }
+  }
+
+  if (!allOk) {
+    process.exitCode = 1;
+    return;
   }
 
   await migrateStatus();
