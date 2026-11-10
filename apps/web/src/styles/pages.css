@@ -5429,3 +5429,502 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+
+
+/* Charm Guides / Bestiary community */
+.bestiary-top-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0 0 1.35rem;
+}
+
+.bestiary-top-tab {
+  min-height: 3.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border: 1px solid #314355;
+  border-radius: 0.7rem;
+  background: linear-gradient(145deg, #101c29, #080f18);
+  color: #aebbc8;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.bestiary-top-tab.is-active {
+  border-color: #bd8a37;
+  color: #f2cf83;
+  box-shadow: inset 0 0 0 1px #bd8a3733;
+}
+
+.section-kicker {
+  color: #8c9bae;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.section-head h2,
+.charm-guides h2,
+.community-top h2 {
+  margin: 0;
+  color: #f0d18c;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+}
+
+.section-head p,
+.community-top p {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-soft);
+  font-size: 0.92rem;
+}
+
+.charm-guides .guide-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.guide-card {
+  --tone: #70c987;
+  min-height: 11rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #80602c;
+  border-radius: 0.85rem;
+  background: linear-gradient(145deg, #101c29, #080f18 75%);
+  box-shadow: 0 10px 22px #0004;
+}
+
+.guide-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--tone);
+  box-shadow: 0 0 13px var(--tone);
+}
+
+.guide-card:hover {
+  transform: translateY(-2px);
+  border-color: #f0c66c;
+}
+
+.guide-main {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.95rem 0.95rem 0.55rem;
+  flex: 1;
+}
+
+.guide-gem {
+  width: 2.4rem;
+  flex: 0 0 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid #80602c;
+  border-radius: 0.65rem;
+  color: var(--tone);
+  background: #0b1520;
+  font-size: 1.2rem;
+}
+
+.guide-info .cp {
+  color: #f0c66c;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.guide-info h3 {
+  margin: 0.35rem 0 0.25rem;
+  font-size: 0.98rem;
+}
+
+.guide-info p {
+  margin: 0;
+  color: #9aa9b9;
+  font-size: 0.78rem;
+}
+
+.guide-info .difficulty {
+  display: inline-block;
+  margin-top: 0.45rem;
+  color: var(--tone);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.guide-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border-top: 1px solid #253546;
+}
+
+.guide-foot .meta {
+  color: #93a4b5;
+  font-size: 0.75rem;
+}
+
+.community {
+  margin-top: 1.7rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid #2a3b4a;
+}
+
+.community-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.community-filters,
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+}
+
+.posts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.post {
+  border: 1px solid #314355;
+  border-radius: 0.85rem;
+  padding: 0.9rem;
+  background: linear-gradient(160deg, #0d1723, #081018);
+}
+
+.post-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.55rem;
+}
+
+.author {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.avatar {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid #80602c;
+  background: #152233;
+  color: #f0c66c;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.author-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.post-date,
+.post-type {
+  color: #93a4b5;
+  font-size: 0.72rem;
+}
+
+.post h3 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: #f0d49a;
+}
+
+.post h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.post p {
+  margin: 0;
+  color: #b4c0cd;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+}
+
+.post-tags span {
+  font-size: 0.7rem;
+  color: #c5d0db;
+  padding: 0.25rem 0.45rem;
+  border-radius: 0.4rem;
+  background: #0b111b;
+  border: 1px solid #293b4b;
+}
+
+.post-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.7rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid #253546;
+}
+
+.post-actions .action,
+.post-actions .btn.small {
+  color: #93a4b5;
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.community-more {
+  margin-top: 0.85rem;
+}
+
+.charm-guide-detail__header,
+.charm-guide-publish .section-head {
+  margin-bottom: 1.25rem;
+}
+
+.charm-guide-detail__notice {
+  color: #f0c66c;
+}
+
+.charm-guide-steps {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.charm-guide-step {
+  border: 1px solid #314355;
+  border-radius: 0.85rem;
+  padding: 0.95rem;
+  background: #0b1520;
+}
+
+.charm-guide-step h2,
+.charm-guide-step h3 {
+  margin: 0 0 0.45rem;
+  color: #f0d18c;
+  font-size: 1.05rem;
+}
+
+.charm-guide-creatures,
+.selected-creatures {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.charm-guide-creatures li,
+.selected-creatures li {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.charm-guide-creatures img,
+.selected-creatures img,
+.picker-list--creatures img {
+  width: 2.5rem;
+  height: 2.5rem;
+  object-fit: contain;
+}
+
+.charm-guide-comments {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #2a3b4a;
+}
+
+.charm-guide-comments .comment-box {
+  display: flex;
+  gap: 0.55rem;
+  margin: 0.75rem 0;
+}
+
+.charm-guide-comments .comment-box input {
+  flex: 1;
+  min-width: 0;
+  background: #050c14;
+  border: 1px solid #324558;
+  border-radius: 0.45rem;
+  color: #fff;
+  padding: 0.55rem 0.7rem;
+}
+
+.charm-guide-comments ul {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wizard-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.wizard-steps button {
+  border: 1px solid #314355;
+  border-radius: 999px;
+  background: #0b1520;
+  color: #aebbc8;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.wizard-steps button.is-active {
+  border-color: #bd8a37;
+  color: #f2cf83;
+}
+
+.wizard-panel {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.wizard-panel--steps {
+  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+  align-items: start;
+}
+
+.step-list,
+.step-editor {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.draft-step {
+  border: 1px solid #314355;
+  border-radius: 0.7rem;
+  padding: 0.7rem;
+  background: #0b1520;
+}
+
+.draft-step.is-active {
+  border-color: #bd8a37;
+}
+
+.draft-step header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.draft-step header button {
+  border: 0;
+  background: none;
+  color: #f0d18c;
+  font-weight: 700;
+  text-align: left;
+  padding: 0;
+}
+
+.draft-step__tools {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.picker-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.45rem 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 12rem;
+  overflow: auto;
+}
+
+.picker-list button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  border: 1px solid #314355;
+  border-radius: 0.5rem;
+  background: #081018;
+  color: #e9edf2;
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+}
+
+.picker-list--creatures button {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+}
+
+.picker-list--creatures small {
+  display: block;
+  color: #93a4b5;
+}
+
+.wizard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1050px) {
+  .charm-guides .guide-grid,
+  .posts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .charm-guides .guide-grid,
+  .posts,
+  .wizard-panel--steps {
+    grid-template-columns: 1fr;
+  }
+
+  .community-top,
+  .guide-foot {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

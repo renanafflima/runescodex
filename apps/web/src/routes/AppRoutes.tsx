@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { RequireAdmin } from "../components/auth/RequireAdmin";
 import { PageContainer } from "../components/layout/PageContainer";
-import { RequireAuth } from "../components/auth/RequireAuth";
+import { RequireAuth, RequireAuthOutlet } from "../components/auth/RequireAuth";
 import { RequirePremium } from "../components/auth/RequirePremium";
 import { AppLayout } from "../layouts/AppLayout";
 import { AdminHuntUpdateRequestsPage } from "../pages/AdminHuntUpdateRequestsPage";
@@ -29,6 +29,9 @@ import { BestiaryPage } from "../pages/BestiaryPage";
 import { BosstiaryBossPage } from "../pages/BosstiaryBossPage";
 import { BosstiaryPage } from "../pages/BosstiaryPage";
 import { CommunityRotationDetailPage } from "../pages/CommunityRotationDetailPage";
+import { CharmGuideDetailPage } from "../pages/CharmGuideDetailPage";
+import { CharmGuidePublishPage } from "../pages/CharmGuidePublishPage";
+import { AdminCharmGuidesPage } from "../pages/admin/AdminCharmGuidesPage";
 import { ForumComposePage } from "../pages/ForumComposePage";
 import { ForumPage } from "../pages/ForumPage";
 import { ForumThreadPage } from "../pages/ForumThreadPage";
@@ -77,10 +80,14 @@ export function AppRoutes() {
             </RequireAuth>
           }
         />
+        <Route element={<RequireAuthOutlet />}>
+          <Route path="bestiary" element={<BestiaryPage />} />
+          <Route path="bestiary/guides/:id" element={<CharmGuideDetailPage />} />
+        </Route>
         <Route element={<RequirePremium />}>
           <Route path="hunts" element={<HuntsPage />} />
           <Route path="hunts/:slug" element={<HuntDetailPage />} />
-          <Route path="bestiary" element={<BestiaryPage />} />
+          <Route path="bestiary/guides/new" element={<CharmGuidePublishPage />} />
           <Route path="bosstiary" element={<BosstiaryPage />} />
           <Route path="bosstiary/community/:id" element={<CommunityRotationDetailPage />} />
           <Route path="bosstiary/:slug" element={<BosstiaryBossPage />} />
@@ -107,6 +114,7 @@ export function AppRoutes() {
           <Route path="tickets/:id" element={<AdminTicketDetailPage />} />
           <Route path="hunts" element={<AdminHuntsPage />} />
           <Route path="bestiary" element={<AdminBestiaryPage />} />
+          <Route path="charm-guides" element={<AdminCharmGuidesPage />} />
           <Route path="bosses" element={<AdminBossesPage />} />
           <Route path="forum" element={<AdminForumPage />} />
           <Route path="users" element={<AdminUsersPage />} />

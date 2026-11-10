@@ -389,6 +389,19 @@ export type AdminTicketDetail = {
     difficulty: string | null;
     description: string | null;
   } | null;
+  charmGuide: {
+    id: string;
+    title: string;
+    cpCategory: string;
+    status: string;
+    totalCharmPoints: number;
+    uniqueCreatureCount: number;
+    stepCount: number;
+    difficulty: string;
+    createdAt: string;
+    publishedAt: string | null;
+    user: { id: string; activeCharacter: { name: string } | null };
+  } | null;
   evidences: Array<{
     id: string;
     mimeType: string;

@@ -10,6 +10,7 @@ export const RATE_LIMITS = {
   bosstiaryProgressWrite: { limit: 30, windowMs: 60_000 },
   partyWrite: { limit: 20, windowMs: 60_000 },
   huntUpdateRequestWrite: { limit: 20, windowMs: 60_000 },
+  charmGuideWrite: { limit: 20, windowMs: 60_000 },
   ticketWrite: { limit: 20, windowMs: 60_000 },
   analyticsWrite: { limit: 60, windowMs: 60_000 },
   checkout: { limit: 10, windowMs: 60_000 },

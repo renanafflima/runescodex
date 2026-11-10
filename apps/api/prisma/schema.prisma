@@ -135,6 +135,14 @@ model User {
   huntSessionsCreated         HuntSession[]              @relation("HuntSessionCreator")
   huntSessionParticipations   HuntSessionParticipant[]
   appNotifications            AppNotification[]
+  charmGuides            CharmGuide[]
+  charmGuideLikes        CharmGuideLike[]
+  charmGuideFavorites    CharmGuideFavorite[]
+  charmGuideComments     CharmGuideComment[]
+  charmGuideCommentLikes CharmGuideCommentLike[]
+  charmGuideProgress     CharmGuideCreatureProgress[]
+  charmGuidePublishIdempotencies CharmGuidePublishIdempotency[]
+  moderatedCharmGuides   CharmGuide[]          @relation("CharmGuideModeratedBy")
 }
 
 /// Active login. Logout deletes this row, so that token stops working.
@@ -266,6 +274,7 @@ model Character {
   updatedAt     DateTime @updatedAt
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   activeForUser User?    @relation("ActiveCharacter")
+  charmGuideProgress CharmGuideCreatureProgress[]
 
   @@index([userId])
 }
@@ -294,6 +303,8 @@ model Creature {
   bestiaryEntry     BestiaryEntry?
   userProgress      UserBestiaryProgress[]
   tickets           Ticket[]
+  charmGuideSteps   CharmGuideStepCreature[]
+  charmGuideProgress CharmGuideCreatureProgress[]
 
   @@index([isActive])
   @@index([name])
@@ -370,6 +381,7 @@ model Hunt {
   tickets   Ticket[]
   comments  HuntComment[]
   updateRequests HuntUpdateRequest[]
+  charmGuideSteps CharmGuideStep[]
 
   @@index([isActive])
   @@index([name])
@@ -865,6 +877,7 @@ enum TicketProblemType {
   DIFFICULTY
   INCORRECT_INFO
   OTHER
+  CHARM_GUIDE
 }
 
 enum TicketImpact {
@@ -919,6 +932,7 @@ model Ticket {
   description      String
   huntId           String?
   creatureId       String?
+  charmGuideId     String?            @unique
   playerLevel      Int?
   partyFormat      TicketPartyFormat?
   catalogValue     String?
@@ -939,6 +953,7 @@ model Ticket {
   resolvedBy       User?              @relation("TicketResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
   hunt             Hunt?              @relation(fields: [huntId], references: [id], onDelete: SetNull)
   creature         Creature?          @relation(fields: [creatureId], references: [id], onDelete: SetNull)
+  charmGuide       CharmGuide?        @relation(fields: [charmGuideId], references: [id], onDelete: SetNull)
   vocations        TicketVocationSelection[]
   evidences        TicketEvidence[]
   messages          TicketMessage[]
@@ -949,6 +964,7 @@ model Ticket {
   @@index([status, createdAt])
   @@index([huntId])
   @@index([creatureId])
+  @@index([charmGuideId])
   @@index([assigneeId, status, createdAt])
   @@index([priority, createdAt])
 }
@@ -1934,4 +1950,192 @@ model AppNotification {
 
   @@index([userId, createdAt])
   @@index([userId, readAt])
+}
+
+enum CharmGuideStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  CHANGES_REQUESTED
+  ARCHIVED
+}
+
+enum CharmGuideCpCategory {
+  CP_100
+  CP_200
+  CP_300
+  CP_500
+}
+
+enum CharmGuideDifficulty {
+  EASY
+  MEDIUM
+  ADVANCED
+  CHALLENGING
+}
+
+/// Community bestiary charm-point guide. Totals are server-computed from BestiaryEntry.
+model CharmGuide {
+  id                  String               @id @default(uuid())
+  userId              String
+  title               String
+  description         String
+  coverImage          String?
+  cpCategory          CharmGuideCpCategory
+  difficulty          CharmGuideDifficulty
+  status              CharmGuideStatus     @default(DRAFT)
+  totalCharmPoints    Int                  @default(0)
+  uniqueCreatureCount Int                  @default(0)
+  stepCount           Int                  @default(0)
+  adminResponse       String?
+  moderatedByUserId   String?
+  moderatedAt         DateTime?
+  publishedAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  user           User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moderatedBy    User?                         @relation("CharmGuideModeratedBy", fields: [moderatedByUserId], references: [id], onDelete: SetNull)
+  steps          CharmGuideStep[]
+  likes          CharmGuideLike[]
+  favorites      CharmGuideFavorite[]
+  comments       CharmGuideComment[]
+  progress       CharmGuideCreatureProgress[]
+  ticket         Ticket?
+  publishIdempotency CharmGuidePublishIdempotency?
+
+  @@index([status, createdAt])
+  @@index([status, cpCategory, createdAt])
+  @@index([userId, createdAt])
+  @@index([cpCategory, status])
+}
+
+model CharmGuideStep {
+  id        String   @id @default(uuid())
+  guideId   String
+  position  Int
+  huntId    String?
+  title     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guide     CharmGuide               @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  hunt      Hunt?                    @relation(fields: [huntId], references: [id], onDelete: SetNull)
+  creatures CharmGuideStepCreature[]
+
+  @@unique([guideId, position])
+  @@index([guideId])
+  @@index([huntId])
+}
+
+model CharmGuideStepCreature {
+  id         String @id @default(uuid())
+  stepId     String
+  creatureId String
+  position   Int
+
+  step     CharmGuideStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  creature Creature       @relation(fields: [creatureId], references: [id], onDelete: Restrict)
+
+  @@unique([stepId, creatureId])
+  @@unique([stepId, position])
+  @@index([creatureId])
+}
+
+model CharmGuideLike {
+  id        String   @id @default(uuid())
+  guideId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  guide CharmGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([guideId, userId])
+  @@index([userId])
+}
+
+model CharmGuideFavorite {
+  id        String   @id @default(uuid())
+  guideId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  guide CharmGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([guideId, userId])
+  @@index([userId])
+}
+
+model CharmGuideComment {
+  id        String   @id @default(uuid())
+  guideId   String
+  userId    String
+  parentId  String?
+  content   String
+  isEdited  Boolean  @default(false)
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guide   CharmGuide             @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  user    User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  CharmGuideComment?     @relation("CharmGuideCommentThread", fields: [parentId], references: [id], onDelete: Restrict)
+  replies CharmGuideComment[]    @relation("CharmGuideCommentThread")
+  likes   CharmGuideCommentLike[]
+
+  @@index([guideId, parentId, createdAt, id])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model CharmGuideCommentLike {
+  id        String   @id @default(uuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment CharmGuideComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([userId])
+}
+
+/// Manual completion of a guide creature for one character. Does not change global bestiary kills.
+model CharmGuideCreatureProgress {
+  id          String   @id @default(uuid())
+  userId      String
+  characterId String
+  guideId     String
+  creatureId  String
+  completedAt DateTime @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character Character  @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  guide     CharmGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  creature  Creature   @relation(fields: [creatureId], references: [id], onDelete: Cascade)
+
+  @@unique([characterId, guideId, creatureId])
+  @@index([guideId, characterId])
+  @@index([userId])
+}
+
+model CharmGuidePublishIdempotency {
+  id             String   @id @default(uuid())
+  userId         String
+  idempotencyKey String
+  payloadHash    String
+  guideId        String?  @unique
+  ticketId       String?
+  createdAt      DateTime @default(now())
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guide CharmGuide? @relation(fields: [guideId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, idempotencyKey])
+  @@index([createdAt])
 }

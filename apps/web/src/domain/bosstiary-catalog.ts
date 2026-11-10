@@ -15,6 +15,18 @@ export type BosstiaryCatalog = {
   skipped: number;
 };
 
+let cachedBossSprites: ReadonlyMap<string, string> | null = null;
+
+function bossSpriteIndex() {
+  if (!cachedBossSprites) cachedBossSprites = bossImages();
+  return cachedBossSprites;
+}
+
+/** Official boss sprite already shipped with the encyclopedia catalog. */
+export function officialBossImage(name: string, slug?: string | null) {
+  return bossImageUrl(name, slug?.trim() || name, bossSpriteIndex());
+}
+
 function bossImages() {
   const files = spriteFileNames.flatMap((fileName) => {
     if (!creatureImageKey(fileName)) return [];
