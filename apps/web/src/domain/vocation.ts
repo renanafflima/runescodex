@@ -2,6 +2,14 @@ export const VOCATIONS = ["EK", "RP", "ED", "MS", "EM"] as const;
 
 export type VocationCode = (typeof VOCATIONS)[number];
 
+export const VOCATION_LABEL: Record<VocationCode, string> = {
+  EK: "Knight",
+  RP: "Paladin",
+  ED: "Druid",
+  MS: "Sorcerer",
+  EM: "Monk",
+};
+
 const VOCATION_ALIASES: Record<string, VocationCode> = {
   ek: "EK",
   knight: "EK",
