@@ -12,7 +12,6 @@ import {
   COMMUNITY_MODE_FILTERS,
   COMMUNITY_SORT_OPTIONS,
   authorLabel,
-  communityBossSummary,
   communityDurationLabel,
   communityHuntModeLabel,
   formatCommunityWhen,
@@ -25,6 +24,8 @@ import {
   progressPercent,
 } from "../../domain/rewards";
 import { useLatestRequest } from "../../hooks/useLatestRequest";
+import { officialBossImage } from "../../domain/bosstiary-catalog";
+import { resolveCreatureImage } from "../../domain/creature-image";
 import { assetUrl } from "../../lib/assets";
 import { describeApiError } from "../../services/api/errors";
 import {
@@ -300,16 +301,35 @@ export function CommunityRotationsFeed() {
                       <Link className="bosstiary-community-card__title" to={`/bosstiary/community/${card.id}`}>
                         {card.title}
                       </Link>
-                      <ul className="bosstiary-community-card__bosses" aria-label="Bosses na rotação">
-                        {card.bosses.slice(0, 5).map((stop) => (
-                          <li key={stop.id}>
-                            <CatalogImage alt="" className="bosstiary-community-card__boss-img" name={stop.name ?? ""} src={stop.image} />
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="bosstiary-community-card__stops">
-                        {communityBossSummary(card)} · {card.bosses.length} bosses
-                      </p>
+                      <ol className="bosstiary-community-card__sequence" aria-label="Bosses na rotação">
+                        {[...card.bosses]
+                          .sort((left, right) => left.position - right.position)
+                          .map((stop, index, stops) => {
+                            const name = stop.name || stop.bossName || "Boss";
+                            const src =
+                              officialBossImage(name, stop.slug) ??
+                              resolveCreatureImage(stop.image, stop.slug, name);
+                            return (
+                              <li key={stop.id}>
+                                <span className="bosstiary-community-card__sequence-stop">
+                                  <span className="bosstiary-community-card__sequence-order">{stop.position}.</span>
+                                  <CatalogImage
+                                    alt=""
+                                    className="bosstiary-community-card__boss-img"
+                                    name={name}
+                                    src={src}
+                                  />
+                                  <span className="bosstiary-community-card__sequence-name">{name}</span>
+                                </span>
+                                {index < stops.length - 1 ? (
+                                  <span aria-hidden="true" className="bosstiary-community-card__sequence-arrow">
+                                    →
+                                  </span>
+                                ) : null}
+                              </li>
+                            );
+                          })}
+                      </ol>
                       <dl className="bosstiary-community-card__stats">
                         <div>
                           <dt>Level</dt>

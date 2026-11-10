@@ -94,6 +94,16 @@ describe("CommunityRotationsFeed", () => {
           author: { id: "user-2", name: "Nyx", vocation: "EK", level: 512 },
           bosses: [
             {
+              id: "stop-2",
+              position: 2,
+              notes: null,
+              bossId: null,
+              bossName: "The Pale Worm",
+              slug: "the-pale-worm",
+              name: "The Pale Worm",
+              image: "arquivo-inexistente.gif",
+            },
+            {
               id: "stop-1",
               position: 1,
               notes: null,
@@ -128,6 +138,14 @@ describe("CommunityRotationsFeed", () => {
 
     expect(await screen.findByText("Loop do Oberon")).toBeInTheDocument();
     expect(screen.getByText("Nyx")).toBeInTheDocument();
+    const sequence = screen.getByRole("list", { name: "Bosses na rotação" });
+    const text = sequence.textContent ?? "";
+    expect(text.indexOf("1.")).toBeLessThan(text.indexOf("Grand Master Oberon"));
+    expect(text.indexOf("Grand Master Oberon")).toBeLessThan(text.indexOf("2."));
+    expect(text.indexOf("2.")).toBeLessThan(text.indexOf("The Pale Worm"));
+    expect(text).toContain("→");
+    expect(sequence.querySelector("img")).toBeTruthy();
+    expect(sequence.querySelector(".catalog-image--fallback")).toHaveTextContent("T");
     fireEvent.click(screen.getByRole("button", { name: "Funcionou pra mim" }));
     await waitFor(() => expect(createCommunityRotationTest).toHaveBeenCalledWith("rot-1", {}));
   });

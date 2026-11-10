@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadBosstiaryCatalog, searchBosstiaryCatalog } from "./bosstiary-catalog";
+import { loadBosstiaryCatalog, officialBossImage, searchBosstiaryCatalog } from "./bosstiary-catalog";
 
 describe("bosstiary candidate catalog", () => {
   it("keeps TibiaWiki candidates unclassified until an editorial review exists", () => {
@@ -29,5 +29,10 @@ describe("bosstiary candidate catalog", () => {
     const hits = searchBosstiaryCatalog(catalog.entries, "ob", 8);
     expect(hits.some((entry) => entry.name === "Grand Master Oberon")).toBe(true);
     expect(searchBosstiaryCatalog(catalog.entries, "o", 8)).toEqual([]);
+  });
+
+  it("resolves an official boss sprite and falls back when the name has no asset", () => {
+    expect(officialBossImage("Grand Master Oberon", "grand-master-oberon")).toMatch(/images\/bosses\//);
+    expect(officialBossImage("Boss sem arquivo", "boss-sem-arquivo")).toBeNull();
   });
 });
