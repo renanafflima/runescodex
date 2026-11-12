@@ -6287,11 +6287,26 @@ button.support-metric:focus-visible,
   border-top: 1px solid #253546;
 }
 
-.post-actions .action,
-.post-actions .btn.small {
+.post-actions .action {
   color: #93a4b5;
   font-size: 0.75rem;
   text-decoration: none;
+}
+
+.post-actions .post-strategy-cta {
+  margin-left: auto;
+  min-height: 2.25rem;
+  padding-inline: 0.85rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 0.2rem 0.65rem rgb(184 132 40 / 28%);
+}
+
+.post-actions .post-strategy-cta:hover {
+  box-shadow: 0 0.25rem 0.85rem rgb(210 158 56 / 36%);
+  filter: brightness(1.04);
 }
 
 .community-more {
@@ -6347,11 +6362,14 @@ button.support-metric:focus-visible,
 }
 
 .charm-guide-creatures img,
+.charm-guide-creatures .catalog-image,
+.charm-guide-creatures .charm-guide-creature__art,
 .selected-creatures img,
 .picker-list--creatures img {
   width: 2.5rem;
   height: 2.5rem;
   object-fit: contain;
+  font-size: 0.75rem;
 }
 
 .charm-guide-comments {
@@ -6506,6 +6524,12 @@ button.support-metric:focus-visible,
   .posts,
   .wizard-panel--steps {
     grid-template-columns: 1fr;
+  }
+
+  .post-actions .post-strategy-cta {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
   }
 
   .community-top,

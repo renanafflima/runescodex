@@ -15,7 +15,7 @@ import {
   type CharmGuideCpCategory,
 } from "../../services/api/charm-guides";
 import { CatalogEmpty, CatalogError, CatalogLoading } from "../catalog/CatalogState";
-import { Button } from "../ui/Button";
+import { Button, ButtonLink } from "../ui/Button";
 import { Chip } from "../ui/Chip";
 
 type CharmGuidesPanelProps = {
@@ -124,7 +124,7 @@ export function CharmGuidesPanel({ onPublish }: CharmGuidesPanelProps) {
             <p>Sequências de Hunts e criaturas publicadas pelos jogadores.</p>
           </div>
           <Button onClick={onPublish} type="button">
-            ＋ Publicar guia
+            ＋ Compartilhe sua estratégia
           </Button>
         </div>
 
@@ -192,9 +192,14 @@ export function CharmGuidesPanel({ onPublish }: CharmGuidesPanelProps) {
                   <span className="action">♡ {guide.likeCount} curtidas</span>
                   <span className="action">▢ {guide.commentCount} comentários</span>
                   <span className="action">☆ {guide.favoriteCount} salvos</span>
-                  <Link className="btn small" to={`/bestiary/guides/${guide.id}`}>
-                    Abrir guia →
-                  </Link>
+                  <ButtonLink
+                    className="post-strategy-cta"
+                    size="sm"
+                    to={`/bestiary/guides/${guide.id}`}
+                    variant="primary"
+                  >
+                    Ver estratégia completa →
+                  </ButtonLink>
                 </div>
               </article>
             ))}

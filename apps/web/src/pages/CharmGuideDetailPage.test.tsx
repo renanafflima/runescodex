@@ -127,4 +127,24 @@ describe("CharmGuideDetailPage", () => {
       expect(api.getCharmGuide).toHaveBeenCalledWith(GUIDE_ID, "char-1");
     });
   });
+
+  it("resolves creature art from slug when the API returns a raw path", async () => {
+    const guide = pendingGuide();
+    guide.steps[0]!.creatures[0] = {
+      id: "c1",
+      slug: "cyclops",
+      name: "Cyclops",
+      image: "Cyclops.gif",
+      difficulty: "EASY",
+      charmPoints: 5,
+      countsTowardTotal: true,
+      repeatedFromEarlierStep: false,
+      completed: false,
+    };
+    api.getCharmGuide.mockResolvedValue(guide);
+    renderDetail();
+    expect(await screen.findByText("Cyclops")).toBeInTheDocument();
+    const image = document.querySelector(".charm-guide-creature__art");
+    expect(image).toHaveAttribute("src", expect.stringContaining("Cyclops.gif"));
+  });
 });

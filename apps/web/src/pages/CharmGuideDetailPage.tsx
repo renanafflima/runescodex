@@ -10,6 +10,7 @@ import {
   charmGuideCategoryLabel,
   charmGuideCategoryPoints,
 } from "../domain/charm-guides";
+import { resolveCreatureImage } from "../domain/creature-image";
 import { describeApiError } from "../services/api/errors";
 import {
   createCharmGuideComment,
@@ -186,7 +187,12 @@ export function CharmGuideDetailPage() {
               <ul className="charm-guide-creatures">
                 {step.creatures.map((creature) => (
                   <li key={`${step.id}-${creature.id}`}>
-                    <CatalogImage alt="" name={creature.name} src={creature.image} />
+                    <CatalogImage
+                      alt=""
+                      className="charm-guide-creature__art"
+                      name={creature.name}
+                      src={resolveCreatureImage(creature.image, creature.slug, creature.name)}
+                    />
                     <div>
                       <strong>{creature.name}</strong>
                       <span>
