@@ -55,11 +55,31 @@ export function charmGuideCategoryPoints(category: CharmGuideCpCategory) {
   return CHARM_GUIDE_CATEGORIES.find((item) => item.cpCategory === category)?.targetPoints ?? 0;
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const RFC_UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+const LEGACY_CREATURE_ID_RE =
+  /^c30000001-0001-4000-8000-[0-9a-f]{12}$/i;
+
+const LEGACY_HUNT_ID_RE = /^hunt-\d{3}$/i;
+
+const SLUG_LIKE_RE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+
+/** Server-issued charm guide row id (not a bestiary slug). */
 export function isCharmGuideUuid(value: string | null | undefined) {
-  return typeof value === "string" && UUID_RE.test(value);
+  if (typeof value !== "string" || !value.trim()) return false;
+  if (SLUG_LIKE_RE.test(value)) return false;
+  return RFC_UUID_RE.test(value);
+}
+
+export function isCatalogCreatureId(value: string | null | undefined) {
+  if (typeof value !== "string" || !value.trim()) return false;
+  return RFC_UUID_RE.test(value) || LEGACY_CREATURE_ID_RE.test(value);
+}
+
+export function isCatalogHuntId(value: string | null | undefined) {
+  if (typeof value !== "string" || !value.trim()) return false;
+  return RFC_UUID_RE.test(value) || LEGACY_HUNT_ID_RE.test(value);
 }
 
 export function formatRelativePt(value: string | null | undefined) {

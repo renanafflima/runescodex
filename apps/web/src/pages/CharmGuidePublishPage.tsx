@@ -8,6 +8,8 @@ import { Input, SearchInput, Textarea } from "../components/ui/FormControls";
 import {
   CHARM_GUIDE_CATEGORIES,
   CHARM_GUIDE_DIFFICULTY_LABEL,
+  isCatalogCreatureId,
+  isCatalogHuntId,
   isCharmGuideUuid,
 } from "../domain/charm-guides";
 import { mapBestiaryEntry } from "../domain/bestiary";
@@ -170,7 +172,7 @@ export function CharmGuidePublishPage() {
           setCreatureResults(
             page.items
               .map((item) => mapBestiaryEntry(item))
-              .filter((entry) => isCharmGuideUuid(entry.id))
+              .filter((entry) => isCatalogCreatureId(entry.id))
               .map((entry) => ({
                 id: entry.id,
                 slug: entry.slug,
@@ -224,7 +226,7 @@ export function CharmGuidePublishPage() {
     try {
       const detail = mapHuntDetail(await getHuntBySlug(hunt.slug));
       const creatures = detail.spawn
-        .filter((creature) => creature.id && isCharmGuideUuid(creature.id))
+        .filter((creature) => creature.id && isCatalogCreatureId(creature.id))
         .map((creature) => ({
           id: creature.id as string,
           slug: creature.slug || "",
@@ -262,11 +264,11 @@ export function CharmGuidePublishPage() {
 
   function toPayload(): CharmGuideStepInput[] {
     return steps.map((step) => ({
-      huntId: step.huntId && isCharmGuideUuid(step.huntId) ? step.huntId : undefined,
+      huntId: step.huntId && isCatalogHuntId(step.huntId) ? step.huntId : undefined,
       title: step.title || step.huntName || undefined,
       creatureIds: step.creatures
         .map((creature) => creature.id)
-        .filter((id) => isCharmGuideUuid(id)),
+        .filter((id) => isCatalogCreatureId(id)),
     }));
   }
 

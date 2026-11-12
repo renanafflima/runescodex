@@ -4,14 +4,17 @@ import {
   IsArray,
   IsOptional,
   IsString,
-  IsUUID,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
+import {
+  IsCatalogCreatureId,
+  IsCatalogHuntId,
+} from '../../common/catalog-id.validators';
 
 export class CharmGuideStepDto {
   @IsOptional()
-  @IsUUID()
+  @IsCatalogHuntId()
   huntId?: string;
 
   @IsOptional()
@@ -26,7 +29,7 @@ export class CharmGuideStepDto {
 
   @IsArray()
   @ArrayMinSize(1)
-  @IsUUID('4', { each: true })
+  @IsCatalogCreatureId()
   creatureIds: string[];
 }
 

@@ -13,6 +13,9 @@ const api = vi.hoisted(() => ({
   getHuntBySlug: vi.fn(),
 }));
 
+const HYDRA = "c30000001-0001-4000-8000-000000000022";
+const BANUTA_HUNT_ID = "hunt-012";
+
 vi.mock("../services/api/bestiary", () => ({
   listBestiaryPage: api.listBestiaryPage,
 }));
@@ -64,6 +67,7 @@ describe("CharmGuidePublishPage", () => {
     api.createCharmGuide.mockReset();
     api.updateCharmGuide.mockReset();
     api.submitCharmGuide.mockReset();
+    api.getHuntBySlug.mockReset();
     navigate.mockReset();
     api.listBestiaryPage.mockResolvedValue({ items: [], page: 1, limit: 8, total: 0, hasMore: false });
     api.listHuntsPage.mockResolvedValue({ items: [], page: 1, limit: 8, total: 0, hasMore: false });
@@ -168,6 +172,72 @@ describe("CharmGuidePublishPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Enviar para análise" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Guia não encontrado.");
+  });
+
+  it("shows legacy catalog creatures such as Hydra in search results", async () => {
+    renderPublish();
+    await fillGuideBasics();
+
+    api.listBestiaryPage.mockResolvedValue({
+      items: [
+        {
+          id: HYDRA,
+          name: "Hydra",
+          slug: "hydra",
+          charmPoints: null,
+          locations: [],
+          together: [],
+          elements: [],
+        },
+      ],
+      page: 1,
+      limit: 8,
+      total: 1,
+      hasMore: false,
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Nome da criatura"), { target: { value: "Hyd" } });
+    expect(await screen.findByRole("button", { name: /Hydra/ })).toBeInTheDocument();
+  });
+
+  it("includes legacy hunt spawn creatures when attaching Banuta", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderPublish();
+    await fillGuideBasics();
+
+    api.listHuntsPage.mockResolvedValue({
+      items: [{ id: BANUTA_HUNT_ID, slug: "banuta", name: "Banuta", location: "Banuta" }],
+      page: 1,
+      limit: 8,
+      total: 1,
+      hasMore: false,
+    });
+
+    api.getHuntBySlug.mockResolvedValue({
+      id: BANUTA_HUNT_ID,
+      slug: "banuta",
+      name: "Banuta",
+      creatures: [
+        {
+          id: "hc-1",
+          creature: {
+            id: HYDRA,
+            name: "Hydra",
+            slug: "hydra",
+            image: "",
+            bestiary: { charmPoints: null, hasEntry: false },
+          },
+        },
+      ],
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Nome da Hunt"), { target: { value: "Ban" } });
+    vi.advanceTimersByTime(260);
+    await waitFor(() => expect(api.listHuntsPage).toHaveBeenCalled());
+    fireEvent.click(await screen.findByRole("button", { name: /^Banuta$/ }));
+    await waitFor(() => expect(api.getHuntBySlug).toHaveBeenCalledWith("banuta"));
+    expect(await screen.findByText(/Hydra/)).toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it("drops stale creature search responses", async () => {
