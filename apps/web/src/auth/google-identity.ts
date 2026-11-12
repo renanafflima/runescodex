@@ -43,6 +43,8 @@ declare global {
 
 let scriptPromise: Promise<void> | null = null;
 let mountGeneration = 0;
+let initializedClient: { clientId: string; googleId: GoogleAccountsId } | null = null;
+let activeCredentialHandler: ((credential: string) => void | Promise<void>) | null = null;
 
 export function googleClientId() {
   return import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || "";
@@ -104,20 +106,32 @@ export function mountGoogleSignInButton(
         return;
       }
 
-      googleId.initialize({
-        client_id: clientId,
-        auto_select: false,
-        cancel_on_tap_outside: false,
-        use_fedcm_for_button: false,
-        callback: (response) => {
-          const credential = response.credential;
-          if (disposed || generation !== mountGeneration || busy || !credential) return;
-          busy = true;
-          void Promise.resolve(options.onCredential(credential)).finally(() => {
-            busy = false;
-          });
-        },
-      });
+      const handleCredential = (credential: string) => {
+        if (disposed || generation !== mountGeneration || busy) return;
+        busy = true;
+        void Promise.resolve(options.onCredential(credential)).finally(() => {
+          busy = false;
+        });
+      };
+      activeCredentialHandler = handleCredential;
+
+      if (
+        initializedClient?.clientId !== clientId ||
+        initializedClient.googleId !== googleId
+      ) {
+        googleId.initialize({
+          client_id: clientId,
+          auto_select: false,
+          cancel_on_tap_outside: false,
+          use_fedcm_for_button: false,
+          callback: (response) => {
+            const credential = response.credential;
+            if (!credential) return;
+            void activeCredentialHandler?.(credential);
+          },
+        });
+        initializedClient = { clientId, googleId };
+      }
 
       parent.replaceChildren();
       googleId.renderButton(parent, {
@@ -139,7 +153,10 @@ export function mountGoogleSignInButton(
   return {
     cancel() {
       disposed = true;
-      if (generation === mountGeneration) mountGeneration += 1;
+      if (generation === mountGeneration) {
+        mountGeneration += 1;
+        activeCredentialHandler = null;
+      }
       parent.replaceChildren();
     },
   };

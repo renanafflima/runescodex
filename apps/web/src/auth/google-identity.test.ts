@@ -115,6 +115,22 @@ describe("Google sign-in button flow", () => {
     await vi.waitFor(() => expect(onCredential).toHaveBeenCalledTimes(2));
   });
 
+  it("initializes Google Identity only once for the same client", async () => {
+    vi.stubEnv("VITE_GOOGLE_CLIENT_ID", "public-client-id");
+    const googleId = installGoogle();
+    const first = document.createElement("div");
+    const second = document.createElement("div");
+    document.body.append(first, second);
+
+    const firstMount = mountGoogleSignInButton(first, { onCredential: vi.fn() });
+    await vi.waitFor(() => expect(googleId.renderButton).toHaveBeenCalledTimes(1));
+    firstMount.cancel();
+    mountGoogleSignInButton(second, { onCredential: vi.fn() });
+    await vi.waitFor(() => expect(googleId.renderButton).toHaveBeenCalledTimes(2));
+
+    expect(googleId.initialize).toHaveBeenCalledTimes(1);
+  });
+
   it("drops a credential that arrives after the button is removed", async () => {
     vi.stubEnv("VITE_GOOGLE_CLIENT_ID", "public-client-id");
     const googleId = installGoogle();
