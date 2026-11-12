@@ -20,7 +20,7 @@ export class CharmGuideCommentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(guideId: string, query: PageQueryDto, userId: string) {
-    await this.requirePublished(guideId);
+    await this.requireReadable(guideId, userId);
     const { page, limit, skip } = resolvePage(query);
     const where: Prisma.CharmGuideCommentWhereInput = {
       guideId,
@@ -197,13 +197,31 @@ export class CharmGuideCommentsService {
   }
 
   private async requirePublished(guideId: string) {
-    const guide = await this.prisma.charmGuide.findUnique({
-      where: { id: guideId },
-      select: { status: true },
-    });
-    if (!guide || guide.status !== CharmGuideStatus.PUBLISHED) {
+    const guide = await this.requireReadable(guideId);
+    if (guide.status !== CharmGuideStatus.PUBLISHED) {
       throw new NotFoundException('Guia não encontrado.');
     }
+  }
+
+  /**
+   * Same visibility as CharmGuidesService.findOne: published guides are
+   * readable by any authenticated user; unpublished only by the author.
+   */
+  private async requireReadable(guideId: string, userId?: string) {
+    const guide = await this.prisma.charmGuide.findUnique({
+      where: { id: guideId },
+      select: { status: true, userId: true },
+    });
+    if (!guide) {
+      throw new NotFoundException('Guia não encontrado.');
+    }
+    if (
+      guide.status !== CharmGuideStatus.PUBLISHED &&
+      guide.userId !== userId
+    ) {
+      throw new NotFoundException('Guia não encontrado.');
+    }
+    return guide;
   }
 
   private async requireComment(guideId: string, commentId: string) {

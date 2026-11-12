@@ -183,7 +183,13 @@ export function AdminTicketDetailPage() {
                     {formatAdminDate(ticket.charmGuide.createdAt)}
                   </p>
                   <p>
-                    <Link to={`/bestiary/guides/${ticket.charmGuide.id}`}>Abrir guia público →</Link>
+                    {ticket.charmGuide.status === "PUBLISHED" ? (
+                      <Link to={`/bestiary/guides/${ticket.charmGuide.id}`}>Abrir guia público →</Link>
+                    ) : (
+                      <Link to={`/admin/charm-guides?guide=${ticket.charmGuide.id}`}>
+                        Abrir na fila de análise →
+                      </Link>
+                    )}
                   </p>
                 </div>
               ) : null}

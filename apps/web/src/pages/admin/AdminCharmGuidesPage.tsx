@@ -182,7 +182,11 @@ export function AdminCharmGuidesPage() {
                 </p>
               ) : null}
               <p>
-                <Link to={`/bestiary/guides/${selected.id}`}>Abrir visão do guia →</Link>
+                {selected.status === "PUBLISHED" ? (
+                  <Link to={`/bestiary/guides/${selected.id}`}>Abrir visão pública →</Link>
+                ) : (
+                  <span>Visão pública disponível após a publicação.</span>
+                )}
               </p>
               <ol>
                 {selected.steps.map((step) => (

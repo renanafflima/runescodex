@@ -38,12 +38,21 @@ export function CharmGuideDetailPage() {
     setLoading(true);
     setError("");
     try {
-      const [detail, commentPage] = await Promise.all([
-        getCharmGuide(id, activeCharacter?.id),
-        listCharmGuideComments(id),
-      ]);
+      const detail = await getCharmGuide(id, activeCharacter?.id);
       setGuide(detail);
-      setComments(commentPage.items as Array<{ id: string; content: string; author: { name: string } }>);
+      if (detail.status !== "PUBLISHED") {
+        setComments([]);
+        return;
+      }
+      try {
+        const commentPage = await listCharmGuideComments(id);
+        setComments(commentPage.items as Array<{ id: string; content: string; author: { name: string } }>);
+      } catch (commentErr) {
+        if (import.meta.env.DEV) {
+          console.error("[charm-guide-detail] comments", commentErr);
+        }
+        setComments([]);
+      }
     } catch (err) {
       setGuide(null);
       setError(describeApiError(err));
@@ -131,22 +140,32 @@ export function CharmGuideDetailPage() {
             {CHARM_GUIDE_DIFFICULTY_LABEL[guide.difficulty]} · por {guide.author.name}
           </p>
           <p>{guide.description}</p>
+          {guide.status === "PENDING_REVIEW" ? (
+            <p role="status">Este guia está em análise e ainda não aparece na comunidade.</p>
+          ) : null}
+          {guide.status === "CHANGES_REQUESTED" || guide.status === "REJECTED" ? (
+            <p role="status">
+              {guide.adminResponse || "A equipe pediu ajustes neste guia antes da publicação."}
+            </p>
+          ) : null}
           <div className="post-tags">
             <span>{guide.totalCharmPoints} CP únicos</span>
             <span>{guide.stepCount} etapas</span>
             <span>{guide.uniqueCreatureCount} criaturas</span>
           </div>
-          <div className="post-actions">
-            <Button onClick={() => void toggleLike()} type="button" variant="secondary">
-              {guide.likedByMe ? "♥ Curtido" : "♡ Curtir"} ({guide.likeCount})
-            </Button>
-            <Button onClick={() => void toggleFavorite()} type="button" variant="secondary">
-              {guide.favoritedByMe ? "★ Salvo" : "☆ Salvar"} ({guide.favoriteCount})
-            </Button>
-            <Button onClick={() => void share()} type="button" variant="ghost">
-              Compartilhar
-            </Button>
-          </div>
+          {guide.status === "PUBLISHED" ? (
+            <div className="post-actions">
+              <Button onClick={() => void toggleLike()} type="button" variant="secondary">
+                {guide.likedByMe ? "♥ Curtido" : "♡ Curtir"} ({guide.likeCount})
+              </Button>
+              <Button onClick={() => void toggleFavorite()} type="button" variant="secondary">
+                {guide.favoritedByMe ? "★ Salvo" : "☆ Salvar"} ({guide.favoriteCount})
+              </Button>
+              <Button onClick={() => void share()} type="button" variant="ghost">
+                Compartilhar
+              </Button>
+            </div>
+          ) : null}
           {notice ? <p className="charm-guide-detail__notice">{notice}</p> : null}
         </header>
 
@@ -175,14 +194,16 @@ export function CharmGuideDetailPage() {
                         {creature.repeatedFromEarlierStep ? " · já contada em etapa anterior" : ""}
                       </span>
                     </div>
-                    <Button
-                      disabled={!isAuthenticated}
-                      onClick={() => void toggleCreature(creature.id, creature.completed)}
-                      type="button"
-                      variant={creature.completed ? "secondary" : "ghost"}
-                    >
-                      {creature.completed ? "Concluída" : "Marcar"}
-                    </Button>
+                    {guide.status === "PUBLISHED" ? (
+                      <Button
+                        disabled={!isAuthenticated}
+                        onClick={() => void toggleCreature(creature.id, creature.completed)}
+                        type="button"
+                        variant={creature.completed ? "secondary" : "ghost"}
+                      >
+                        {creature.completed ? "Concluída" : "Marcar"}
+                      </Button>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -190,33 +211,35 @@ export function CharmGuideDetailPage() {
           ))}
         </ol>
 
-        <section className="charm-guide-comments" aria-labelledby="guide-comments-title">
-          <h2 id="guide-comments-title">Comunidade</h2>
-          {isAuthenticated ? (
-            <div className="comment-box">
-              <input
-                onChange={(event) => setComment(event.target.value)}
-                placeholder="Comente sobre este guia..."
-                value={comment}
-              />
-              <Button onClick={() => void sendComment()} type="button">
-                Enviar
-              </Button>
-            </div>
-          ) : (
-            <p>
-              <Link to="/login">Entre na conta</Link> para comentar.
-            </p>
-          )}
-          <ul>
-            {comments.map((item) => (
-              <li key={item.id}>
-                <strong>{item.author.name}</strong>
-                <p>{item.content}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
+        {guide.status === "PUBLISHED" ? (
+          <section className="charm-guide-comments" aria-labelledby="guide-comments-title">
+            <h2 id="guide-comments-title">Comunidade</h2>
+            {isAuthenticated ? (
+              <div className="comment-box">
+                <input
+                  onChange={(event) => setComment(event.target.value)}
+                  placeholder="Comente sobre este guia..."
+                  value={comment}
+                />
+                <Button onClick={() => void sendComment()} type="button">
+                  Enviar
+                </Button>
+              </div>
+            ) : (
+              <p>
+                <Link to="/login">Entre na conta</Link> para comentar.
+              </p>
+            )}
+            <ul>
+              {comments.map((item) => (
+                <li key={item.id}>
+                  <strong>{item.author.name}</strong>
+                  <p>{item.content}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
       </PageContainer>
     </div>
   );

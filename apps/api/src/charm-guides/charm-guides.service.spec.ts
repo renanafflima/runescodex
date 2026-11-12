@@ -387,4 +387,25 @@ describe('CharmGuidesService', () => {
       NotFoundException,
     );
   });
+
+  it('lets the author read their own pending guide', async () => {
+    prisma.charmGuide.findUnique.mockResolvedValue(
+      detailRow({ status: CharmGuideStatus.PENDING_REVIEW, userId: 'owner' }),
+    );
+    prisma.charmGuideLike.findMany.mockResolvedValue([]);
+    prisma.charmGuideFavorite.findMany.mockResolvedValue([]);
+    const detail = await service.findOne('guide-1', 'owner');
+    expect(detail.id).toBe('guide-1');
+    expect(detail.status).toBe(CharmGuideStatus.PENDING_REVIEW);
+  });
+
+  it('lets any authenticated user read a published guide', async () => {
+    prisma.charmGuide.findUnique.mockResolvedValue(
+      detailRow({ status: CharmGuideStatus.PUBLISHED, userId: 'owner' }),
+    );
+    prisma.charmGuideLike.findMany.mockResolvedValue([]);
+    prisma.charmGuideFavorite.findMany.mockResolvedValue([]);
+    const detail = await service.findOne('guide-1', 'other');
+    expect(detail.status).toBe(CharmGuideStatus.PUBLISHED);
+  });
 });
