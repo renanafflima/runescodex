@@ -74,6 +74,17 @@ describe("bestiary mapping", () => {
     }
   });
 
+  it("does not use slug or name as creature id when id is missing", () => {
+    const mapped = mapBestiaryEntry({
+      name: "Dragon",
+      slug: "dragon",
+      locations: [],
+      together: [],
+      elements: [],
+    });
+    expect(mapped.id).toBe("");
+  });
+
   it("keeps the initials fallback when a creature has no local image", () => {
     const mapped = mapBestiaryEntry({
       name: "Creature Without Sprite",

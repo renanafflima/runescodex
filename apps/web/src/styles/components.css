@@ -334,6 +334,11 @@
   transform: translateY(-50%);
 }
 
+.search-field__spinner {
+  display: inline-flex;
+  color: var(--color-accent, #74b8df);
+}
+
 .search-field__control {
   padding-left: 2.75rem;
 }

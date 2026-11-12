@@ -53,8 +53,9 @@ export function mapBestiaryEntry(entry: unknown): BestiaryEntry {
   const estimatedHours = hasNumericValue(data.estimatedHours) ? Number(data.estimatedHours) : null;
   const companions = mapCompanions(data.together);
 
+  const creatureId = typeof data.id === "string" ? data.id : "";
   return {
-    id: String(data.id || data.slug || data.name || ""),
+    id: creatureId,
     name: String(data.name || ""),
     slug: String(data.slug || ""),
     image: resolveCreatureImage(data.image, data.name),

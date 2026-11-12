@@ -6,6 +6,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import { Icon } from "./Icon";
+import { Loading } from "./Feedback";
 
 type FieldFrameProps = {
   children: ReactNode;
@@ -75,23 +76,31 @@ export function Input({
 
 type SearchInputProps = Omit<InputProps, "label" | "type"> & {
   label?: string;
+  loading?: boolean;
 };
 
 export function SearchInput({
   className = "",
   id: providedId,
   label = "Buscar",
+  loading = false,
   ...props
 }: SearchInputProps) {
   const generatedId = useId();
   const id = providedId || generatedId;
 
   return (
-    <div className="search-field">
+    <div className={`search-field${loading ? " search-field--loading" : ""}`}>
       <label className="sr-only" htmlFor={id}>
         {label}
       </label>
-      <Icon className="search-field__icon" name="search" size={18} />
+      {loading ? (
+        <span className="search-field__icon search-field__spinner">
+          <Loading label="Buscando" size="sm" />
+        </span>
+      ) : (
+        <Icon className="search-field__icon" name="search" size={18} />
+      )}
       <input
         className={`field__control search-field__control ${className}`.trim()}
         id={id}

@@ -57,7 +57,7 @@ export function describeApiError(error: unknown) {
     if (error.status === 500 || error.status === 503) {
       return "Erro temporário no servidor. Tente novamente.";
     }
-    if (error.status === 404) return "Conteúdo não encontrado.";
+    if (error.status === 404) return error.message || "Conteúdo não encontrado.";
     if (error.status === 409) return "Este email já está em uso.";
     if (error.status === 400) return error.message || "Dados inválidos.";
     return error.message || "Não foi possível concluir esta ação.";

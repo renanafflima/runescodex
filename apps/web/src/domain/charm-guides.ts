@@ -55,6 +55,13 @@ export function charmGuideCategoryPoints(category: CharmGuideCpCategory) {
   return CHARM_GUIDE_CATEGORIES.find((item) => item.cpCategory === category)?.targetPoints ?? 0;
 }
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isCharmGuideUuid(value: string | null | undefined) {
+  return typeof value === "string" && UUID_RE.test(value);
+}
+
 export function formatRelativePt(value: string | null | undefined) {
   if (!value) return "";
   const date = new Date(value);

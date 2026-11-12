@@ -232,6 +232,13 @@ describe('CharmGuidesService', () => {
     expect(result.status).toBe(CharmGuideStatus.PENDING_REVIEW);
   });
 
+  it('returns not found when submitting a guide that does not exist', async () => {
+    prisma.charmGuide.findUnique.mockResolvedValue(null);
+    await expect(service.submit('user-1', 'missing-guide')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
   it('blocks duplicate submit while the guide is already pending review', async () => {
     prisma.charmGuide.findUnique.mockResolvedValue(
       detailRow({ status: CharmGuideStatus.PENDING_REVIEW }),

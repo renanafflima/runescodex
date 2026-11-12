@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CatalogImage } from "../components/catalog/CatalogImage";
 import { PageContainer } from "../components/layout/PageContainer";
@@ -8,14 +8,16 @@ import { Input, SearchInput, Textarea } from "../components/ui/FormControls";
 import {
   CHARM_GUIDE_CATEGORIES,
   CHARM_GUIDE_DIFFICULTY_LABEL,
+  isCharmGuideUuid,
 } from "../domain/charm-guides";
 import { mapBestiaryEntry } from "../domain/bestiary";
 import { mapHuntDetail, mapHuntListItem } from "../domain/hunts";
-import { describeApiError } from "../services/api/errors";
+import { ApiError, describeApiError } from "../services/api/errors";
 import { listBestiaryPage } from "../services/api/bestiary";
 import {
   createCharmGuide,
   submitCharmGuide,
+  updateCharmGuide,
   type CharmGuideCpCategory,
   type CharmGuideDifficulty,
   type CharmGuideStepInput,
@@ -50,6 +52,19 @@ function newStep(): DraftStep {
   };
 }
 
+function logPublishError(scope: string, error: unknown) {
+  if (import.meta.env.DEV) {
+    console.error(`[charm-guide-publish] ${scope}`, error);
+  }
+}
+
+function formatPublishError(error: unknown) {
+  if (error instanceof Error && !(error instanceof ApiError)) {
+    return error.message;
+  }
+  return describeApiError(error);
+}
+
 export function CharmGuidePublishPage() {
   const navigate = useNavigate();
   const [wizardStep, setWizardStep] = useState(0);
@@ -60,10 +75,17 @@ export function CharmGuidePublishPage() {
   const [coverImage, setCoverImage] = useState("");
   const [steps, setSteps] = useState<DraftStep[]>([newStep()]);
   const [activeStepKey, setActiveStepKey] = useState<string | null>(null);
+  const [draftGuideId, setDraftGuideId] = useState<string | null>(null);
   const [huntQuery, setHuntQuery] = useState("");
   const [creatureQuery, setCreatureQuery] = useState("");
   const [huntResults, setHuntResults] = useState<Array<{ id: string; slug: string; name: string }>>([]);
   const [creatureResults, setCreatureResults] = useState<DraftCreature[]>([]);
+  const [huntSearchBusy, setHuntSearchBusy] = useState(false);
+  const [creatureSearchBusy, setCreatureSearchBusy] = useState(false);
+  const [creatureSearchError, setCreatureSearchError] = useState("");
+  const [huntSearchError, setHuntSearchError] = useState("");
+  const huntSearchSeq = useRef(0);
+  const creatureSearchSeq = useRef(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -95,49 +117,81 @@ export function CharmGuidePublishPage() {
   }, [activeStep, steps]);
 
   useEffect(() => {
-    const timer = window.setTimeout(async () => {
-      if (huntQuery.trim().length < 2) {
-        setHuntResults([]);
-        return;
-      }
-      try {
-        const page = await listHuntsPage({ search: huntQuery.trim(), limit: 8 });
-        setHuntResults(
-          page.items
-            .map((item) => mapHuntListItem(item))
-            .map((hunt) => ({ id: hunt.id, slug: hunt.slug, name: hunt.name })),
-        );
-      } catch {
-        setHuntResults([]);
-      }
+    const query = huntQuery.trim();
+    if (query.length < 2) {
+      setHuntResults([]);
+      setHuntSearchBusy(false);
+      setHuntSearchError("");
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const requestId = ++huntSearchSeq.current;
+      setHuntSearchBusy(true);
+      setHuntSearchError("");
+      void listHuntsPage({ search: query, limit: 8 })
+        .then((page) => {
+          if (requestId !== huntSearchSeq.current) return;
+          setHuntResults(
+            page.items
+              .map((item) => mapHuntListItem(item))
+              .map((hunt) => ({ id: hunt.id, slug: hunt.slug, name: hunt.name })),
+          );
+        })
+        .catch((err) => {
+          if (requestId !== huntSearchSeq.current) return;
+          logPublishError("hunt-search", err);
+          setHuntResults([]);
+          setHuntSearchError("Não foi possível buscar hunts agora.");
+        })
+        .finally(() => {
+          if (requestId === huntSearchSeq.current) {
+            setHuntSearchBusy(false);
+          }
+        });
     }, 250);
     return () => window.clearTimeout(timer);
   }, [huntQuery]);
 
   useEffect(() => {
-    const timer = window.setTimeout(async () => {
-      if (creatureQuery.trim().length < 2) {
-        setCreatureResults([]);
-        return;
-      }
-      try {
-        const page = await listBestiaryPage({ search: creatureQuery.trim(), limit: 8 });
-        setCreatureResults(
-          page.items.map((item) => {
-            const entry = mapBestiaryEntry(item);
-            return {
-              id: entry.id,
-              slug: entry.slug,
-              name: entry.name,
-              image: entry.image || "",
-              difficulty: entry.difficulty,
-              charmPoints: entry.charmPoints,
-            };
-          }),
-        );
-      } catch {
-        setCreatureResults([]);
-      }
+    const query = creatureQuery.trim();
+    if (query.length < 2) {
+      setCreatureResults([]);
+      setCreatureSearchBusy(false);
+      setCreatureSearchError("");
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const requestId = ++creatureSearchSeq.current;
+      setCreatureSearchBusy(true);
+      setCreatureSearchError("");
+      void listBestiaryPage({ search: query, limit: 8 })
+        .then((page) => {
+          if (requestId !== creatureSearchSeq.current) return;
+          setCreatureResults(
+            page.items
+              .map((item) => mapBestiaryEntry(item))
+              .filter((entry) => isCharmGuideUuid(entry.id))
+              .map((entry) => ({
+                id: entry.id,
+                slug: entry.slug,
+                name: entry.name,
+                image: entry.image || "",
+                difficulty: entry.difficulty,
+                charmPoints: entry.charmPoints,
+              })),
+          );
+        })
+        .catch((err) => {
+          if (requestId !== creatureSearchSeq.current) return;
+          logPublishError("creature-search", err);
+          setCreatureResults([]);
+          setCreatureSearchError("Não foi possível buscar criaturas agora.");
+        })
+        .finally(() => {
+          if (requestId === creatureSearchSeq.current) {
+            setCreatureSearchBusy(false);
+          }
+        });
     }, 250);
     return () => window.clearTimeout(timer);
   }, [creatureQuery]);
@@ -170,9 +224,9 @@ export function CharmGuidePublishPage() {
     try {
       const detail = mapHuntDetail(await getHuntBySlug(hunt.slug));
       const creatures = detail.spawn
-        .filter((creature) => Boolean(creature.id))
+        .filter((creature) => creature.id && isCharmGuideUuid(creature.id))
         .map((creature) => ({
-          id: String(creature.id),
+          id: creature.id as string,
           slug: creature.slug || "",
           name: creature.name,
           image: creature.image || "",
@@ -189,7 +243,8 @@ export function CharmGuidePublishPage() {
       setHuntQuery("");
       setHuntResults([]);
     } catch (err) {
-      setError(describeApiError(err));
+      logPublishError("attach-hunt", err);
+      setError(formatPublishError(err));
     } finally {
       setBusy(false);
     }
@@ -207,40 +262,104 @@ export function CharmGuidePublishPage() {
 
   function toPayload(): CharmGuideStepInput[] {
     return steps.map((step) => ({
-      huntId: step.huntId,
+      huntId: step.huntId && isCharmGuideUuid(step.huntId) ? step.huntId : undefined,
       title: step.title || step.huntName || undefined,
-      creatureIds: step.creatures.map((creature) => creature.id),
+      creatureIds: step.creatures
+        .map((creature) => creature.id)
+        .filter((id) => isCharmGuideUuid(id)),
     }));
   }
 
-  async function publish() {
+  function validateGuidePayload() {
+    if (title.trim().length < 3) throw new Error("Informe um título com pelo menos 3 caracteres.");
+    if (description.trim().length < 10) {
+      throw new Error("Informe uma descrição com pelo menos 10 caracteres.");
+    }
+    if (steps.some((step) => step.creatures.length === 0)) {
+      throw new Error("Cada etapa precisa de ao menos uma criatura.");
+    }
+    const payload = toPayload();
+    if (payload.some((step) => step.creatureIds.length === 0)) {
+      throw new Error(
+        "Uma ou mais criaturas são inválidas. Pesquise novamente no Bestiário antes de continuar.",
+      );
+    }
+    return payload;
+  }
+
+  function buildCreateBody(stepsPayload: CharmGuideStepInput[]) {
+    return {
+      title: title.trim(),
+      description: description.trim(),
+      cpCategory,
+      difficulty,
+      coverImage: coverImage.trim() || undefined,
+      steps: stepsPayload,
+    };
+  }
+
+  async function persistDraft(): Promise<string> {
+    const stepsPayload = validateGuidePayload();
+    const body = buildCreateBody(stepsPayload);
+    if (draftGuideId && isCharmGuideUuid(draftGuideId)) {
+      const updated = await updateCharmGuide(draftGuideId, body);
+      if (!isCharmGuideUuid(updated.id)) {
+        throw new Error("Resposta inválida da API ao atualizar o guia.");
+      }
+      return updated.id;
+    }
+    const created = await createCharmGuide(body);
+    if (!isCharmGuideUuid(created.id)) {
+      throw new Error("Resposta inválida da API ao criar o guia.");
+    }
+    setDraftGuideId(created.id);
+    return created.id;
+  }
+
+  async function goToReview() {
+    if (busy) return;
     setBusy(true);
     setError("");
     setNotice("");
     try {
-      if (title.trim().length < 3) throw new Error("Informe um título com pelo menos 3 caracteres.");
-      if (description.trim().length < 10) {
-        throw new Error("Informe uma descrição com pelo menos 10 caracteres.");
-      }
-      if (steps.some((step) => step.creatures.length === 0)) {
-        throw new Error("Cada etapa precisa de ao menos uma criatura.");
-      }
-      const guide = await createCharmGuide({
-        title: title.trim(),
-        description: description.trim(),
-        cpCategory,
-        difficulty,
-        coverImage: coverImage.trim() || undefined,
-        steps: toPayload(),
-      });
-      const submitted = await submitCharmGuide(guide.id, `publish:${guide.id}`);
-      setNotice("Guia enviado para análise da equipe.");
-      navigate(`/bestiary/guides/${submitted.id}`);
+      await persistDraft();
+      setWizardStep(2);
     } catch (err) {
-      setError(err instanceof Error && !(err as { status?: number }).status ? err.message : describeApiError(err));
+      logPublishError("persist-review", err);
+      setError(formatPublishError(err));
     } finally {
       setBusy(false);
     }
+  }
+
+  async function publish() {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const guideId = await persistDraft();
+      const submitted = await submitCharmGuide(guideId, `publish:${guideId}`);
+      if (!isCharmGuideUuid(submitted.id)) {
+        throw new Error("Resposta inválida da API ao enviar o guia.");
+      }
+      setNotice("Guia enviado para análise da equipe.");
+      navigate(`/bestiary/guides/${submitted.id}`);
+    } catch (err) {
+      logPublishError("submit", err);
+      setError(formatPublishError(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function changeWizardStep(index: number) {
+    if (index === wizardStep) return;
+    if (index === 2 && wizardStep < 2) {
+      void goToReview();
+      return;
+    }
+    setWizardStep(index);
   }
 
   return (
@@ -262,7 +381,7 @@ export function CharmGuidePublishPage() {
             <button
               className={wizardStep === index ? "is-active" : ""}
               key={label}
-              onClick={() => setWizardStep(index)}
+              onClick={() => changeWizardStep(index)}
               type="button"
             >
               {index + 1}. {label}
@@ -380,10 +499,16 @@ export function CharmGuidePublishPage() {
                 <div>
                   <p className="field__label">Buscar Hunt do catálogo</p>
                   <SearchInput
+                    loading={huntSearchBusy}
                     onChange={(event) => setHuntQuery(event.target.value)}
                     placeholder="Nome da Hunt"
                     value={huntQuery}
                   />
+                  {huntSearchError ? (
+                    <p className="field__message" role="status">
+                      {huntSearchError}
+                    </p>
+                  ) : null}
                   <ul className="picker-list">
                     {huntResults.map((hunt) => (
                       <li key={hunt.id}>
@@ -413,10 +538,29 @@ export function CharmGuidePublishPage() {
                 <div>
                   <p className="field__label">Buscar criatura do Bestiário</p>
                   <SearchInput
+                    loading={creatureSearchBusy}
                     onChange={(event) => setCreatureQuery(event.target.value)}
                     placeholder="Nome da criatura"
                     value={creatureQuery}
                   />
+                  {creatureSearchBusy && creatureResults.length === 0 ? (
+                    <p className="field__message" role="status">
+                      Buscando criaturas…
+                    </p>
+                  ) : null}
+                  {creatureSearchError ? (
+                    <p className="field__message field__message--error" role="status">
+                      {creatureSearchError}
+                    </p>
+                  ) : null}
+                  {!creatureSearchBusy &&
+                  creatureQuery.trim().length >= 2 &&
+                  creatureResults.length === 0 &&
+                  !creatureSearchError ? (
+                    <p className="field__message" role="status">
+                      Nenhuma criatura encontrada.
+                    </p>
+                  ) : null}
                   <ul className="picker-list picker-list--creatures">
                     {creatureResults.map((creature) => {
                       const selected = activeStep.creatures.some((item) => item.id === creature.id);
@@ -460,7 +604,7 @@ export function CharmGuidePublishPage() {
               <Button onClick={() => setWizardStep(0)} type="button" variant="secondary">
                 Voltar
               </Button>
-              <Button onClick={() => setWizardStep(2)} type="button">
+              <Button loading={busy} onClick={() => void goToReview()} type="button">
                 Revisar
               </Button>
             </div>
@@ -503,7 +647,7 @@ export function CharmGuidePublishPage() {
               <Button onClick={() => setWizardStep(1)} type="button" variant="secondary">
                 Voltar
               </Button>
-              <Button loading={busy} onClick={() => void publish()} type="button">
+              <Button disabled={busy} loading={busy} onClick={() => void publish()} type="button">
                 Enviar para análise
               </Button>
             </div>
