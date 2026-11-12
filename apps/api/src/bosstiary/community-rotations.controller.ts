@@ -201,8 +201,9 @@ export class CommunityRotationsController {
   listTests(
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: PageQueryDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.rotations.listTests(id, query);
+    return this.rotations.listTests(id, query, user.userId);
   }
 
   @Post(':id/tests')

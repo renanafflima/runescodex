@@ -21,6 +21,7 @@ import {
   type CommunityRotationBossInput,
   type CreateCommunityRotationPayload,
 } from "../../services/api/community-rotations";
+import { listMyParties, type PartySummary } from "../../services/api/parties";
 
 type DraftBoss = {
   key: string;
@@ -31,7 +32,10 @@ type DraftBoss = {
   notes: string;
 };
 
+type ShareDestination = "PUBLIC" | "PRIVATE" | "GROUP";
+
 type CommunityRotationPublishModalProps = {
+  defaultPartyId?: string;
   onClose: () => void;
   onPublished: (id: string) => void;
   open: boolean;
@@ -45,6 +49,7 @@ function newBossKey() {
 }
 
 export function CommunityRotationPublishModal({
+  defaultPartyId,
   onClose,
   onPublished,
   open,
@@ -67,6 +72,11 @@ export function CommunityRotationPublishModal({
   const [bossHits, setBossHits] = useState<BosstiaryEntry[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [destination, setDestination] = useState<ShareDestination>(
+    defaultPartyId ? "GROUP" : "PUBLIC",
+  );
+  const [selectedPartyId, setSelectedPartyId] = useState(defaultPartyId ?? "");
+  const [parties, setParties] = useState<PartySummary[]>([]);
   const publishIdempotencyKey = useRef<string | null>(null);
 
   useEffect(() => {
@@ -86,6 +96,15 @@ export function CommunityRotationPublishModal({
     }
   }, [bossQuery, open]);
 
+  useEffect(() => {
+    if (!open) return;
+    setDestination(defaultPartyId ? "GROUP" : "PUBLIC");
+    setSelectedPartyId(defaultPartyId ?? "");
+    void listMyParties()
+      .then((result) => setParties(result.items))
+      .catch(() => setParties([]));
+  }, [defaultPartyId, open]);
+
   function reset() {
     setTitle("");
     setDescription("");
@@ -99,6 +118,8 @@ export function CommunityRotationPublishModal({
     setBosses([]);
     setBossSearch("");
     setError("");
+    setDestination(defaultPartyId ? "GROUP" : "PUBLIC");
+    setSelectedPartyId(defaultPartyId ?? "");
     publishIdempotencyKey.current = null;
   }
 
@@ -171,6 +192,10 @@ export function CommunityRotationPublishModal({
       setError("Adicione pelo menos um boss à rotação.");
       return;
     }
+    if (destination === "GROUP" && !selectedPartyId) {
+      setError("Selecione uma Party para compartilhar a rotação.");
+      return;
+    }
     const bossPayload: CommunityRotationBossInput[] = bosses.map((stop, index) => ({
       position: index + 1,
       bossName: stop.bossName,
@@ -184,7 +209,9 @@ export function CommunityRotationPublishModal({
       huntMode,
       plannedDurationMinutes: plannedDuration,
       bosses: bossPayload,
+      visibility: destination,
     };
+    if (destination === "GROUP") payload.partyId = selectedPartyId;
     const desc = description.trim();
     if (desc) payload.description = desc;
     payload.vocation = vocation;
@@ -220,14 +247,14 @@ export function CommunityRotationPublishModal({
 
   return (
     <Modal
-      description="Compartilhe sua rotação de bosses com a comunidade. Os dados são validados pelo servidor."
+      description="Cadastre a rotação no diário privado, compartilhe com uma Party ou publique no feed da comunidade."
       footer={
         <div className="bosstiary-community-publish__footer">
           <Button disabled={pending} onClick={handleClose} type="button" variant="ghost">
             Cancelar
           </Button>
           <Button disabled={pending} form="community-rotation-publish" loading={pending} type="submit">
-            Publicar rotação
+            Cadastrar rotação
           </Button>
         </div>
       }
@@ -249,6 +276,69 @@ export function CommunityRotationPublishModal({
           required
           value={title}
         />
+
+        <fieldset className="bosstiary-community-publish__destination">
+          <legend>Disponibilidade</legend>
+          <label className="bosstiary-community-publish__choice">
+            <input
+              checked={destination === "PRIVATE"}
+              name="rotation-destination"
+              onChange={() => setDestination("PRIVATE")}
+              type="radio"
+              value="PRIVATE"
+            />
+            <span>
+              <strong>Meu diário privado</strong>
+              <small>Só você consulta esta rotação.</small>
+            </span>
+          </label>
+          <label className="bosstiary-community-publish__choice">
+            <input
+              checked={destination === "GROUP"}
+              name="rotation-destination"
+              onChange={() => setDestination("GROUP")}
+              type="radio"
+              value="GROUP"
+            />
+            <span>
+              <strong>Compartilhar com uma Party</strong>
+              <small>Todos os integrantes da sala selecionada veem o cadastro.</small>
+            </span>
+          </label>
+          <label className="bosstiary-community-publish__choice">
+            <input
+              checked={destination === "PUBLIC"}
+              name="rotation-destination"
+              onChange={() => setDestination("PUBLIC")}
+              type="radio"
+              value="PUBLIC"
+            />
+            <span>
+              <strong>Comunidade (feed público)</strong>
+              <small>Mantém o cadastro visível no feed da Comunidade.</small>
+            </span>
+          </label>
+          {destination === "GROUP" ? (
+            parties.length === 0 ? (
+              <p className="bosstiary-community-publish__hint">
+                Você ainda não participa de nenhuma Party. Crie ou aceite um convite em Minhas Partys.
+              </p>
+            ) : (
+              <Select
+                label="Party"
+                onChange={(e) => setSelectedPartyId(e.target.value)}
+                options={[
+                  { value: "", label: "Selecione a Party" },
+                  ...parties.map((item) => ({
+                    value: item.id,
+                    label: `${item.name} — ${item.memberCount} ${item.memberCount === 1 ? "participante" : "participantes"}`,
+                  })),
+                ]}
+                value={selectedPartyId}
+              />
+            )
+          ) : null}
+        </fieldset>
 
         <div className="bosstiary-community-publish__grid">
           <Select

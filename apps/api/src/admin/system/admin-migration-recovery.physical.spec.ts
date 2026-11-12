@@ -169,6 +169,33 @@ describe('assessRecoveryStep', () => {
     expect(result.readyForDdl).toBe(false);
   });
 
+  it('allows ddl for CommunityRotation party visibility when columns are missing', async () => {
+    const applied = new Set([
+      '20261103000000_hunt_vocation_multiple_level_ranges',
+      '20261103120000_hunt_update_request_vocation_range',
+      '20261103143000_billing_checkout_attempt',
+      '20261104090000_add_bosstiary',
+      '20261107120000_add_community_rotations',
+      '20261107143000_community_rotation_publish_idempotency',
+      '20261107143500_drop_community_rotation_sort_enum',
+      '20261109180000_add_bosstiary_progress',
+      '20261109190000_unique_community_rotation_test',
+      '20261109200000_add_party_hunt_sessions',
+    ]);
+    const result = await assessRecoveryStep(
+      probeFrom({
+        columns: {
+          'CommunityRotation.visibility': false,
+          'CommunityRotation.partyId': false,
+        },
+      }),
+      '20261112120000_community_rotation_party_visibility',
+      applied,
+    );
+    expect(result.readyForDdl).toBe(true);
+    expect(result.readyForResolveOnly).toBe(false);
+  });
+
   it('treats CommunityRotationSort drop as ddl when enum still exists', async () => {
     const applied = new Set([
       '20261103000000_hunt_vocation_multiple_level_ranges',

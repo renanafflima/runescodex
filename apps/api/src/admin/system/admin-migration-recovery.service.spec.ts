@@ -123,7 +123,7 @@ describe('AdminMigrationRecoveryService', () => {
     mockApplied(['20261013040000_add_hunt_creature_kill_per_hour']);
     const view = await service.diagnostic();
     expect(view.temporary).toBe(true);
-    expect(view.steps).toHaveLength(10);
+    expect(view.steps).toHaveLength(11);
     expect(view.database.host).toBe('ep-prod.example.neon.tech');
     expect(JSON.stringify(view)).not.toMatch(/secret/);
   });

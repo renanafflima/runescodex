@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import {
@@ -34,6 +35,9 @@ function rotationRow(overrides: Record<string, unknown> = {}) {
     combatMinutes: null,
     travelMinutes: null,
     status: CommunityRotationStatus.PUBLISHED,
+    visibility: 'PUBLIC',
+    partyId: null,
+    party: null,
     createdAt: new Date('2026-11-01T00:00:00.000Z'),
     updatedAt: new Date('2026-11-01T00:00:00.000Z'),
     user: {
@@ -105,6 +109,9 @@ describe('CommunityRotationsService', () => {
     user: {
       findUnique: jest.fn(),
     },
+    partyMember: {
+      findUnique: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
@@ -120,6 +127,7 @@ describe('CommunityRotationsService', () => {
     prisma.communityRotationTest.findFirst.mockResolvedValue(null);
     prisma.creature.findMany.mockResolvedValue([]);
     prisma.user.findUnique.mockResolvedValue({ role: 'USER' });
+    prisma.partyMember.findUnique.mockResolvedValue(null);
     prisma.communityRotation.count.mockResolvedValue(0);
 
     const moduleRef = await Test.createTestingModule({
@@ -164,6 +172,125 @@ describe('CommunityRotationsService', () => {
     );
     expect(result.author.name).toBe('Rook Sample');
     expect(result.bosses[0].slug).toBe('the-welter');
+    expect(prisma.communityRotation.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          visibility: 'PUBLIC',
+          partyId: null,
+        }),
+      }),
+    );
+  });
+
+  it('shares a rotation with a party the author belongs to', async () => {
+    prisma.bosstiaryBoss.findMany.mockResolvedValue([{ id: 'boss-1' }]);
+    prisma.partyMember.findUnique.mockResolvedValue({
+      status: 'ACTIVE',
+      party: { status: 'ACTIVE' },
+    });
+    prisma.communityRotation.create.mockResolvedValue(
+      rotationRow({
+        visibility: 'GROUP',
+        partyId: 'party-1',
+        party: { id: 'party-1', name: 'Os Caçadores' },
+      }),
+    );
+
+    const result = await service.create('user-1', {
+      title: 'Quick bane loop',
+      recommendedLevel: 'L500',
+      huntMode: BosstiaryHuntMode.SOLO,
+      plannedDurationMinutes: 30,
+      visibility: 'GROUP',
+      partyId: 'party-1',
+      bosses: [{ bossId: 'boss-1', position: 1 }],
+    });
+
+    expect(prisma.communityRotation.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          visibility: 'GROUP',
+          partyId: 'party-1',
+        }),
+      }),
+    );
+    expect(result.partyId).toBe('party-1');
+    expect(result.visibility).toBe('GROUP');
+  });
+
+  it('rejects sharing with a party the user does not belong to', async () => {
+    prisma.bosstiaryBoss.findMany.mockResolvedValue([{ id: 'boss-1' }]);
+    prisma.partyMember.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.create('user-1', {
+        title: 'Quick bane loop',
+        recommendedLevel: 'L500',
+        huntMode: BosstiaryHuntMode.SOLO,
+        plannedDurationMinutes: 30,
+        visibility: 'GROUP',
+        partyId: 'party-foreign',
+        bosses: [{ bossId: 'boss-1', position: 1 }],
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.communityRotation.create).not.toHaveBeenCalled();
+  });
+
+  it('keeps the public feed free of private and party rotations', async () => {
+    prisma.communityRotation.count.mockResolvedValue(0);
+    prisma.communityRotation.findMany.mockResolvedValue([]);
+
+    await service.list({ page: 1, limit: 12 }, 'user-2');
+
+    expect(prisma.communityRotation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            { visibility: 'PUBLIC' },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('lists party rotations only for active members', async () => {
+    prisma.partyMember.findUnique.mockResolvedValue({
+      status: 'ACTIVE',
+      party: { status: 'ACTIVE' },
+    });
+    prisma.communityRotation.count.mockResolvedValue(1);
+    prisma.communityRotation.findMany.mockResolvedValue([
+      rotationRow({
+        visibility: 'GROUP',
+        partyId: 'party-1',
+        party: { id: 'party-1', name: 'Os Caçadores' },
+      }),
+    ]);
+
+    const result = await service.listByParty('user-2', 'party-1', { page: 1, limit: 12 });
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].partyId).toBe('party-1');
+  });
+
+  it('hides party rotations from users who left the party', async () => {
+    prisma.partyMember.findUnique.mockResolvedValue({
+      status: 'LEFT',
+      party: { status: 'ACTIVE' },
+    });
+
+    await expect(
+      service.listByParty('user-2', 'party-1', { page: 1, limit: 12 }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('hides a private rotation from other users', async () => {
+    prisma.communityRotation.findUnique.mockResolvedValue(
+      rotationRow({ visibility: 'PRIVATE', userId: 'user-1' }),
+    );
+
+    await expect(service.findOne('rotation-1', 'user-2')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('records reward event when publishing', async () => {
@@ -206,9 +333,12 @@ describe('CommunityRotationsService', () => {
   });
 
   it('rejects duplicate likes', async () => {
-    prisma.communityRotation.findFirst.mockResolvedValue({
+    prisma.communityRotation.findUnique.mockResolvedValue({
       id: 'rotation-1',
       userId: 'user-1',
+      status: CommunityRotationStatus.PUBLISHED,
+      visibility: 'PUBLIC',
+      partyId: null,
     });
     prisma.communityRotationLike.create.mockRejectedValue({ code: 'P2002' });
 
@@ -295,10 +425,12 @@ describe('CommunityRotationsService', () => {
   });
 
   it('rejects a second evaluation from the same user', async () => {
-    prisma.communityRotation.findFirst.mockResolvedValue({
+    prisma.communityRotation.findUnique.mockResolvedValue({
       id: 'rotation-1',
       userId: 'user-1',
       status: CommunityRotationStatus.PUBLISHED,
+      visibility: 'PUBLIC',
+      partyId: null,
     });
     prisma.communityRotationTest.findFirst.mockResolvedValue({ id: 'test-1' });
 

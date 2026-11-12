@@ -42,6 +42,7 @@ vi.mock("../services/api/parties", () => ({
   listSentPartyInvites: vi.fn(async () => ({ items: [], page: 1, limit: 20, total: 0, hasMore: false })),
   listPartyNotifications: vi.fn(async () => ({ items: [], page: 1, limit: 20, total: 0, hasMore: false })),
   listHuntSessions: vi.fn(async () => ({ items: [], page: 1, limit: 20, total: 0, hasMore: false })),
+  listPartyRotations: vi.fn(async () => ({ items: [], page: 1, limit: 20, total: 0, hasMore: false })),
   markPartyNotificationRead: vi.fn(),
   cancelPartyInvite: vi.fn(),
   cancelHuntSession: vi.fn(),

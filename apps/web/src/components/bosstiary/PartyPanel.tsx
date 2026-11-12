@@ -1,10 +1,21 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { CatalogEmpty, CatalogError, CatalogLoading } from "../catalog/CatalogState";
+import { CatalogImage } from "../catalog/CatalogImage";
 import { Button } from "../ui/Button";
 import { Input, Select, Textarea } from "../ui/FormControls";
+import { officialBossImage } from "../../domain/bosstiary-catalog";
+import {
+  authorLabel,
+  communityDurationLabel,
+  communityHuntModeLabel,
+  formatCommunityWhen,
+} from "../../domain/bosstiary-community";
+import { resolveCreatureImage } from "../../domain/creature-image";
 import { useLatestRequest } from "../../hooks/useLatestRequest";
 import { describeApiError } from "../../services/api/errors";
 import { listBosstiaryProgressRotations } from "../../services/api/bosstiary-progress";
+import type { CommunityRotationCard } from "../../services/api/community-rotations";
 import {
   acceptPartyInvite,
   archiveParty,
@@ -21,6 +32,7 @@ import {
   listMyParties,
   listPartyActivities,
   listPartyNotifications,
+  listPartyRotations,
   listReceivedPartyInvites,
   listSentPartyInvites,
   markPartyNotificationRead,
@@ -32,6 +44,7 @@ import {
   type PartyInvitation,
   type PartySummary,
 } from "../../services/api/parties";
+import { CommunityRotationPublishModal } from "./CommunityRotationPublishModal";
 
 type Screen = "home" | "detail" | "session";
 
@@ -54,6 +67,8 @@ export function PartyPanel() {
   const [sessionTitle, setSessionTitle] = useState("");
   const [rotationId, setRotationId] = useState("");
   const [rotations, setRotations] = useState<Array<{ id: string; title: string }>>([]);
+  const [sharedRotations, setSharedRotations] = useState<CommunityRotationCard[]>([]);
+  const [publishOpen, setPublishOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState("");
   const [nextLeaderId, setNextLeaderId] = useState("");
@@ -90,14 +105,16 @@ export function PartyPanel() {
     setLoading(true);
     setError("");
     try {
-      const [detail, nextSessions, nextRotations] = await Promise.all([
+      const [detail, nextSessions, nextRotations, partyRotations] = await Promise.all([
         getParty(id),
         listHuntSessions(id),
         listBosstiaryProgressRotations(),
+        listPartyRotations(id),
       ]);
       setParty(detail);
       setSessions(nextSessions.items);
       setRotations(nextRotations);
+      setSharedRotations(partyRotations.items);
       setScreen("detail");
     } catch (err) {
       setError(describeApiError(err));
@@ -181,7 +198,7 @@ export function PartyPanel() {
       <header className="bosstiary-section-title">
         <div>
           <h2>Minhas Partys</h2>
-          <p>Reúna jogadores, convide por e-mail e registre hunts compartilhadas sem misturar o diário privado.</p>
+          <p>Reúna jogadores, convide por e-mail e compartilhe rotações de bosses só com os integrantes da sala.</p>
         </div>
         <span className="subtle">Comunidade</span>
       </header>
@@ -240,15 +257,16 @@ export function PartyPanel() {
               {parties.length === 0 ? (
                 <CatalogEmpty description="Crie a primeira party e convide amigos pelo e-mail da conta RuneCodex." title="Nenhuma party ainda" />
               ) : (
-                <ul className="bosstiary-drops-grid">
+                <ul className="party-room-grid">
                   {parties.map((item) => (
                     <li key={item.id}>
-                      <button className="bosstiary-community-card__title" onClick={() => void openParty(item.id)} type="button">
-                        {item.name}
+                      <button className="party-room-card" onClick={() => void openParty(item.id)} type="button">
+                        <strong>{item.name}</strong>
+                        <p>
+                          {item.memberCount} {item.memberCount === 1 ? "participante" : "participantes"}
+                          {item.myRole ? ` · ${item.myRole}` : ""}
+                        </p>
                       </button>
-                      <p>
-                        {item.memberCount} integrantes · {item.myRole}
-                      </p>
                     </li>
                   ))}
                 </ul>
@@ -327,7 +345,10 @@ export function PartyPanel() {
             <header className="bosstiary-progress-panel__head">
               <div>
                 <h3>{party.name}</h3>
-                <p>{party.description || "Sem descrição."}</p>
+                <p>
+                  {party.memberCount} {party.memberCount === 1 ? "participante" : "participantes"}
+                  {party.description ? ` · ${party.description}` : ""}
+                </p>
               </div>
               <Button onClick={() => { setScreen("home"); void loadHome(); }} size="sm" type="button" variant="ghost">Voltar</Button>
             </header>
@@ -390,6 +411,31 @@ export function PartyPanel() {
                 <Button onClick={() => void archiveParty(party.id).then(() => { setScreen("home"); void loadHome(); })} type="button" variant="ghost">Encerrar Party</Button>
               )}
             </div>
+          </section>
+          <section className="bosstiary-progress-panel bosstiary-progress-panel--wide">
+            <header className="bosstiary-progress-panel__head">
+              <div>
+                <h3>Rotações compartilhadas</h3>
+                <p>Cadastros dos integrantes desta Party. Rotações privadas de cada jogador não aparecem aqui.</p>
+              </div>
+              <Button onClick={() => setPublishOpen(true)} size="sm" type="button">
+                Cadastrar rotação
+              </Button>
+            </header>
+            {sharedRotations.length === 0 ? (
+              <CatalogEmpty
+                description="Qualquer integrante pode cadastrar uma rotação e escolher esta Party como destino."
+                title="Nenhuma rotação compartilhada"
+              />
+            ) : (
+              <ul className="party-shared-rotations">
+                {sharedRotations.map((card) => (
+                  <li key={card.id}>
+                    <PartySharedRotationCard card={card} />
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
           <section className="bosstiary-progress-panel">
             <header className="bosstiary-progress-panel__head">
@@ -486,6 +532,74 @@ export function PartyPanel() {
           )}
         </section>
       ) : null}
+
+      <CommunityRotationPublishModal
+        defaultPartyId={party?.id}
+        onClose={() => setPublishOpen(false)}
+        onPublished={() => {
+          setPublishOpen(false);
+          if (party) void openParty(party.id);
+        }}
+        open={publishOpen}
+      />
     </section>
+  );
+}
+
+function PartySharedRotationCard({ card }: { card: CommunityRotationCard }) {
+  return (
+    <article className="bosstiary-community-card party-shared-rotation">
+      <header className="bosstiary-community-card__author">
+        <span aria-hidden="true" className="bosstiary-community-card__avatar">
+          {authorLabel(card.author.name).slice(0, 1).toUpperCase()}
+        </span>
+        <div>
+          <strong>{authorLabel(card.author.name)}</strong>
+          <p className="bosstiary-community-card__meta">Autor da rotação</p>
+        </div>
+        <time className="bosstiary-community-card__when" dateTime={card.createdAt}>
+          {formatCommunityWhen(card.createdAt)}
+        </time>
+      </header>
+      <Link className="bosstiary-community-card__title" to={`/bosstiary/community/${card.id}`}>
+        {card.title}
+      </Link>
+      <ol className="bosstiary-community-card__sequence" aria-label="Bosses na rotação">
+        {[...card.bosses]
+          .sort((left, right) => left.position - right.position)
+          .map((stop, index, stops) => {
+            const name = stop.name || stop.bossName || "Boss";
+            const src = officialBossImage(name, stop.slug) ?? resolveCreatureImage(stop.image, stop.slug, name);
+            return (
+              <li key={stop.id}>
+                <span className="bosstiary-community-card__sequence-stop">
+                  <span className="bosstiary-community-card__sequence-order">{stop.position}.</span>
+                  <CatalogImage alt="" className="bosstiary-community-card__boss-img" name={name} src={src} />
+                  <span className="bosstiary-community-card__sequence-name">{name}</span>
+                </span>
+                {index < stops.length - 1 ? (
+                  <span aria-hidden="true" className="bosstiary-community-card__sequence-arrow">
+                    →
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+      </ol>
+      <dl className="bosstiary-community-card__stats">
+        <div>
+          <dt>Level</dt>
+          <dd>{card.recommendedLevelLabel}</dd>
+        </div>
+        <div>
+          <dt>Modo</dt>
+          <dd>{communityHuntModeLabel(card.huntMode)}</dd>
+        </div>
+        <div>
+          <dt>Duração</dt>
+          <dd>{communityDurationLabel(card.plannedDurationMinutes)}</dd>
+        </div>
+      </dl>
+    </article>
   );
 }

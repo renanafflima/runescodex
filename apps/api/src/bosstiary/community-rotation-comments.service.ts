@@ -5,11 +5,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CommunityRotationStatus } from '../../generated/prisma/client.js';
 import { pageResult, resolvePage } from '../common/pagination';
 import { PageQueryDto } from '../common/dto/page-query.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { PUBLIC_STATUSES } from './community-rotation.constants';
+import { loadReadableCommunityRotation } from './community-rotation-access';
 import { CreateCommunityRotationCommentDto } from './dto/create-community-rotation-comment.dto';
 import { UpdateCommunityRotationCommentDto } from './dto/update-community-rotation-comment.dto';
 
@@ -63,7 +62,7 @@ export class CommunityRotationCommentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(rotationId: string, query: PageQueryDto, userId?: string) {
-    await this.requireVisibleRotation(rotationId);
+    await this.requireVisibleRotation(rotationId, userId);
     const { page, limit, skip } = resolvePage(query);
     const rootWhere = { rotationId, parentId: null };
     const [total, commentCount, roots] = await Promise.all([
@@ -125,7 +124,7 @@ export class CommunityRotationCommentsService {
     userId: string,
     dto: CreateCommunityRotationCommentDto,
   ) {
-    await this.requireVisibleRotation(rotationId);
+    await this.requireVisibleRotation(rotationId, userId);
     const parentId = await this.resolveParent(rotationId, dto.parentId);
     const created = await this.prisma.communityRotationComment.create({
       data: {
@@ -175,7 +174,7 @@ export class CommunityRotationCommentsService {
   }
 
   async like(rotationId: string, commentId: string, userId: string) {
-    const comment = await this.requireComment(rotationId, commentId);
+    const comment = await this.requireComment(rotationId, commentId, userId);
     if (comment.isDeleted) {
       throw new BadRequestException(
         'Não é possível curtir um comentário removido.',
@@ -195,29 +194,28 @@ export class CommunityRotationCommentsService {
   }
 
   async unlike(rotationId: string, commentId: string, userId: string) {
-    const comment = await this.requireComment(rotationId, commentId);
+    const comment = await this.requireComment(rotationId, commentId, userId);
     await this.prisma.communityRotationCommentLike.deleteMany({
       where: { commentId: comment.id, userId },
     });
     return this.likeState(comment.id, userId, false);
   }
 
-  private async requireVisibleRotation(rotationId: string) {
-    const rotation = await this.prisma.communityRotation.findFirst({
-      where: {
-        id: rotationId,
-        status: { in: PUBLIC_STATUSES },
-      },
-      select: { id: true },
-    });
-    if (!rotation) {
+  private async requireVisibleRotation(rotationId: string, userId?: string) {
+    if (!userId) {
       throw new NotFoundException('Rotação não encontrada.');
     }
-    return rotation;
+    return loadReadableCommunityRotation(this.prisma, rotationId, userId, {
+      publishedOnly: true,
+    });
   }
 
-  private async requireComment(rotationId: string, commentId: string) {
-    await this.requireVisibleRotation(rotationId);
+  private async requireComment(
+    rotationId: string,
+    commentId: string,
+    userId: string,
+  ) {
+    await this.requireVisibleRotation(rotationId, userId);
     const comment = await this.prisma.communityRotationComment.findFirst({
       where: { id: commentId, rotationId },
       select: {
@@ -239,7 +237,7 @@ export class CommunityRotationCommentsService {
     commentId: string,
     userId: string,
   ) {
-    const comment = await this.requireComment(rotationId, commentId);
+    const comment = await this.requireComment(rotationId, commentId, userId);
     if (comment.userId !== userId) {
       throw new ForbiddenException('Você não pode alterar este comentário.');
     }

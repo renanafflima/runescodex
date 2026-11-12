@@ -7,6 +7,7 @@ import {
   BOSSTIARY_TABLES,
   COMMUNITY_ENUMS,
   COMMUNITY_PUBLISH_IDEMPOTENCY_INDEXES,
+  COMMUNITY_ROTATION_PARTY_INDEXES,
   COMMUNITY_ROTATION_TEST_UNIQUE_INDEX,
   COMMUNITY_TABLES,
   MIGRATION_RECOVERY_ALLOWLIST,
@@ -198,6 +199,26 @@ async function assessPartyHuntSessionsComplete(
     'BosstiaryProgressActivity',
     'partyId',
   );
+  const ok = Object.values(details).every(Boolean);
+  return { ok, details };
+}
+
+async function assessCommunityRotationPartyVisibilityComplete(
+  probe: MigrationRecoveryProbe,
+): Promise<{ ok: boolean; details: Record<string, boolean> }> {
+  const details: Record<string, boolean> = {
+    'column:CommunityRotation.visibility': await probe.columnExists(
+      'CommunityRotation',
+      'visibility',
+    ),
+    'column:CommunityRotation.partyId': await probe.columnExists(
+      'CommunityRotation',
+      'partyId',
+    ),
+  };
+  for (const name of COMMUNITY_ROTATION_PARTY_INDEXES) {
+    details[`index:${name}`] = await probe.indexExists(name);
+  }
   const ok = Object.values(details).every(Boolean);
   return { ok, details };
 }
@@ -500,6 +521,42 @@ export async function assessRecoveryStep(
         readyForResolveOnly: false,
         blockedReasons,
         details: party.details,
+      };
+    }
+    case '20261112120000_community_rotation_party_visibility': {
+      const share = await assessCommunityRotationPartyVisibilityComplete(probe);
+      if (share.ok) {
+        return {
+          step,
+          migrationInHistory: false,
+          readyForDdl: false,
+          readyForResolveOnly: true,
+          blockedReasons,
+          details: share.details,
+        };
+      }
+      const missingVisibility = !share.details['column:CommunityRotation.visibility'];
+      const missingPartyId = !share.details['column:CommunityRotation.partyId'];
+      if (missingVisibility || missingPartyId) {
+        return {
+          step,
+          migrationInHistory: false,
+          readyForDdl: true,
+          readyForResolveOnly: false,
+          blockedReasons,
+          details: share.details,
+        };
+      }
+      blockedReasons.push(
+        'CommunityRotation party visibility objects are partially present; complete DDL before resolve.',
+      );
+      return {
+        step,
+        migrationInHistory: false,
+        readyForDdl: false,
+        readyForResolveOnly: false,
+        blockedReasons,
+        details: share.details,
       };
     }
     default: {

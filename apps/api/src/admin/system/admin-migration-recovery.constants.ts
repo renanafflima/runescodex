@@ -18,6 +18,7 @@ export const MIGRATION_RECOVERY_ALLOWLIST = [
   '20261109180000_add_bosstiary_progress',
   '20261109190000_unique_community_rotation_test',
   '20261109200000_add_party_hunt_sessions',
+  '20261112120000_community_rotation_party_visibility',
 ] as const;
 
 export type MigrationRecoveryStepName =
@@ -117,4 +118,9 @@ export const PARTY_HUNT_INDEXES = [
   'PartyInvitation_party_email_pending_key',
   'HuntSessionParticipant_sessionId_userId_key',
   'BosstiaryProgressActivity_partyId_visibility_occurredAt_idx',
+] as const;
+
+export const COMMUNITY_ROTATION_PARTY_INDEXES = [
+  'CommunityRotation_visibility_status_createdAt_idx',
+  'CommunityRotation_partyId_visibility_status_idx',
 ] as const;

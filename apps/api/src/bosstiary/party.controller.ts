@@ -29,6 +29,8 @@ import {
   TransferPartyLeaderDto,
   UpdatePartyDto,
 } from './dto/party.dto';
+import { CommunityRotationsService } from './community-rotations.service';
+import { ListCommunityRotationsQueryDto } from './dto/list-community-rotations-query.dto';
 import { HuntSessionService } from './hunt-session.service';
 import { PartyNotificationsService } from './party-notifications.service';
 import { PartyService } from './party.service';
@@ -46,6 +48,7 @@ export class PartyController {
     private readonly sessions: HuntSessionService,
     private readonly notifications: PartyNotificationsService,
     private readonly progress: BosstiaryProgressService,
+    private readonly rotations: CommunityRotationsService,
   ) {}
 
   @Get()
@@ -172,6 +175,15 @@ export class PartyController {
     @Param('userId', ParseUUIDPipe) targetUserId: string,
   ) {
     return this.parties.removeMember(user.userId, id, targetUserId);
+  }
+
+  @Get(':id/rotations')
+  listRotations(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: ListCommunityRotationsQueryDto,
+  ) {
+    return this.rotations.listByParty(user.userId, id, query);
   }
 
   @Get(':id/sessions')

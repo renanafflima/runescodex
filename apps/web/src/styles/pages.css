@@ -5570,6 +5570,43 @@ button.support-metric:focus-visible,
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-width: 0;
+}
+
+.bosstiary-community-publish__destination {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.75rem;
+  min-width: 0;
+}
+
+.bosstiary-community-publish__destination legend {
+  padding: 0 0.35rem;
+  color: var(--color-gold-pale);
+}
+
+.bosstiary-community-publish__choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.65rem;
+  background: rgb(8 12 20 / 70%);
+  cursor: pointer;
+}
+
+.bosstiary-community-publish__choice strong,
+.bosstiary-community-publish__choice small {
+  display: block;
+}
+
+.bosstiary-community-publish__choice small {
+  margin-top: 0.15rem;
+  color: var(--color-text-soft);
 }
 
 .bosstiary-community-publish__grid {
@@ -5884,6 +5921,48 @@ button.support-metric:focus-visible,
 .bosstiary-progress-mine {
   display: grid;
   gap: 1rem;
+  min-width: 0;
+}
+
+.party-room-grid,
+.party-shared-rotations {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.party-room-card,
+.party-shared-rotation {
+  width: 100%;
+  min-width: 0;
+}
+
+.party-room-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgb(217 173 63 / 18%);
+  border-radius: 0.85rem;
+  background: rgb(8 12 20 / 88%);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.party-room-card strong {
+  color: var(--color-gold-pale);
+}
+
+.party-room-card p {
+  margin: 0;
+  color: var(--color-text-soft);
+}
+
+.party-shared-rotation {
+  overflow: hidden;
 }
 
 .bosstiary-progress-panel {
@@ -6013,8 +6092,36 @@ button.support-metric:focus-visible,
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .bosstiary-drops-grid {
+  .bosstiary-drops-grid,
+  .party-room-grid,
+  .party-shared-rotations {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 40rem) {
+  .bosstiary-progress-panel__head,
+  .bosstiary-community-card__author,
+  .bosstiary-community-card__stats,
+  .bosstiary-community-card__sequence {
+    flex-wrap: wrap;
+  }
+
+  .bosstiary-progress-panel__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bosstiary-community-publish__boss-search,
+  .bosstiary-community-publish__boss-actions,
+  .bosstiary-community-card__actions {
+    flex-wrap: wrap;
+  }
+
+  .party-room-card,
+  .bosstiary-community-card__title,
+  .bosstiary-community-card__sequence-name {
+    overflow-wrap: anywhere;
   }
 }
 

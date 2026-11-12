@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  BosstiaryVisibility,
   CommunityRotationStatus,
   Prisma,
   UserRole,
@@ -25,6 +26,11 @@ import {
 } from './community-rotation.constants';
 import { validateBossStopsInput } from './community-rotation-bosses.validation';
 import {
+  canReadCommunityRotation,
+  isActivePartyMember,
+  loadReadableCommunityRotation,
+} from './community-rotation-access';
+import {
   hashCommunityRotationCreatePayload,
   sanitizeCommunityRotationIdempotencyKey,
 } from './community-rotation-publish.idempotency';
@@ -41,6 +47,7 @@ const ROTATION_INCLUDE = {
       activeCharacter: { select: { name: true, vocation: true, level: true } },
     },
   },
+  party: { select: { id: true, name: true } },
   bosses: {
     orderBy: { position: 'asc' as const },
     include: {
@@ -130,7 +137,11 @@ export class CommunityRotationsService {
       top.map((row) => [row.rotationId, row._count._all]),
     );
     const rows = await this.prisma.communityRotation.findMany({
-      where: { id: { in: ids }, status: CommunityRotationStatus.PUBLISHED },
+      where: {
+        id: { in: ids },
+        status: CommunityRotationStatus.PUBLISHED,
+        visibility: BosstiaryVisibility.PUBLIC,
+      },
       include: ROTATION_INCLUDE,
     });
     const byId = new Map(rows.map((row) => [row.id, row]));
@@ -159,11 +170,7 @@ export class CommunityRotationsService {
     if (!row) {
       throw new NotFoundException('Rotação não encontrada.');
     }
-    if (
-      !PUBLIC_STATUSES.includes(row.status) &&
-      row.userId !== userId &&
-      !(await this.isAdmin(userId))
-    ) {
+    if (!(await canReadCommunityRotation(this.prisma, row, userId))) {
       throw new NotFoundException('Rotação não encontrada.');
     }
     const featuredSet = new Set(await this.weeklyFeaturedRotationIds(3));
@@ -177,6 +184,7 @@ export class CommunityRotationsService {
     dto: CreateCommunityRotationDto,
     idempotencyKeyRaw?: string,
   ) {
+    const share = await this.resolveShareTarget(userId, dto.visibility, dto.partyId);
     const bosses = await this.validateBosses(await this.resolveCatalogBosses(dto.bosses));
     let idempotencyKey =
       sanitizeCommunityRotationIdempotencyKey(idempotencyKeyRaw);
@@ -201,10 +209,17 @@ export class CommunityRotationsService {
     }
 
     try {
-      return await this.persistRotation(userId, dto, bosses, idempotencyKey ?? undefined, requestHash);
+      return await this.persistRotation(
+        userId,
+        dto,
+        bosses,
+        share,
+        idempotencyKey ?? undefined,
+        requestHash,
+      );
     } catch (error) {
       if (idempotencyKey && isMissingIdempotencyStore(error)) {
-        return this.persistRotation(userId, dto, bosses, undefined, requestHash);
+        return this.persistRotation(userId, dto, bosses, share, undefined, requestHash);
       }
       if (idempotencyKey && isUniqueViolation(error)) {
         const cached = await this.findIdempotentCreate(
@@ -220,10 +235,44 @@ export class CommunityRotationsService {
     }
   }
 
+  async listByParty(userId: string, partyId: string, query: ListCommunityRotationsQueryDto) {
+    if (!(await isActivePartyMember(this.prisma, userId, partyId))) {
+      throw new NotFoundException('Party não encontrada.');
+    }
+    const { page, limit, skip } = resolvePage(query);
+    const where: Prisma.CommunityRotationWhereInput = {
+      partyId,
+      visibility: BosstiaryVisibility.GROUP,
+      status: { in: PUBLIC_STATUSES },
+    };
+    const [total, rows] = await Promise.all([
+      this.prisma.communityRotation.count({ where }),
+      this.prisma.communityRotation.findMany({
+        where,
+        include: ROTATION_INCLUDE,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip,
+        take: limit,
+      }),
+    ]);
+    const engagement = await this.rotationEngagement(
+      rows.map((row) => row.id),
+      userId,
+    );
+    const images = await this.bossImages(rows);
+    return pageResult(
+      rows.map((row) => this.serializeCard(row, engagement, images, false)),
+      total,
+      page,
+      limit,
+    );
+  }
+
   private async persistRotation(
     userId: string,
     dto: CreateCommunityRotationDto,
     bosses: Awaited<ReturnType<CommunityRotationsService['validateBosses']>>,
+    share: { visibility: BosstiaryVisibility; partyId: string | null },
     idempotencyKey: string | undefined,
     requestHash: string,
   ) {
@@ -268,6 +317,8 @@ export class CommunityRotationsService {
             combatMinutes: dto.combatMinutes ?? null,
             travelMinutes: dto.travelMinutes ?? null,
             status: CommunityRotationStatus.PUBLISHED,
+            visibility: share.visibility,
+            partyId: share.partyId,
             bosses: { create: bosses },
           },
           include: ROTATION_INCLUDE,
@@ -366,7 +417,7 @@ export class CommunityRotationsService {
   }
 
   async like(id: string, userId: string) {
-    await this.requirePublished(id);
+    await this.requirePublished(id, userId);
     try {
       await this.prisma.communityRotationLike.create({
         data: { rotationId: id, userId },
@@ -381,7 +432,7 @@ export class CommunityRotationsService {
   }
 
   async unlike(id: string, userId: string) {
-    await this.requirePublished(id);
+    await this.requirePublished(id, userId);
     await this.prisma.communityRotationLike.deleteMany({
       where: { rotationId: id, userId },
     });
@@ -389,7 +440,7 @@ export class CommunityRotationsService {
   }
 
   async favorite(id: string, userId: string) {
-    await this.requirePublished(id);
+    await this.requirePublished(id, userId);
     try {
       await this.prisma.communityRotationFavorite.create({
         data: { rotationId: id, userId },
@@ -403,7 +454,7 @@ export class CommunityRotationsService {
   }
 
   async unfavorite(id: string, userId: string) {
-    await this.requirePublished(id);
+    await this.requirePublished(id, userId);
     await this.prisma.communityRotationFavorite.deleteMany({
       where: { rotationId: id, userId },
     });
@@ -415,7 +466,7 @@ export class CommunityRotationsService {
     userId: string,
     dto: CreateCommunityRotationTestDto,
   ) {
-    const rotation = await this.requirePublished(id);
+    const rotation = await this.requirePublished(id, userId);
     const already = await this.prisma.communityRotationTest.findFirst({
       where: { rotationId: rotation.id, userId },
       select: { id: true },
@@ -446,8 +497,8 @@ export class CommunityRotationsService {
     }
   }
 
-  async listTests(id: string, query: PageQueryDto) {
-    await this.requirePublished(id);
+  async listTests(id: string, query: PageQueryDto, userId: string) {
+    await this.requirePublished(id, userId);
     const { page, limit, skip } = resolvePage(query);
     const where = { rotationId: id };
     const [total, rows] = await Promise.all([
@@ -467,6 +518,7 @@ export class CommunityRotationsService {
   ): Prisma.CommunityRotationWhereInput {
     const and: Prisma.CommunityRotationWhereInput[] = [
       { status: { in: PUBLIC_STATUSES } },
+      { visibility: BosstiaryVisibility.PUBLIC },
     ];
     const recommendedLevel = mapLevelFilter(query.level);
     if (recommendedLevel) {
@@ -575,7 +627,10 @@ export class CommunityRotationsService {
       by: ['rotationId'],
       where: {
         createdAt: { gte: periodStart, lt: periodEnd },
-        rotation: { status: CommunityRotationStatus.PUBLISHED },
+        rotation: {
+          status: CommunityRotationStatus.PUBLISHED,
+          visibility: BosstiaryVisibility.PUBLIC,
+        },
       },
       _count: { _all: true },
     });
@@ -632,15 +687,38 @@ export class CommunityRotationsService {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
   }
 
-  private async requirePublished(id: string) {
-    const rotation = await this.prisma.communityRotation.findFirst({
-      where: { id, status: CommunityRotationStatus.PUBLISHED },
-      select: { id: true, userId: true },
+  private async requirePublished(id: string, userId: string) {
+    return loadReadableCommunityRotation(this.prisma, id, userId, {
+      publishedOnly: true,
     });
-    if (!rotation) {
-      throw new NotFoundException('Rotação não encontrada.');
+  }
+
+  private async resolveShareTarget(
+    userId: string,
+    visibilityRaw?: BosstiaryVisibility,
+    partyIdRaw?: string,
+  ) {
+    const visibility = visibilityRaw ?? BosstiaryVisibility.PUBLIC;
+    const partyId = partyIdRaw?.trim() || null;
+    if (visibility === BosstiaryVisibility.GROUP) {
+      if (!partyId) {
+        throw new BadRequestException(
+          'Selecione uma Party para compartilhar a rotação.',
+        );
+      }
+      if (!(await isActivePartyMember(this.prisma, userId, partyId))) {
+        throw new ForbiddenException(
+          'Você só pode compartilhar rotações com Parties das quais participa.',
+        );
+      }
+      return { visibility, partyId };
     }
-    return rotation;
+    if (partyId) {
+      throw new BadRequestException(
+        'partyId só pode ser usado com visibilidade GROUP.',
+      );
+    }
+    return { visibility, partyId: null };
   }
 
   private async requireAuthorOrAdmin(id: string, userId: string) {
@@ -773,6 +851,9 @@ export class CommunityRotationsService {
       combatMinutes: row.combatMinutes,
       travelMinutes: row.travelMinutes,
       status: row.status,
+      visibility: row.visibility,
+      partyId: row.partyId,
+      partyName: row.party?.name ?? null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       author: {

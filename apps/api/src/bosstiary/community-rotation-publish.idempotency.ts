@@ -52,6 +52,8 @@ export function hashCommunityRotationCreatePayload(
     observedTotalMinutes: dto.observedTotalMinutes ?? null,
     combatMinutes: dto.combatMinutes ?? null,
     travelMinutes: dto.travelMinutes ?? null,
+    visibility: dto.visibility ?? 'PUBLIC',
+    partyId: dto.partyId ?? null,
     bosses,
   };
 

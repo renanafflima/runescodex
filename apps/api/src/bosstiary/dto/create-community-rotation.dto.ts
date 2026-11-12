@@ -7,13 +7,18 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { BosstiaryHuntMode, Vocation } from '../../../generated/prisma/client.js';
+import {
+  BosstiaryHuntMode,
+  BosstiaryVisibility,
+  Vocation,
+} from '../../../generated/prisma/client.js';
 import { CommunityRotationBossInputDto } from './community-rotation-boss-input.dto';
 
 export const COMMUNITY_ROTATION_TITLE_MAX = 120;
@@ -104,6 +109,14 @@ export class CreateCommunityRotationDto {
   @Min(0)
   @Max(600)
   travelMinutes?: number;
+
+  @IsOptional()
+  @IsEnum(BosstiaryVisibility)
+  visibility?: BosstiaryVisibility;
+
+  @IsOptional()
+  @IsUUID()
+  partyId?: string;
 
   @IsArray()
   @ArrayMinSize(1)

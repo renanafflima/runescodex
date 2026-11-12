@@ -376,6 +376,13 @@ export class AdminMigrationRecoveryService {
           push,
         );
         return;
+      case '20261112120000_community_rotation_party_visibility':
+        await this.applyMigrationFileSql(
+          client,
+          '20261112120000_community_rotation_party_visibility',
+          push,
+        );
+        return;
       default:
         throw new BadRequestException(
           `Step ${step} does not support DDL through recovery API.`,
@@ -518,7 +525,8 @@ export class AdminMigrationRecoveryService {
     if (
       step === '20261109180000_add_bosstiary_progress' ||
       step === '20261109190000_unique_community_rotation_test' ||
-      step === '20261109200000_add_party_hunt_sessions'
+      step === '20261109200000_add_party_hunt_sessions' ||
+      step === '20261112120000_community_rotation_party_visibility'
     ) {
       if (!reassessed.readyForResolveOnly) {
         throw new BadRequestException(

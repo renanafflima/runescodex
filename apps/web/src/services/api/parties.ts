@@ -1,4 +1,5 @@
 import { apiRequest, withQuery } from "./client";
+import type { CommunityRotationCard } from "./community-rotations";
 import { readPage, type PageResult } from "./page";
 
 export type PartyStatus = "ACTIVE" | "ARCHIVED";
@@ -144,6 +145,12 @@ export function cancelPartyInvite(partyId: string, invitationId: string) {
     `${BASE}/${encodeURIComponent(partyId)}/invitations/${encodeURIComponent(invitationId)}`,
     { method: "DELETE" },
   );
+}
+
+export async function listPartyRotations(partyId: string) {
+  return readPage(
+    await apiRequest(withQuery(`${BASE}/${encodeURIComponent(partyId)}/rotations`, { limit: 20 })),
+  ) as PageResult<CommunityRotationCard>;
 }
 
 export async function listHuntSessions(partyId: string) {

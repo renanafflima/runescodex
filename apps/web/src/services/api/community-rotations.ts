@@ -56,6 +56,9 @@ export type CommunityRotationCard = {
   testedByAuthor: boolean;
   testedByMe: boolean;
   featured: boolean;
+  visibility: "PRIVATE" | "PUBLIC" | "GROUP";
+  partyId: string | null;
+  partyName: string | null;
 };
 
 export type CommunityRotationRankingItem = CommunityRotationCard & {
@@ -98,6 +101,8 @@ export type CreateCommunityRotationPayload = {
   combatMinutes?: number;
   travelMinutes?: number;
   bosses: CommunityRotationBossInput[];
+  visibility?: "PRIVATE" | "PUBLIC" | "GROUP";
+  partyId?: string;
 };
 
 export type UpdateCommunityRotationPayload = Partial<CreateCommunityRotationPayload>;
