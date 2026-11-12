@@ -10,6 +10,7 @@ import {
   Prisma,
   TicketImpact,
   TicketOrigin,
+  TicketMessageVisibility,
   TicketProblemType,
   TicketStatus,
   UserRole,
@@ -730,13 +731,23 @@ export class CharmGuidesService {
     if (actor?.role !== UserRole.ADMIN) {
       throw new ForbiddenException();
     }
+    const note = adminResponse?.trim() || '';
+    if (
+      (status === CharmGuideStatus.REJECTED ||
+        status === CharmGuideStatus.CHANGES_REQUESTED) &&
+      note.length < 3
+    ) {
+      throw new BadRequestException(
+        'Informe a justificativa para o autor da contribuição.',
+      );
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.charmGuide.update({
         where: { id },
         data: {
           status,
-          adminResponse: adminResponse ?? null,
+          adminResponse: note || null,
           moderatedByUserId: actorId,
           moderatedAt: new Date(),
           publishedAt:
@@ -748,34 +759,63 @@ export class CharmGuidesService {
         where: { charmGuideId: id },
         orderBy: { createdAt: 'desc' },
       });
+      const nextStatus =
+        status === CharmGuideStatus.PUBLISHED
+          ? TicketStatus.RESOLVED
+          : status === CharmGuideStatus.REJECTED
+            ? TicketStatus.REJECTED
+            : TicketStatus.WAITING_ON_USER;
       if (ticket) {
-        await tx.ticket.update({
-          where: { id: ticket.id },
-          data: {
-            status:
-              status === CharmGuideStatus.PUBLISHED
-                ? TicketStatus.RESOLVED
-                : status === CharmGuideStatus.REJECTED
-                  ? TicketStatus.REJECTED
-                  : TicketStatus.WAITING_ON_USER,
-            resolutionNote: adminResponse ?? null,
-            resolvedAt:
-              status === CharmGuideStatus.PUBLISHED ||
-              status === CharmGuideStatus.REJECTED
-                ? new Date()
-                : null,
-            resolvedByUserId:
-              status === CharmGuideStatus.PUBLISHED ||
-              status === CharmGuideStatus.REJECTED
-                ? actorId
-                : null,
-          },
-        });
+        const closed =
+          status === CharmGuideStatus.PUBLISHED ||
+          status === CharmGuideStatus.REJECTED;
+        if (note) {
+          const created = await tx.ticketMessage.create({
+            data: {
+              ticketId: ticket.id,
+              authorId: actorId,
+              visibility: TicketMessageVisibility.PUBLIC,
+              body: note,
+            },
+            select: { createdAt: true },
+          });
+          await tx.ticket.update({
+            where: { id: ticket.id },
+            data: {
+              status: nextStatus,
+              resolutionNote: note,
+              firstResponseAt: ticket.firstResponseAt ?? created.createdAt,
+              resolvedAt: closed ? new Date() : null,
+              resolvedByUserId: closed ? actorId : null,
+            },
+          });
+        } else {
+          await tx.ticket.update({
+            where: { id: ticket.id },
+            data: {
+              status: nextStatus,
+              resolvedAt: closed ? new Date() : null,
+              resolvedByUserId: closed ? actorId : null,
+            },
+          });
+        }
       }
-      return this.serializeDetail(updated, {
-        liked: new Set(),
-        favorited: new Set(),
-      });
+      return this.serializeDetail(
+        {
+          ...updated,
+          ticket: ticket
+            ? {
+                id: ticket.id,
+                protocol: ticket.protocol,
+                status: nextStatus,
+              }
+            : updated.ticket,
+        },
+        {
+          liked: new Set(),
+          favorited: new Set(),
+        },
+      );
     });
   }
 

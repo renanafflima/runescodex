@@ -101,7 +101,7 @@ export class AdminTicketsService {
   }
 
   async summary() {
-    const [statuses, priorities] = await Promise.all([
+    const [statuses, priorities, unassigned] = await Promise.all([
       this.prisma.ticket.groupBy({
         by: ['status'],
         _count: { _all: true },
@@ -111,6 +111,12 @@ export class AdminTicketsService {
         where: { status: { in: ACTIVE_TICKET_STATUSES } },
         _count: { _all: true },
       }),
+      this.prisma.ticket.count({
+        where: {
+          assigneeId: null,
+          status: { in: ACTIVE_TICKET_STATUSES },
+        },
+      }),
     ]);
     const statusCount = Object.fromEntries(
       statuses.map((row) => [row.status, row._count._all]),
@@ -118,18 +124,21 @@ export class AdminTicketsService {
     const priorityCount = Object.fromEntries(
       priorities.map((row) => [row.priority, row._count._all]),
     );
+    const statusesSnapshot = {
+      OPEN: statusCount.OPEN ?? 0,
+      IN_REVIEW: statusCount.IN_REVIEW ?? 0,
+      WAITING_ON_USER: statusCount.WAITING_ON_USER ?? 0,
+      WAITING_ON_STAFF: statusCount.WAITING_ON_STAFF ?? 0,
+      RESOLVED: statusCount.RESOLVED ?? 0,
+      REJECTED: statusCount.REJECTED ?? 0,
+    };
     return {
       scope: 'snapshot' as const,
       definition:
         'Contagem da fila inteira neste momento. Não usa o período do dashboard.',
-      statuses: {
-        OPEN: statusCount.OPEN ?? 0,
-        IN_REVIEW: statusCount.IN_REVIEW ?? 0,
-        WAITING_ON_USER: statusCount.WAITING_ON_USER ?? 0,
-        WAITING_ON_STAFF: statusCount.WAITING_ON_STAFF ?? 0,
-        RESOLVED: statusCount.RESOLVED ?? 0,
-        REJECTED: statusCount.REJECTED ?? 0,
-      },
+      total: Object.values(statusesSnapshot).reduce((sum, value) => sum + value, 0),
+      unassigned,
+      statuses: statusesSnapshot,
       priorities: {
         LOW: priorityCount.LOW ?? 0,
         NORMAL: priorityCount.NORMAL ?? 0,

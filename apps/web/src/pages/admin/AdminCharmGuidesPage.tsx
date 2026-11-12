@@ -221,13 +221,17 @@ export function AdminCharmGuidesPage() {
                     Aprovar
                   </button>
                   <button
-                    disabled={pending}
+                    disabled={pending || response.trim().length < 3}
                     onClick={() => void moderate("CHANGES_REQUESTED")}
                     type="button"
                   >
                     Solicitar ajustes
                   </button>
-                  <button disabled={pending} onClick={() => void moderate("REJECTED")} type="button">
+                  <button
+                    disabled={pending || response.trim().length < 3}
+                    onClick={() => void moderate("REJECTED")}
+                    type="button"
+                  >
                     Rejeitar
                   </button>
                 </div>

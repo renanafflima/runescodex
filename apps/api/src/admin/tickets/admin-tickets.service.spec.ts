@@ -82,6 +82,8 @@ describe('AdminTicketsService', () => {
     expect(result.summary.statuses.OPEN).toBe(2);
     expect(result.summary.priorities.URGENT).toBe(1);
     expect(result.summary.scope).toBe('snapshot');
+    expect(result.summary.unassigned).toBe(0);
+    expect(result.summary.total).toBe(2);
   });
 
   it('rejects an urgent priority without a justification', async () => {

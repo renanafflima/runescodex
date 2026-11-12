@@ -4,16 +4,19 @@ import { Section } from "../components/layout/Section";
 import { Button } from "../components/ui/Button";
 import { Select, Textarea, Input } from "../components/ui/FormControls";
 import { Modal } from "../components/ui/Modal";
+import { charmGuideCategoryLabel, charmGuideCategoryPoints } from "../domain/charm-guides";
 import {
   TICKET_CATEGORY_LABEL,
   TICKET_CREATE_CATEGORIES,
   TICKET_STATUS_LABEL,
+  charmGuideStatusLabel,
   formatProfileDate,
   ticketBody,
   ticketCanReply,
   ticketCategoryLabel,
   ticketStatusLabel,
   ticketSubject,
+  WAITING_ON_TEAM_FILTER,
 } from "../domain/tickets";
 import { describeApiError } from "../services/api/errors";
 import {
@@ -24,7 +27,9 @@ import {
   listMyTickets,
   replyMyTicket,
   type SupportTicket,
+  type TicketListSummary,
 } from "../services/api/tickets";
+import type { CharmGuideCpCategory } from "../services/api/charm-guides";
 
 const emptyDraft = {
   problemType: "OTHER",
@@ -34,6 +39,7 @@ const emptyDraft = {
 
 export function AccountTickets() {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [summary, setSummary] = useState<TicketListSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
@@ -62,8 +68,13 @@ export function AccountTickets() {
     setLoading(true);
     setError("");
     try {
-      const page = await listMyTickets({ status, problemType });
+      const page = await listMyTickets(
+        status === WAITING_ON_TEAM_FILTER
+          ? { waitingOnTeam: true, problemType }
+          : { status, problemType },
+      );
       setTickets(page.items);
+      setSummary(page.summary ?? null);
     } catch (caught) {
       setError(describeApiError(caught));
     } finally {
@@ -202,20 +213,40 @@ export function AccountTickets() {
     <Section
       actions={
         <Button onClick={() => { setComposerOpen(true); setFormError(""); }} size="sm" type="button">
-          Abrir chamado
+          + Abrir chamado
         </Button>
       }
       className="ticket-section"
-      description="Erros, acesso, personagens, recompensas e outras situações entram no mesmo sistema de chamados da equipe."
+      description="Acompanhe suas solicitações, contribuições e respostas da equipe RuneCodex."
       eyebrow="Suporte"
       title="Meus chamados"
     >
+      <div className="support-metrics" aria-label="Resumo dos chamados">
+        {[
+          { id: "", label: "Todos", value: summary?.all ?? tickets.length },
+          { id: WAITING_ON_TEAM_FILTER, label: "Aguardando equipe", value: summary?.waitingOnTeam ?? 0 },
+          { id: "WAITING_ON_USER", label: "Aguardando você", value: summary?.waitingOnYou ?? 0 },
+          { id: "RESOLVED", label: "Resolvidos", value: summary?.resolved ?? 0 },
+        ].map((item) => (
+          <button
+            aria-pressed={status === item.id}
+            className={`support-metric${status === item.id ? " is-active" : ""}`}
+            key={item.id || "all"}
+            onClick={() => setStatus(item.id)}
+            type="button"
+          >
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </button>
+        ))}
+      </div>
       <div className="ticket-filters">
         <Select
           label="Estado"
           onChange={(event) => setStatus(event.target.value)}
           options={[
             { value: "", label: "Todos" },
+            { value: WAITING_ON_TEAM_FILTER, label: "Aguardando equipe" },
             ...Object.entries(TICKET_STATUS_LABEL).map(([value, label]) => ({ value, label })),
           ]}
           value={status}
@@ -239,7 +270,7 @@ export function AccountTickets() {
       ) : null}
       {!loading && !error && tickets.length === 0 ? (
         <CatalogEmpty
-          action={<Button onClick={() => setComposerOpen(true)} type="button">Abrir chamado</Button>}
+          action={<Button onClick={() => setComposerOpen(true)} type="button">+ Abrir chamado</Button>}
           description="Nenhum chamado seu corresponde a este filtro."
           title="Nenhum chamado"
         />
@@ -248,14 +279,20 @@ export function AccountTickets() {
         <ul className="ticket-list">
           {tickets.map((ticket) => (
             <li key={ticket.id}>
-              <button onClick={() => void openDetail(ticket.id)} type="button">
-                <strong>{ticket.protocol || "Chamado"}</strong>
-                <span>{ticketSubject(ticket.description, ticket.problemType)}</span>
-                <span>{ticketCategoryLabel(ticket.problemType)}</span>
-                <span>{ticketStatusLabel(ticket.status)}</span>
-                <span>Aberto em {formatProfileDate(ticket.createdAt)}</span>
-                <span>Atualizado em {formatProfileDate(ticket.updatedAt)}</span>
-                {ticket.firstResponseAt ? <em>Resposta da equipe</em> : null}
+              <button className="support-ticket-card" onClick={() => void openDetail(ticket.id)} type="button">
+                <div className="support-ticket-card__top">
+                  <strong>{ticket.protocol || "Chamado"}</strong>
+                  <span className={`support-badge support-badge--${ticket.status.toLowerCase()}`}>
+                    {ticketStatusLabel(ticket.status)}
+                  </span>
+                </div>
+                <p className="support-ticket-card__title">{ticketSubject(ticket.description, ticket.problemType)}</p>
+                <p className="support-ticket-card__meta">
+                  <span>{ticketCategoryLabel(ticket.problemType)}</span>
+                  <span>Aberto em {formatProfileDate(ticket.createdAt)}</span>
+                  <span>Atualizado em {formatProfileDate(ticket.updatedAt)}</span>
+                </p>
+                {ticket.firstResponseAt ? <em>Nova resposta da equipe</em> : null}
               </button>
             </li>
           ))}
@@ -324,6 +361,23 @@ export function AccountTickets() {
             <p>Atualizado em {formatProfileDate(detail.updatedAt)}</p>
             <h3>Descrição</h3>
             <p>{ticketBody(detail.description)}</p>
+            {detail.charmGuide ? (
+              <div className="support-contribution">
+                <h3>Contribuição de Bestiário</h3>
+                <p>{detail.charmGuide.title}</p>
+                <p>
+                  {charmGuideCategoryPoints(detail.charmGuide.cpCategory as CharmGuideCpCategory)} CP
+                  {" · "}
+                  {charmGuideCategoryLabel(detail.charmGuide.cpCategory as CharmGuideCpCategory)}
+                  {" · "}
+                  {detail.charmGuide.totalCharmPoints} CP únicos
+                  {" · "}
+                  {detail.charmGuide.stepCount} etapas
+                </p>
+                <p>Situação da análise: {charmGuideStatusLabel(detail.charmGuide.status)}</p>
+                {detail.charmGuide.adminResponse ? <p>{detail.charmGuide.adminResponse}</p> : null}
+              </div>
+            ) : null}
             {detail.resolutionNote ? (
               <>
                 <h3>Resultado</h3>

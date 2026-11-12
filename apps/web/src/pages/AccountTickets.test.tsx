@@ -59,7 +59,7 @@ describe("AccountTickets", () => {
 
     expect(await screen.findByText("RC-1")).toBeInTheDocument();
     expect(screen.getByText("Falha no acesso")).toBeInTheDocument();
-    expect(screen.getByText("Resposta da equipe")).toBeInTheDocument();
+    expect(screen.getByText("Nova resposta da equipe")).toBeInTheDocument();
     expect(api.listMyTickets).toHaveBeenCalledWith({ status: "", problemType: "" });
 
     fireEvent.click(screen.getByRole("button", { name: /RC-1/ }));
@@ -82,7 +82,7 @@ describe("AccountTickets", () => {
     api.listMyTickets.mockResolvedValue({ items: [] });
     api.createMyTicket.mockRejectedValue(new ApiError("HTTP_ERROR", 400, "Assunto inválido", null));
     render(<AccountTickets />);
-    const openTicket = screen.getAllByRole("button", { name: "Abrir chamado" })[0];
+    const openTicket = screen.getAllByRole("button", { name: /Abrir chamado/ })[0];
     if (!openTicket) throw new Error("Botão de abertura ausente");
     fireEvent.click(openTicket);
 
@@ -107,7 +107,7 @@ describe("AccountTickets", () => {
       }),
     );
     render(<AccountTickets />);
-    const openTicket = screen.getAllByRole("button", { name: "Abrir chamado" })[0];
+    const openTicket = screen.getAllByRole("button", { name: /Abrir chamado/ })[0];
     if (!openTicket) throw new Error("Botão de abertura ausente");
     fireEvent.click(openTicket);
     fireEvent.change(screen.getByLabelText("Assunto"), { target: { value: "Acesso" } });
@@ -118,6 +118,40 @@ describe("AccountTickets", () => {
     expect(api.createMyTicket).toHaveBeenCalledTimes(1);
     resolveCreate(ticket);
     expect(await screen.findByText(/RC-1 aberto/)).toBeInTheDocument();
+  });
+
+  it("filters the waiting-on-team KPI to the same OPEN, IN_REVIEW and WAITING_ON_STAFF queue", async () => {
+    const openTicket = { ...ticket, id: "open-1", protocol: "RC-OPEN", status: "OPEN" };
+    const reviewTicket = {
+      ...ticket,
+      id: "review-1",
+      protocol: "RC-REVIEW",
+      status: "IN_REVIEW",
+      description: "Em atendimento",
+    };
+    api.listMyTickets.mockImplementation(async (query: { status?: string; waitingOnTeam?: boolean }) => {
+      if (query.waitingOnTeam) {
+        return {
+          items: [openTicket, reviewTicket],
+          summary: { all: 3, waitingOnTeam: 2, waitingOnYou: 1, resolved: 0, rejected: 0, statuses: {} },
+        };
+      }
+      return {
+        items: [openTicket],
+        summary: { all: 3, waitingOnTeam: 2, waitingOnYou: 1, resolved: 0, rejected: 0, statuses: {} },
+      };
+    });
+    render(<AccountTickets />);
+
+    expect(await screen.findByText("RC-OPEN")).toBeInTheDocument();
+    const metric = screen.getByRole("button", { name: /Aguardando equipe/ });
+    expect(metric).toHaveTextContent("2");
+    fireEvent.click(metric);
+
+    expect(await screen.findByText("RC-REVIEW")).toBeInTheDocument();
+    expect(screen.getByText("RC-OPEN")).toBeInTheDocument();
+    expect(api.listMyTickets).toHaveBeenCalledWith({ waitingOnTeam: true, problemType: "" });
+    expect(screen.getByRole("button", { name: /Aguardando equipe/ })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("sends a reply and blocks another user's ticket in the detail", async () => {

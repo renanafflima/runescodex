@@ -189,32 +189,13 @@ export function AdminShell() {
   }, [query]);
 
   return (
-    <div className="admin-shell">
-      <div className="admin-sidebar">
+    <div className={`admin-shell${menuOpen ? " admin-shell--menu-open" : ""}`}>
+      <header className="admin-top">
         <button className="admin-nav-toggle" onClick={() => setMenuOpen((open) => !open)} type="button">
           {menuOpen ? "Fechar menu" : "Menu"}
         </button>
-        <nav aria-label="Administração" className={menuOpen ? "admin-nav admin-nav--open" : "admin-nav"}>
-          {GROUPS.map((group) => (
-            <div key={group.label}>
-              <p className="admin-nav__group">{group.label}</p>
-              {group.items.map((item) => {
-                const count = "badge" in item && item.badge ? badges[item.badge] : 0;
-                return (
-                  <NavLink end={"end" in item ? item.end : false} key={item.to} to={item.to}>
-                    <span>{item.label}</span>
-                    {count > 0 ? <span className="admin-nav__count">{count}</span> : null}
-                  </NavLink>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-      </div>
-      <div className="admin-page">
-        <header className="admin-top">
-          <p className="admin-crumb">{crumb}</p>
-          <form className="admin-search" onSubmit={(event) => event.preventDefault()}>
+        <p className="admin-crumb">{crumb}</p>
+        <form className="admin-search" onSubmit={(event) => event.preventDefault()}>
             <input
               aria-label="Busca administrativa"
               onChange={(event) => setQuery(event.target.value)}
@@ -238,7 +219,26 @@ export function AdminShell() {
             <span>{user?.email || "Administrador"}</span>
             <button onClick={() => void logout()} type="button">Sair</button>
           </div>
-        </header>
+      </header>
+      <div className="admin-sidebar">
+        <nav aria-label="Administração" className={menuOpen ? "admin-nav admin-nav--open" : "admin-nav"}>
+          {GROUPS.map((group) => (
+            <div key={group.label}>
+              <p className="admin-nav__group">{group.label}</p>
+              {group.items.map((item) => {
+                const count = "badge" in item && item.badge ? badges[item.badge] : 0;
+                return (
+                  <NavLink end={"end" in item ? item.end : false} key={item.to} to={item.to}>
+                    <span>{item.label}</span>
+                    {count > 0 ? <span className="admin-nav__count">{count}</span> : null}
+                  </NavLink>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+      </div>
+      <div className="admin-page">
         <Outlet />
       </div>
     </div>

@@ -72,6 +72,7 @@ describe('TicketsService', () => {
       create: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
+      groupBy: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
     },
@@ -101,6 +102,7 @@ describe('TicketsService', () => {
     prisma.hunt.findUnique.mockResolvedValue({ id: HUNT_ID });
     prisma.creature.findUnique.mockResolvedValue({ id: CREATURE_ID });
     prisma.ticket.count.mockResolvedValue(1);
+    prisma.ticket.groupBy.mockResolvedValue([]);
     prisma.ticketEvidence.count.mockResolvedValue(0);
     storage.put.mockImplementation(
       (object: { storageKey: string; body: Buffer; mimeType: string }) =>
@@ -350,6 +352,74 @@ describe('TicketsService', () => {
     );
     expect(result.items).toHaveLength(1);
     expect(result.items[0].authorId).toBe(USER_ID);
+    expect(result.summary.waitingOnYou).toBe(0);
+    expect(result.summary.all).toBe(0);
+  });
+
+  it('summarizes the caller ticket statuses without mixing the current list filter', async () => {
+    prisma.ticket.findMany.mockResolvedValue([]);
+    prisma.ticket.count.mockResolvedValue(0);
+    prisma.ticket.groupBy.mockResolvedValue([
+      { status: 'OPEN', _count: { _all: 2 } },
+      { status: 'WAITING_ON_USER', _count: { _all: 1 } },
+      { status: 'RESOLVED', _count: { _all: 4 } },
+    ]);
+
+    const result = await service.findAll(USER_ID, { status: 'RESOLVED' });
+
+    expect(prisma.ticket.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { authorId: USER_ID, referralReward: { is: null } },
+      }),
+    );
+    expect(result.summary).toEqual(
+      expect.objectContaining({
+        all: 7,
+        waitingOnTeam: 2,
+        waitingOnYou: 1,
+        resolved: 4,
+      }),
+    );
+  });
+
+  it('lists the waiting-on-team queue without collapsing canonical statuses', async () => {
+    prisma.ticket.findMany.mockResolvedValue([
+      ticketRow(),
+      ticketRow({ id: 'review-1', status: 'IN_REVIEW' }),
+    ]);
+    prisma.ticket.count.mockResolvedValue(2);
+    prisma.ticket.groupBy.mockResolvedValue([
+      { status: 'OPEN', _count: { _all: 1 } },
+      { status: 'IN_REVIEW', _count: { _all: 1 } },
+    ]);
+
+    const result = await service.findAll(USER_ID, { waitingOnTeam: 'true' });
+
+    expect(prisma.ticket.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          authorId: USER_ID,
+          status: { in: ['OPEN', 'IN_REVIEW', 'WAITING_ON_STAFF'] },
+        }),
+      }),
+    );
+    expect(result.items).toHaveLength(2);
+    expect(result.summary.waitingOnTeam).toBe(2);
+  });
+
+  it('keeps a canonical WAITING_ON_STAFF list filter isolated from the team queue', async () => {
+    prisma.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
+    prisma.ticket.findMany.mockResolvedValue([]);
+    await service.findAll(ADMIN_ID, {
+      status: 'WAITING_ON_STAFF',
+      waitingOnTeam: 'true',
+    });
+
+    expect(prisma.ticket.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ status: 'WAITING_ON_STAFF' }),
+      }),
+    );
   });
 
   it('lets staff list tickets from every author', async () => {
@@ -436,7 +506,7 @@ describe('TicketsService', () => {
     expect(reviewed.status).toBe('IN_REVIEW');
     expect(prisma.ticket.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: { status: 'IN_REVIEW' },
+        data: { status: 'IN_REVIEW', assigneeId: ADMIN_ID },
       }),
     );
 
@@ -496,14 +566,62 @@ describe('TicketsService', () => {
     );
   });
 
-  it('rejects an invalid status transition', async () => {
+  it('lets staff resolve an OPEN ticket with a resolution note', async () => {
     prisma.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
     prisma.ticket.findUnique.mockResolvedValue(ticketRow());
+    prisma.ticket.update.mockResolvedValue(
+      ticketRow({
+        status: 'RESOLVED',
+        resolutionNote: 'Concluído',
+        resolvedByUserId: ADMIN_ID,
+      }),
+    );
+
+    const resolved = await service.updateStatus(ADMIN_ID, TICKET_ID, {
+      status: 'RESOLVED',
+      resolutionNote: 'Concluído',
+    });
+
+    expect(resolved.status).toBe('RESOLVED');
+    expect(prisma.ticket.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'RESOLVED',
+          resolutionNote: 'Concluído',
+          resolvedByUserId: ADMIN_ID,
+          resolvedAt: expect.any(Date) as unknown as Date,
+        }),
+      }),
+    );
+  });
+
+  it('blocks resolving a CHARM_GUIDE ticket while the guide is still pending review', async () => {
+    prisma.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
+    prisma.ticket.findUnique.mockResolvedValue(
+      ticketRow({
+        problemType: 'CHARM_GUIDE',
+        charmGuide: { id: 'guide-1', status: 'PENDING_REVIEW' },
+      }),
+    );
 
     await expect(
       service.updateStatus(ADMIN_ID, TICKET_ID, {
         status: 'RESOLVED',
-        resolutionNote: 'Skipped review',
+        resolutionNote: 'Aprovado no chamado',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.ticket.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects an invalid status transition', async () => {
+    prisma.user.findUnique.mockResolvedValue({ role: 'ADMIN' });
+    prisma.ticket.findUnique.mockResolvedValue(
+      ticketRow({ status: 'RESOLVED' }),
+    );
+
+    await expect(
+      service.updateStatus(ADMIN_ID, TICKET_ID, {
+        status: 'IN_REVIEW',
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });

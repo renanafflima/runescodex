@@ -18,4 +18,9 @@ export class ListTicketsQueryDto extends PageQueryDto {
   @IsOptional()
   @IsIn(['true'])
   mine?: 'true';
+
+  /// Lists OPEN + IN_REVIEW + WAITING_ON_STAFF. Ignored when `status` is set.
+  @IsOptional()
+  @IsIn(['true'])
+  waitingOnTeam?: 'true';
 }

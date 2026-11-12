@@ -12,6 +12,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import {
+  CharmGuideStatus,
   Prisma,
   TicketEvidenceSource,
   TicketImpact,
@@ -45,7 +46,11 @@ import {
   type TicketImageMime,
 } from './tickets.constants';
 import { UpdateTicketStatusDto } from './dto/update-ticket-status.dto';
-import { ACTIVE_TICKET_STATUSES, STATUS_TRANSITIONS } from './ticket-status';
+import {
+  ACTIVE_TICKET_STATUSES,
+  STATUS_TRANSITIONS,
+  WAITING_ON_TEAM_STATUSES,
+} from './ticket-status';
 
 const HUNT_PROBLEM_TYPES = new Set<TicketProblemType>([
   'XP_PER_HOUR',
@@ -58,6 +63,20 @@ const TICKET_INCLUDE = {
   author: { select: { id: true } },
   hunt: { select: { id: true, name: true, slug: true } },
   creature: { select: { id: true, name: true, slug: true } },
+  charmGuide: {
+    select: {
+      id: true,
+      title: true,
+      cpCategory: true,
+      status: true,
+      totalCharmPoints: true,
+      uniqueCreatureCount: true,
+      stepCount: true,
+      difficulty: true,
+      adminResponse: true,
+      publishedAt: true,
+    },
+  },
   vocations: { select: { vocation: true } },
   evidences: {
     select: {
@@ -107,6 +126,18 @@ type TicketRecord = {
   author: { id: string };
   hunt: { id: string; name: string; slug: string } | null;
   creature: { id: string; name: string; slug: string } | null;
+  charmGuide?: {
+    id: string;
+    title: string;
+    cpCategory: string;
+    status: CharmGuideStatus;
+    totalCharmPoints: number;
+    uniqueCreatureCount: number;
+    stepCount: number;
+    difficulty: string;
+    adminResponse: string | null;
+    publishedAt: Date | null;
+  } | null;
   vocations: Array<{ vocation: TicketVocation }>;
   evidences: Array<{
     id: string;
@@ -223,11 +254,18 @@ export class TicketsService {
     const own = query.mine === 'true' || !(await this.isAdmin(userId));
     const where = {
       ...(own ? { authorId: userId, referralReward: { is: null } } : {}),
-      ...(query.status ? { status: query.status } : {}),
+      ...(query.status
+        ? { status: query.status }
+        : query.waitingOnTeam === 'true'
+          ? { status: { in: WAITING_ON_TEAM_STATUSES } }
+          : {}),
       ...(query.problemType ? { problemType: query.problemType } : {}),
     };
 
-    const [tickets, total] = await Promise.all([
+    const summaryWhere = {
+      ...(own ? { authorId: userId, referralReward: { is: null } } : {}),
+    };
+    const [tickets, total, statusRows] = await Promise.all([
       this.prisma.ticket.findMany({
         where,
         include: TICKET_INCLUDE,
@@ -236,14 +274,47 @@ export class TicketsService {
         take: limit,
       }),
       this.prisma.ticket.count({ where }),
+      this.prisma.ticket.groupBy({
+        by: ['status'],
+        where: summaryWhere,
+        _count: { _all: true },
+      }),
     ]);
+    const statusCount = Object.fromEntries(
+      statusRows.map((row) => [row.status, row._count._all]),
+    ) as Record<TicketStatus, number | undefined>;
+    const waitingOnTeam =
+      (statusCount.OPEN ?? 0) +
+      (statusCount.IN_REVIEW ?? 0) +
+      (statusCount.WAITING_ON_STAFF ?? 0);
 
-    return pageResult(
-      tickets.map((ticket) => this.serialize(ticket)),
-      total,
-      page,
-      limit,
-    );
+    return {
+      ...pageResult(
+        tickets.map((ticket) => this.serialize(ticket)),
+        total,
+        page,
+        limit,
+      ),
+      summary: {
+        all:
+          waitingOnTeam +
+          (statusCount.WAITING_ON_USER ?? 0) +
+          (statusCount.RESOLVED ?? 0) +
+          (statusCount.REJECTED ?? 0),
+        waitingOnTeam,
+        waitingOnYou: statusCount.WAITING_ON_USER ?? 0,
+        resolved: statusCount.RESOLVED ?? 0,
+        rejected: statusCount.REJECTED ?? 0,
+        statuses: {
+          OPEN: statusCount.OPEN ?? 0,
+          IN_REVIEW: statusCount.IN_REVIEW ?? 0,
+          WAITING_ON_USER: statusCount.WAITING_ON_USER ?? 0,
+          WAITING_ON_STAFF: statusCount.WAITING_ON_STAFF ?? 0,
+          RESOLVED: statusCount.RESOLVED ?? 0,
+          REJECTED: statusCount.REJECTED ?? 0,
+        },
+      },
+    };
   }
 
   async findById(userId: string, ticketId: string) {
@@ -451,7 +522,13 @@ export class TicketsService {
 
     const current = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
-      select: { id: true, status: true, updatedAt: true },
+      select: {
+        id: true,
+        status: true,
+        updatedAt: true,
+        assigneeId: true,
+        charmGuide: { select: { id: true, status: true } },
+      },
     });
     if (!current) {
       throw new NotFoundException('Ticket not found');
@@ -465,6 +542,14 @@ export class TicketsService {
     const terminal =
       dto.status === TicketStatus.RESOLVED ||
       dto.status === TicketStatus.REJECTED;
+    if (
+      terminal &&
+      current.charmGuide?.status === CharmGuideStatus.PENDING_REVIEW
+    ) {
+      throw new BadRequestException(
+        'Aprove ou rejeite a contribuição de Charm Points antes de encerrar o chamado.',
+      );
+    }
     const resolutionNote = dto.resolutionNote?.trim();
     if (terminal && !resolutionNote) {
       throw new BadRequestException('Resolution note is required');
@@ -476,6 +561,9 @@ export class TicketsService {
       data: {
         status: dto.status,
         ...(resolutionNote ? { resolutionNote } : {}),
+        ...(dto.status === TicketStatus.IN_REVIEW && !current.assigneeId
+          ? { assigneeId: actorId }
+          : {}),
         ...(terminal
           ? { resolvedByUserId: actorId, resolvedAt: new Date() }
           : {}),
@@ -700,6 +788,20 @@ export class TicketsService {
       author: { id: ticket.author.id },
       hunt: ticket.hunt,
       creature: ticket.creature,
+      charmGuide: ticket.charmGuide
+        ? {
+            id: ticket.charmGuide.id,
+            title: ticket.charmGuide.title,
+            cpCategory: ticket.charmGuide.cpCategory,
+            status: ticket.charmGuide.status,
+            totalCharmPoints: ticket.charmGuide.totalCharmPoints,
+            uniqueCreatureCount: ticket.charmGuide.uniqueCreatureCount,
+            stepCount: ticket.charmGuide.stepCount,
+            difficulty: ticket.charmGuide.difficulty,
+            adminResponse: ticket.charmGuide.adminResponse,
+            publishedAt: ticket.charmGuide.publishedAt,
+          }
+        : null,
       playerLevel: ticket.playerLevel,
       partyFormat: ticket.partyFormat,
       vocations: ticket.vocations.map((row) => row.vocation),

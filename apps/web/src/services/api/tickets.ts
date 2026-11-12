@@ -15,6 +15,19 @@ export type TicketEvidence = {
   createdAt: string;
 };
 
+export type TicketCharmGuide = {
+  id: string;
+  title: string;
+  cpCategory: string;
+  status: string;
+  totalCharmPoints: number;
+  uniqueCreatureCount: number;
+  stepCount: number;
+  difficulty: string;
+  adminResponse: string | null;
+  publishedAt: string | null;
+};
+
 export type SupportTicket = {
   id: string;
   protocol: string | null;
@@ -28,26 +41,39 @@ export type SupportTicket = {
   firstResponseAt: string | null;
   createdAt: string;
   updatedAt: string;
+  priority?: string;
+  charmGuide?: TicketCharmGuide | null;
   messages?: TicketMessage[];
   evidences?: TicketEvidence[];
+};
+
+export type TicketListSummary = {
+  all: number;
+  waitingOnTeam: number;
+  waitingOnYou: number;
+  resolved: number;
+  rejected: number;
+  statuses: Record<string, number>;
 };
 
 export type TicketListQuery = {
   page?: number;
   status?: string;
   problemType?: string;
+  waitingOnTeam?: boolean;
 };
 
 const EVIDENCE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 export const TICKET_EVIDENCE_MAX_BYTES = 5_000_000;
 
 export function listMyTickets(query: TicketListQuery = {}) {
-  return apiRequest<PageResult<SupportTicket>>(
+  return apiRequest<PageResult<SupportTicket> & { summary?: TicketListSummary }>(
     withQuery("/tickets", {
       mine: "true",
       page: query.page ?? 1,
       limit: 20,
-      status: query.status,
+      status: query.waitingOnTeam ? undefined : query.status,
+      waitingOnTeam: query.waitingOnTeam ? "true" : undefined,
       problemType: query.problemType,
     }),
     { auth: true },

@@ -1,10 +1,19 @@
 export const TICKET_STATUS_LABEL: Record<string, string> = {
   OPEN: "Aberto",
-  IN_REVIEW: "Em análise",
-  WAITING_ON_USER: "Aguardando você",
+  IN_REVIEW: "Em atendimento",
+  WAITING_ON_USER: "Aguardando sua resposta",
   WAITING_ON_STAFF: "Aguardando a equipe",
   RESOLVED: "Resolvido",
-  REJECTED: "Recusado",
+  REJECTED: "Rejeitado",
+};
+
+export const WAITING_ON_TEAM_FILTER = "waitingOnTeam";
+
+export const TICKET_PRIORITY_LABEL: Record<string, string> = {
+  LOW: "Baixa",
+  NORMAL: "Normal",
+  HIGH: "Alta",
+  URGENT: "Urgente",
 };
 
 export const TICKET_CATEGORY_LABEL: Record<string, string> = {
@@ -15,6 +24,16 @@ export const TICKET_CATEGORY_LABEL: Record<string, string> = {
   DIFFICULTY: "Dificuldade",
   INCORRECT_INFO: "Informação incorreta",
   OTHER: "Outros",
+  CHARM_GUIDE: "Guia de Charm Points",
+};
+
+export const CHARM_GUIDE_STATUS_LABEL: Record<string, string> = {
+  DRAFT: "Rascunho",
+  PENDING_REVIEW: "Aguardando análise",
+  PUBLISHED: "Publicado",
+  REJECTED: "Rejeitado",
+  CHANGES_REQUESTED: "Ajustes solicitados",
+  ARCHIVED: "Arquivado",
 };
 
 export const TICKET_CREATE_CATEGORIES = [
@@ -30,6 +49,14 @@ export function ticketStatusLabel(status: string) {
 
 export function ticketCategoryLabel(problemType: string) {
   return TICKET_CATEGORY_LABEL[problemType] || problemType;
+}
+
+export function ticketPriorityLabel(priority: string) {
+  return TICKET_PRIORITY_LABEL[priority] || priority;
+}
+
+export function charmGuideStatusLabel(status: string) {
+  return CHARM_GUIDE_STATUS_LABEL[status] || status;
 }
 
 export function ticketCanReply(status: string) {

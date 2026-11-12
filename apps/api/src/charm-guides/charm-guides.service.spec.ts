@@ -55,6 +55,7 @@ describe('CharmGuidesService', () => {
       upsert: jest.fn(),
     },
     ticket: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+    ticketMessage: { create: jest.fn() },
     character: { findFirst: jest.fn() },
     user: { findUnique: jest.fn() },
     $transaction: jest.fn((fn: (tx: typeof prisma) => unknown) => fn(prisma)),
@@ -361,7 +362,15 @@ describe('CharmGuidesService', () => {
     prisma.charmGuide.update.mockResolvedValue(
       detailRow({ status: CharmGuideStatus.PUBLISHED }),
     );
-    prisma.ticket.findFirst.mockResolvedValue({ id: 'ticket-1' });
+    prisma.ticket.findFirst.mockResolvedValue({
+      id: 'ticket-1',
+      protocol: 'RC-1',
+      status: 'OPEN',
+      firstResponseAt: null,
+    });
+    prisma.ticketMessage.create.mockResolvedValue({
+      createdAt: new Date('2026-11-12T12:00:00.000Z'),
+    });
     prisma.ticket.update.mockResolvedValue({});
 
     const result = await service.adminModerate(
@@ -372,11 +381,145 @@ describe('CharmGuidesService', () => {
     );
 
     expect(result.status).toBe(CharmGuideStatus.PUBLISHED);
+    expect(result.ticket).toEqual({
+      id: 'ticket-1',
+      protocol: 'RC-1',
+      status: TicketStatus.RESOLVED,
+    });
+    expect(prisma.charmGuide.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: CharmGuideStatus.PUBLISHED }),
+      }),
+    );
+    expect(prisma.ticketMessage.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          ticketId: 'ticket-1',
+          visibility: 'PUBLIC',
+          body: 'Aprovado',
+        }),
+      }),
+    );
     expect(prisma.ticket.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ status: TicketStatus.RESOLVED }),
       }),
     );
+  });
+
+  it('rejects a pending guide without publishing and records the justification', async () => {
+    prisma.charmGuide.findUnique.mockResolvedValue(
+      detailRow({ status: CharmGuideStatus.PENDING_REVIEW }),
+    );
+    prisma.user.findUnique.mockResolvedValue({ role: UserRole.ADMIN });
+    prisma.charmGuide.update.mockResolvedValue(
+      detailRow({ status: CharmGuideStatus.REJECTED }),
+    );
+    prisma.ticket.findFirst.mockResolvedValue({
+      id: 'ticket-1',
+      protocol: 'RC-1',
+      status: 'OPEN',
+      firstResponseAt: null,
+    });
+    prisma.ticketMessage.create.mockResolvedValue({
+      createdAt: new Date('2026-11-12T12:00:00.000Z'),
+    });
+    prisma.ticket.update.mockResolvedValue({});
+
+    const result = await service.adminModerate(
+      'admin-1',
+      'guide-1',
+      CharmGuideStatus.REJECTED,
+      'Etapas incompletas',
+    );
+
+    expect(result.status).toBe(CharmGuideStatus.REJECTED);
+    expect(result.ticket).toEqual({
+      id: 'ticket-1',
+      protocol: 'RC-1',
+      status: TicketStatus.REJECTED,
+    });
+    expect(prisma.charmGuide.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: CharmGuideStatus.REJECTED,
+          publishedAt: null,
+        }),
+      }),
+    );
+    expect(prisma.ticket.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: TicketStatus.REJECTED }),
+      }),
+    );
+  });
+
+  it('returns WAITING_ON_USER on the ticket when changes are requested', async () => {
+    prisma.charmGuide.findUnique.mockResolvedValue(
+      detailRow({ status: CharmGuideStatus.PENDING_REVIEW }),
+    );
+    prisma.user.findUnique.mockResolvedValue({ role: UserRole.ADMIN });
+    prisma.charmGuide.update.mockResolvedValue(
+      detailRow({ status: CharmGuideStatus.CHANGES_REQUESTED }),
+    );
+    prisma.ticket.findFirst.mockResolvedValue({
+      id: 'ticket-1',
+      protocol: 'RC-1',
+      status: 'OPEN',
+      firstResponseAt: null,
+    });
+    prisma.ticketMessage.create.mockResolvedValue({
+      createdAt: new Date('2026-11-12T12:00:00.000Z'),
+    });
+    prisma.ticket.update.mockResolvedValue({});
+
+    const result = await service.adminModerate(
+      'admin-1',
+      'guide-1',
+      CharmGuideStatus.CHANGES_REQUESTED,
+      'Revise as etapas',
+    );
+
+    expect(result.status).toBe(CharmGuideStatus.CHANGES_REQUESTED);
+    expect(result.ticket).toEqual({
+      id: 'ticket-1',
+      protocol: 'RC-1',
+      status: TicketStatus.WAITING_ON_USER,
+    });
+    expect(prisma.ticket.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: TicketStatus.WAITING_ON_USER }),
+      }),
+    );
+  });
+
+  it('does not moderate the same pending guide twice', async () => {
+    prisma.charmGuide.findUnique.mockResolvedValue(
+      detailRow({ status: CharmGuideStatus.PUBLISHED }),
+    );
+    prisma.user.findUnique.mockResolvedValue({ role: UserRole.ADMIN });
+
+    await expect(
+      service.adminModerate(
+        'admin-1',
+        'guide-1',
+        CharmGuideStatus.PUBLISHED,
+        'De novo',
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.charmGuide.update).not.toHaveBeenCalled();
+  });
+
+  it('requires a justification when rejecting a charm guide', async () => {
+    prisma.charmGuide.findUnique.mockResolvedValue(
+      detailRow({ status: CharmGuideStatus.PENDING_REVIEW }),
+    );
+    prisma.user.findUnique.mockResolvedValue({ role: UserRole.ADMIN });
+
+    await expect(
+      service.adminModerate('admin-1', 'guide-1', CharmGuideStatus.REJECTED),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.charmGuide.update).not.toHaveBeenCalled();
   });
 
   it('hides unpublished guides from other users', async () => {

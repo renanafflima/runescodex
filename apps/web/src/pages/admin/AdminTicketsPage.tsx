@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { Button } from "../../components/ui/Button";
+import {
+  TICKET_CATEGORY_LABEL,
+  ticketCategoryLabel,
+  ticketPriorityLabel,
+  ticketStatusLabel,
+} from "../../domain/tickets";
 import { getAdminTickets } from "../../services/api/admin-portal";
 import { AdminState, Pager, adminError, formatAdminDate } from "./admin-ui";
 
@@ -16,15 +23,6 @@ const VIEWS = [
 ];
 
 const STATUSES = ["OPEN", "IN_REVIEW", "WAITING_ON_USER", "WAITING_ON_STAFF", "RESOLVED", "REJECTED"];
-
-const STATUS_LABEL: Record<string, string> = {
-  OPEN: "Aberto",
-  IN_REVIEW: "Em atendimento",
-  WAITING_ON_USER: "Aguardando usuário",
-  WAITING_ON_STAFF: "Aguardando equipe",
-  RESOLVED: "Resolvido",
-  REJECTED: "Rejeitado",
-};
 
 export function AdminTicketsPage() {
   const [params, setParams] = useSearchParams();
@@ -101,11 +99,28 @@ export function AdminTicketsPage() {
         <div>
           <h1>Central de chamados</h1>
           <p className="admin-page__lead">
-            A fila inclui os estados de espera. Notas internas não aparecem para o autor do chamado.
-            Correções estruturadas de Hunt ficam em Contribuições.
+            Gerencie solicitações, acompanhe contribuições e organize o atendimento da comunidade.
           </p>
         </div>
       </header>
+      {summary ? (
+        <div className="support-metrics support-metrics--admin" aria-label="Indicadores da fila">
+          {[
+            { label: "Total de chamados", value: summary.total ?? 0 },
+            { label: "Não atribuídos", value: summary.unassigned ?? 0 },
+            { label: "Abertos", value: summary.statuses.OPEN ?? 0 },
+            { label: "Em atendimento", value: summary.statuses.IN_REVIEW ?? 0 },
+            { label: "Aguardando usuário", value: summary.statuses.WAITING_ON_USER ?? 0 },
+            { label: "Aguardando equipe", value: summary.statuses.WAITING_ON_STAFF ?? 0 },
+            { label: "Resolvidos", value: summary.statuses.RESOLVED ?? 0 },
+          ].map((item) => (
+            <div className="support-metric" key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
+        </div>
+      ) : null}
       {huntId || creatureId || authorId ? (
         <p className="admin-note">
           Lista restrita à entidade selecionada.{" "}
@@ -124,18 +139,29 @@ export function AdminTicketsPage() {
           </button>
         </p>
       ) : null}
-      <div className="admin-filters">
-        {VIEWS.map((item) => (
-          <button
-            aria-pressed={view === item.id}
-            key={item.label}
-            onClick={() => setView(item.id)}
-            type="button"
-          >
-            {item.label}
-          </button>
-        ))}
+      <div className="support-tabs" role="tablist" aria-label="Filtrar por situação">
+        {VIEWS.map((item) => {
+          const count =
+            item.id === "unassigned"
+              ? summary?.unassigned
+              : item.id && summary?.statuses[item.id];
+          return (
+            <button
+              aria-pressed={view === item.id}
+              className={view === item.id ? "is-active" : ""}
+              key={item.label}
+              onClick={() => setView(item.id)}
+              type="button"
+            >
+              {item.label}
+              {typeof count === "number" ? <em>{count}</em> : null}
+            </button>
+          );
+        })}
+      </div>
+      <div className="admin-filters support-filters">
         <form
+          className="support-filter-grid"
           onSubmit={(event) => {
             event.preventDefault();
             const copy = new URLSearchParams(params);
@@ -175,6 +201,7 @@ export function AdminTicketsPage() {
               <option value="DIFFICULTY">Dificuldade</option>
               <option value="INCORRECT_INFO">Informação incorreta</option>
               <option value="OTHER">Geral</option>
+              <option value="CHARM_GUIDE">{TICKET_CATEGORY_LABEL.CHARM_GUIDE}</option>
             </select>
           </label>
           <label>
@@ -255,16 +282,23 @@ export function AdminTicketsPage() {
               value={to}
             />
           </label>
-          <button type="submit">Filtrar</button>
+          <div className="support-filter-actions">
+            <Button size="sm" type="submit">Filtrar</Button>
+            <Button
+              onClick={() => {
+                setDraft("");
+                setAuthorDraft("");
+                setParams(new URLSearchParams());
+              }}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              Limpar filtros
+            </Button>
+          </div>
         </form>
       </div>
-      {summary ? (
-        <p className="admin-note">
-          {summary.definition} Abertos {summary.statuses.OPEN ?? 0}, em atendimento {summary.statuses.IN_REVIEW ?? 0},
-          aguardando usuário {summary.statuses.WAITING_ON_USER ?? 0}, aguardando equipe {summary.statuses.WAITING_ON_STAFF ?? 0}.
-          Na fila ativa: urgente {summary.priorities.URGENT ?? 0}, alta {summary.priorities.HIGH ?? 0}, normal {summary.priorities.NORMAL ?? 0}, baixa {summary.priorities.LOW ?? 0}.
-        </p>
-      ) : null}
       <AdminState empty={!loading && rows.length === 0} error={error} loading={loading} onRetry={() => void load()}>
         <div className="admin-table-wrap">
           <table className="admin-table">
@@ -273,12 +307,12 @@ export function AdminTicketsPage() {
                 <th>Protocolo</th>
                 <th>Assunto</th>
                 <th>Tipo</th>
-                <th>Status</th>
-                <th>Prioridade</th>
                 <th>Solicitante</th>
                 <th>Responsável</th>
-                <th>Mensagens</th>
-                <th>Atualizado</th>
+                <th>Prioridade</th>
+                <th>Status</th>
+                <th>Última atualização</th>
+                <th>Ação</th>
               </tr>
             </thead>
             <tbody>
@@ -288,13 +322,25 @@ export function AdminTicketsPage() {
                     <Link to={`/admin/tickets/${row.id}`}>{row.protocol}</Link>
                   </td>
                   <td>{row.subject}</td>
-                  <td>{row.problemType}</td>
-                  <td>{STATUS_LABEL[row.status] ?? row.status}</td>
-                  <td>{row.priority}</td>
+                  <td>{ticketCategoryLabel(row.problemType)}</td>
                   <td>{row.author.name || "Jogador"}</td>
                   <td>{row.assignee?.name || "Não atribuído"}</td>
-                  <td>{row.messageCount}</td>
+                  <td>
+                    <span className={`support-badge support-badge--priority-${row.priority.toLowerCase()}`}>
+                      {ticketPriorityLabel(row.priority)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`support-badge support-badge--${row.status.toLowerCase()}`}>
+                      {ticketStatusLabel(row.status)}
+                    </span>
+                  </td>
                   <td>{formatAdminDate(row.updatedAt)}</td>
+                  <td>
+                    <Link className="button button--secondary button--sm" to={`/admin/tickets/${row.id}`}>
+                      Abrir
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>

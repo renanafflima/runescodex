@@ -292,6 +292,8 @@ export function getAdminTickets(query: AdminPeriodQuery) {
     summary?: {
       scope: "snapshot";
       definition: string;
+      total?: number;
+      unassigned?: number;
       statuses: Record<string, number>;
       priorities: Record<string, number>;
     };

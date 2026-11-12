@@ -8,11 +8,19 @@ export const ACTIVE_TICKET_STATUSES: TicketStatus[] = [
   TicketStatus.WAITING_ON_STAFF,
 ];
 
+/** Player-facing "waiting on the team" queue. Canonical statuses stay unchanged. */
+export const WAITING_ON_TEAM_STATUSES: TicketStatus[] = [
+  TicketStatus.OPEN,
+  TicketStatus.IN_REVIEW,
+  TicketStatus.WAITING_ON_STAFF,
+];
+
 export const STATUS_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
   OPEN: [
     TicketStatus.IN_REVIEW,
     TicketStatus.WAITING_ON_USER,
     TicketStatus.WAITING_ON_STAFF,
+    TicketStatus.RESOLVED,
     TicketStatus.REJECTED,
   ],
   IN_REVIEW: [
