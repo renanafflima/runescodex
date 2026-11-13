@@ -80,6 +80,18 @@ describe("bosstiary filters", () => {
     expect(filterBosstiary(catalog, { query: "feru", party: "all", level: 300 })).toEqual([]);
   });
 
+  it("filters by official Bosstiary category", () => {
+    const mixed = [
+      entry({ slug: "black-knight", name: "Black Knight", officialCategory: "Bane" }),
+      entry({ slug: "ferumbras", name: "Ferumbras", officialCategory: "Archfoe" }),
+    ];
+    expect(
+      filterBosstiary(mixed, { query: "", party: "all", level: "all", officialCategory: "Bane" }).map(
+        (item) => item.slug,
+      ),
+    ).toEqual(["black-knight"]);
+  });
+
   it("applies only a reviewed classification and ignores a repeated slug", () => {
     const reviewed = applyBossReview(
       [entry()],
