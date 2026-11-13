@@ -17,13 +17,13 @@ describe("bosstiary rotations domain", () => {
     expect(parseBosstiaryTab("unknown")).toBe("comunidade");
   });
 
-  it("maps old rotation and level URLs to community inner views", () => {
+  it("maps legacy community URLs to the public feed", () => {
     expect(parseCommunityInnerView(null, null)).toBe("feed");
     expect(parseCommunityInnerView("rotas", null)).toBe("feed");
-    expect(parseCommunityInnerView("level", null)).toBe("level");
+    expect(parseCommunityInnerView("level", null)).toBe("feed");
     expect(parseCommunityInnerView(null, "planner")).toBe("feed");
-    expect(parseCommunityInnerView(null, "level")).toBe("level");
-    expect(parseCommunityInnerView(null, "party")).toBe("party");
+    expect(parseCommunityInnerView(null, "level")).toBe("feed");
+    expect(parseCommunityInnerView(null, "party")).toBe("feed");
   });
 
   it("exposes only three main area cards", () => {

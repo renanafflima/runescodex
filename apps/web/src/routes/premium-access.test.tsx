@@ -107,6 +107,7 @@ describe("Web premium routes", () => {
       "/hunts",
       "/hunts/cyclops",
       "/bosstiary",
+      "/bosstiary/parties",
       "/bestiary/rat",
       "/bestiary/rat/hunts",
       "/bestiary/guides/new",

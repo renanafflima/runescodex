@@ -8,6 +8,7 @@ import { Test } from '@nestjs/testing';
 import {
   BosstiaryHuntMode,
   CommunityRotationStatus,
+  UserRole,
 } from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service';
 import { RewardsService } from '../rewards/rewards.service';
@@ -386,6 +387,42 @@ describe('CommunityRotationsService', () => {
       data: { status: CommunityRotationStatus.REMOVED },
     });
     expect(result).toEqual({ id: 'rotation-1', removed: true });
+  });
+
+  it('lets an administrator remove another user rotation', async () => {
+    prisma.communityRotation.findUnique.mockResolvedValue({
+      id: 'rotation-1',
+      userId: 'author-1',
+      status: CommunityRotationStatus.PUBLISHED,
+    });
+    prisma.user.findUnique.mockResolvedValue({ role: UserRole.ADMIN });
+    prisma.communityRotation.update.mockResolvedValue({});
+
+    const result = await service.remove('rotation-1', 'admin-1');
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { id: 'admin-1' },
+      select: { role: true },
+    });
+    expect(prisma.communityRotation.update).toHaveBeenCalledWith({
+      where: { id: 'rotation-1' },
+      data: { status: CommunityRotationStatus.REMOVED },
+    });
+    expect(result).toEqual({ id: 'rotation-1', removed: true });
+  });
+
+  it('blocks a regular user from removing another user rotation', async () => {
+    prisma.communityRotation.findUnique.mockResolvedValue({
+      id: 'rotation-1',
+      userId: 'author-1',
+      status: CommunityRotationStatus.PUBLISHED,
+    });
+    prisma.user.findUnique.mockResolvedValue({ role: UserRole.USER });
+
+    await expect(service.remove('rotation-1', 'user-2')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(prisma.communityRotation.update).not.toHaveBeenCalled();
   });
 
   it('rejects duplicate boss ids in the same rotation', async () => {

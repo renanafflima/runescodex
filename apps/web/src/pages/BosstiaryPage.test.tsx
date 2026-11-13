@@ -85,6 +85,7 @@ vi.mock("../auth/AuthContext", () => ({
     isAuthenticated: true,
     isReady: true,
     isRosterReady: true,
+    user: { id: "user-1", role: "USER" },
   }),
 }));
 
@@ -195,18 +196,26 @@ describe("BosstiaryPage", () => {
     expect(screen.queryByRole("button", { name: /^Rotações$/ })).not.toBeInTheDocument();
   });
 
-  it("hides the planner and keeps level inside the community area", async () => {
+  it("hides the planner and keeps the community feed for legacy URLs", async () => {
     show("?tab=rotas");
     expect(await screen.findByRole("heading", { name: "Rotações da Comunidade" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Planejador" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Monte sua rotação" })).not.toBeInTheDocument();
   });
 
-  it("opens recommendations by level from the community area", async () => {
+  it("does not expose weekly rewards, level recommendations or duplicate party access", async () => {
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Recomendações por level" }));
-    await waitFor(() => expect(loadBosstiaryCatalog).toHaveBeenCalled());
-    expect(screen.getByRole("heading", { name: "Boss por level" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Rotações da Comunidade" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Recompensas semanais" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Recomendações por level" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Minhas Partys" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Área da comunidade" })).not.toBeInTheDocument();
+  });
+
+  it("keeps personal progress free of the party room", async () => {
+    show("?tab=progresso");
+    expect(await screen.findByRole("heading", { name: "Meu Progresso" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Partys" })).not.toBeInTheDocument();
   });
 
   it("loads encyclopedia content only on its tab", async () => {
@@ -215,11 +224,17 @@ describe("BosstiaryPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Enciclopédia/i }));
     await waitFor(() => expect(loadBosstiaryCatalog).toHaveBeenCalled());
-    expect(screen.getByText(/candidatos da TibiaWiki com isboss/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Enciclopédia" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Ferumbras/ })).toBeInTheDocument();
+    expect(screen.queryByText("Classificação pendente")).not.toBeInTheDocument();
+    expect(screen.queryByText("Nível não revisado")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Candidato TibiaWiki/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Solo" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "PT" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "300" })).not.toBeInTheDocument();
   });
 
-  it("filters encyclopedia entries and opens the boss modal", async () => {
+  it("filters encyclopedia entries by name and opens the boss modal", async () => {
     show("?tab=enciclopedia");
     await waitFor(() => expect(screen.getByRole("button", { name: /Ferumbras/ })).toBeInTheDocument());
 
@@ -227,8 +242,6 @@ describe("BosstiaryPage", () => {
     expect(screen.queryByRole("button", { name: /Ferumbras/ })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Buscar boss pelo nome"), { target: { value: "" } });
-    fireEvent.click(screen.getByRole("button", { name: "Solo" }));
-    fireEvent.click(screen.getByRole("button", { name: "300" }));
     fireEvent.click(screen.getByRole("button", { name: /Ferumbras/ }));
     expect(screen.getByRole("dialog", { name: "Ferumbras" })).toBeInTheDocument();
   });

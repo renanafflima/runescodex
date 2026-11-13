@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CommunityRotationPublishModal } from "./CommunityRotationPublishModal";
 
@@ -57,7 +58,9 @@ describe("CommunityRotationPublishModal", () => {
   it("publishes a private diary rotation without a party", async () => {
     const onPublished = vi.fn();
     render(
-      <CommunityRotationPublishModal onClose={() => undefined} onPublished={onPublished} open />,
+      <MemoryRouter>
+        <CommunityRotationPublishModal onClose={() => undefined} onPublished={onPublished} open />
+      </MemoryRouter>,
     );
 
     fireEvent.change(screen.getByLabelText("Título"), { target: { value: "Ferumbras e Orshabaal" } });
@@ -77,12 +80,14 @@ describe("CommunityRotationPublishModal", () => {
 
   it("shares the same form with a selected party", async () => {
     render(
-      <CommunityRotationPublishModal
-        defaultPartyId="party-1"
-        onClose={() => undefined}
-        onPublished={vi.fn()}
-        open
-      />,
+      <MemoryRouter>
+        <CommunityRotationPublishModal
+          defaultPartyId="party-1"
+          onClose={() => undefined}
+          onPublished={vi.fn()}
+          open
+        />
+      </MemoryRouter>,
     );
 
     expect(await screen.findByLabelText("Party")).toBeInTheDocument();

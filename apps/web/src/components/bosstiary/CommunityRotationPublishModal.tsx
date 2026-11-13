@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { CatalogImage } from "../catalog/CatalogImage";
 import { Button } from "../ui/Button";
@@ -321,7 +322,8 @@ export function CommunityRotationPublishModal({
           {destination === "GROUP" ? (
             parties.length === 0 ? (
               <p className="bosstiary-community-publish__hint">
-                Você ainda não participa de nenhuma Party. Crie ou aceite um convite em Minhas Partys.
+                Você ainda não participa de nenhuma Party. Crie ou aceite um convite em{" "}
+                <Link to="/bosstiary/parties">Minhas Partys</Link>.
               </p>
             ) : (
               <Select

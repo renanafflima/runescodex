@@ -18,6 +18,7 @@ export type IconName =
   | "sort"
   | "star"
   | "swords"
+  | "trash"
   | "user";
 
 type IconProps = Omit<SVGProps<SVGSVGElement>, "name"> & {
@@ -116,6 +117,15 @@ function IconPath({ name }: { name: IconName }) {
     case "star":
       return (
         <path d="m12 3.5 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.9l-4.8 2.5.9-5.4-3.9-3.8 5.4-.8L12 3.5Z" />
+      );
+    case "trash":
+      return (
+        <>
+          <path d="M4 7h16" />
+          <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" />
+          <path d="M6.5 7 7.4 19.2A1.5 1.5 0 0 0 8.9 20.5h6.2a1.5 1.5 0 0 0 1.5-1.3L17.5 7" />
+          <path d="M10 11v6M14 11v6" />
+        </>
       );
     case "swords":
       return (

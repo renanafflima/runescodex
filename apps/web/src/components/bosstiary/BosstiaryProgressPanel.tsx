@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { PartyPanel } from "./PartyPanel";
 import { CatalogEmpty, CatalogError, CatalogLoading } from "../catalog/CatalogState";
 import { CatalogImage } from "../catalog/CatalogImage";
 import { Button } from "../ui/Button";
@@ -25,7 +24,7 @@ import {
 } from "../../services/api/bosstiary-progress";
 
 const SEARCH_DEBOUNCE_MS = 300;
-type ProgressView = "mine" | "all" | "party";
+type ProgressView = "mine" | "all";
 
 const EMPTY_SUMMARY: BosstiaryProgressSummary = {
   bossesDefeated: 0,
@@ -282,22 +281,11 @@ export function BosstiaryProgressPanel() {
         >
           Todos os bosses
         </button>
-        <button
-          aria-selected={view === "party"}
-          className={`bosstiary-progress-subtab${view === "party" ? " is-active" : ""}`}
-          onClick={() => setView("party")}
-          role="tab"
-          type="button"
-        >
-          Partys
-        </button>
       </div>
 
       {error ? <CatalogError description={error} onRetry={() => (view === "mine" ? loadMine() : loadChecklist())} /> : null}
 
-      {view === "party" ? (
-        <PartyPanel />
-      ) : view === "mine" ? (
+      {view === "mine" ? (
         <div className="bosstiary-progress-mine">
           <section className="bosstiary-progress-panel">
             <header className="bosstiary-progress-panel__head">

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { CatalogEmpty, CatalogError, CatalogLoading } from "../catalog/CatalogState";
 import { CatalogImage } from "../catalog/CatalogImage";
 import { Button } from "../ui/Button";
 import { SearchInput, Select } from "../ui/FormControls";
+import { Icon } from "../ui/Icon";
 import { Pagination } from "../ui/Pagination";
 import {
   COMMUNITY_DURATION_FILTERS,
@@ -15,21 +16,14 @@ import {
   communityDurationLabel,
   communityHuntModeLabel,
   formatCommunityWhen,
-  missionActivityPath,
 } from "../../domain/bosstiary-community";
-import {
-  formatRewardAmount,
-  isPlayableRewardMission,
-  missionArtFile,
-  progressPercent,
-} from "../../domain/rewards";
 import { useLatestRequest } from "../../hooks/useLatestRequest";
 import { officialBossImage } from "../../domain/bosstiary-catalog";
 import { resolveCreatureImage } from "../../domain/creature-image";
-import { assetUrl } from "../../lib/assets";
 import { describeApiError } from "../../services/api/errors";
 import {
   createCommunityRotationTest,
+  deleteCommunityRotation,
   favoriteCommunityRotation,
   likeCommunityRotation,
   listCommunityRotationRanking,
@@ -43,20 +37,16 @@ import {
   type CommunityRotationRankingItem,
   type CommunityRotationSort,
 } from "../../services/api/community-rotations";
-import { getRewardsMe, listRewardMissions, type RewardMission } from "../../services/api/rewards";
 import { CommunityRotationPublishModal } from "./CommunityRotationPublishModal";
 
 const SEARCH_DEBOUNCE_MS = 300;
 const PAGE_LIMIT = 12;
 
-function art(file: string | null) {
-  return file ? assetUrl(`images/rewards/${file}`) : "";
-}
-
 export function CommunityRotationsFeed() {
   const feedRequests = useLatestRequest();
   const sidebarRequests = useLatestRequest();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
   const [level, setLevel] = useState<CommunityLevelFilter>("ALL");
   const [mode, setMode] = useState<CommunityModeFilter>("ALL");
   const [duration, setDuration] = useState<CommunityDurationFilter>("ALL");
@@ -71,8 +61,8 @@ export function CommunityRotationsFeed() {
   const [socialBusy, setSocialBusy] = useState("");
   const [ranking, setRanking] = useState<CommunityRotationRankingItem[]>([]);
   const [rankingError, setRankingError] = useState("");
-  const [missions, setMissions] = useState<RewardMission[]>([]);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     const timer = window.setTimeout(() => setSearch(searchDraft.trim()), SEARCH_DEBOUNCE_MS);
@@ -114,14 +104,9 @@ export function CommunityRotationsFeed() {
     const current = sidebarRequests.start();
     setRankingError("");
     try {
-      const [rank, missionList] = await Promise.all([
-        listCommunityRotationRanking(5),
-        listRewardMissions("WEEKLY"),
-        getRewardsMe(),
-      ]);
+      const rank = await listCommunityRotationRanking(5);
       if (!current()) return;
       setRanking(Array.isArray(rank) ? rank : []);
-      setMissions(Array.isArray(missionList) ? missionList : []);
     } catch (err) {
       if (!current()) return;
       setRanking([]);
@@ -138,15 +123,6 @@ export function CommunityRotationsFeed() {
   }, [loadSidebar]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_LIMIT));
-
-  const weeklyMission = useMemo(() => {
-    const playable = missions.filter(isPlayableRewardMission);
-    return (
-      playable.find((mission) => mission.eventType === "BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED") ??
-      playable.find((mission) => mission.eventType?.includes("BOSSTIARY")) ??
-      null
-    );
-  }, [missions]);
 
   function applySocial(cardId: string, patch: Partial<CommunityRotationCard>) {
     setItems((current) => current.map((item) => (item.id === cardId ? { ...item, ...patch } : item)));
@@ -183,6 +159,28 @@ export function CommunityRotationsFeed() {
         favoritedByMe: state.favoritedByMe,
         favoritesCount: state.favoritesCount,
       });
+    } catch (err) {
+      setError(describeApiError(err));
+    } finally {
+      setSocialBusy("");
+    }
+  }
+
+  async function removeRotation(card: CommunityRotationCard) {
+    if (!isAdmin || socialBusy) return;
+    const confirmed = window.confirm(
+      `Excluir a rotação "${card.title}"? Ela sairá do feed da Comunidade.`,
+    );
+    if (!confirmed) return;
+    const key = `delete:${card.id}`;
+    setSocialBusy(key);
+    setNotice("");
+    try {
+      await deleteCommunityRotation(card.id);
+      setItems((current) => current.filter((item) => item.id !== card.id));
+      setTotal((current) => Math.max(0, current - 1));
+      setNotice("Rotação excluída.");
+      void loadSidebar();
     } catch (err) {
       setError(describeApiError(err));
     } finally {
@@ -227,14 +225,15 @@ export function CommunityRotationsFeed() {
         <main className="bosstiary-community__main">
           <section className="bosstiary-community-filters" aria-label="Filtros da comunidade">
             <div className="bosstiary-community-filters__row">
-              <label className="field bosstiary-community-filters__search">
-                <span className="sr-only">Buscar rotações</span>
+              <div className="field bosstiary-community-filters__search">
+                <span className="field__label">Busca</span>
                 <SearchInput
+                  label="Busca"
                   onChange={(event) => setSearchDraft(event.target.value)}
                   placeholder="Buscar por título, descrição ou boss..."
                   value={searchDraft}
                 />
-              </label>
+              </div>
               <Select
                 label="Level"
                 onChange={(e) => setLevel(e.target.value as CommunityLevelFilter)}
@@ -261,6 +260,12 @@ export function CommunityRotationsFeed() {
               />
             </div>
           </section>
+
+          {notice ? (
+            <p className="bosstiary-community__notice" role="status">
+              {notice}
+            </p>
+          ) : null}
 
           {error ? <CatalogError description={error} onRetry={() => void loadFeed()} /> : null}
 
@@ -294,9 +299,22 @@ export function CommunityRotationsFeed() {
                               .join(" · ")}
                           </p>
                         </div>
-                        <time className="bosstiary-community-card__when" dateTime={card.createdAt}>
-                          {formatCommunityWhen(card.createdAt)}
-                        </time>
+                        <div className="bosstiary-community-card__aside">
+                          <time className="bosstiary-community-card__when" dateTime={card.createdAt}>
+                            {formatCommunityWhen(card.createdAt)}
+                          </time>
+                          {isAdmin ? (
+                            <button
+                              aria-label={`Excluir rotação ${card.title}`}
+                              className="bosstiary-community-card__delete"
+                              disabled={socialBusy === `delete:${card.id}`}
+                              onClick={() => void removeRotation(card)}
+                              type="button"
+                            >
+                              <Icon name="trash" size={16} />
+                            </button>
+                          ) : null}
+                        </div>
                       </header>
                       <Link className="bosstiary-community-card__title" to={`/bosstiary/community/${card.id}`}>
                         {card.title}
@@ -400,45 +418,6 @@ export function CommunityRotationsFeed() {
         </main>
 
         <aside className="bosstiary-community__sidebar" aria-label="Painel lateral">
-          <section className="bosstiary-community-panel bosstiary-community-rewards">
-            <header>
-              <h3>Recompensas semanais</h3>
-              <p>Publique uma rotação e avance na missão do Bosstiário.</p>
-            </header>
-            {weeklyMission ? (
-              <article className="rewards-mission bosstiary-community-rewards__mission">
-                {(() => {
-                  const file = missionArtFile(weeklyMission);
-                  return file ? <img alt="" src={art(file)} /> : <span className="rewards-mission__fallback" />;
-                })()}
-                <span className="rewards-mission__shade" />
-                <span className="rewards-mission__body">
-                  <span className="rewards-mission__title">{weeklyMission.title}</span>
-                  <span className="rewards-mission__desc">{weeklyMission.description}</span>
-                  <span className="rewards-progress">
-                    <i>
-                      <i style={{ width: `${progressPercent(weeklyMission.current, weeklyMission.target)}%` }} />
-                    </i>
-                    <b>
-                      {weeklyMission.current} / {weeklyMission.target}
-                    </b>
-                  </span>
-                  <span className="rewards-mission__action">
-                    +{formatRewardAmount(weeklyMission.rewardPoints)} pontos
-                  </span>
-                  {missionActivityPath(weeklyMission.eventType) ? (
-                    <Link className="bosstiary-community-rewards__link" to={missionActivityPath(weeklyMission.eventType)!}>
-                      Ver missão
-                    </Link>
-                  ) : null}
-                </span>
-              </article>
-            ) : (
-              <p className="bosstiary-community-panel__empty">Nenhuma missão semanal publicada para rotações ainda.</p>
-            )}
-            {publishCta}
-          </section>
-
           <section className="bosstiary-community-panel bosstiary-community-ranking">
             <header>
               <h3>Ranking semanal</h3>

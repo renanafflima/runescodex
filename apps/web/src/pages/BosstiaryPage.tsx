@@ -1,31 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { CatalogError, CatalogLoading } from "../components/catalog/CatalogState";
 import { PageContainer } from "../components/layout/PageContainer";
-import { BossByLevelPanel } from "../components/bosstiary/BossByLevelPanel";
 import { BosstiaryProgressPanel } from "../components/bosstiary/BosstiaryProgressPanel";
 import { EncyclopediaPanel } from "../components/bosstiary/EncyclopediaPanel";
 import { CommunityRotationsFeed } from "../components/bosstiary/CommunityRotationsFeed";
-import { PartyPanel } from "../components/bosstiary/PartyPanel";
 import { loadBosstiaryCatalog, type BosstiaryCatalog } from "../domain/bosstiary-catalog";
-import {
-  BOSSTIARY_TABS,
-  COMMUNITY_INNER_VIEWS,
-  parseBosstiaryTab,
-  parseCommunityInnerView,
-  type BosstiaryTab,
-  type CommunityInnerView,
-} from "../domain/bosstiary-rotations";
+import { BOSSTIARY_TABS, parseBosstiaryTab, type BosstiaryTab } from "../domain/bosstiary-rotations";
 
 export function BosstiaryPage() {
   const [params, setParams] = useSearchParams();
   const bossSlug = params.get("boss");
   const tab = parseBosstiaryTab(params.get("tab"));
-  const communityView = parseCommunityInnerView(params.get("tab"), params.get("view"));
   const [catalog, setCatalog] = useState<BosstiaryCatalog | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const needsCatalog = tab === "enciclopedia" || (tab === "comunidade" && communityView === "level");
+  const needsCatalog = tab === "enciclopedia";
 
   function load() {
     setLoading(true);
@@ -53,14 +42,6 @@ export function BosstiaryPage() {
     search.delete("view");
     if (next === "comunidade") search.delete("tab");
     else search.set("tab", next);
-    setParams(search, { replace: true });
-  }
-
-  function setCommunityView(next: CommunityInnerView) {
-    const search = new URLSearchParams(params);
-    search.delete("tab");
-    if (next === "feed") search.delete("view");
-    else search.set("view", next);
     setParams(search, { replace: true });
   }
 
@@ -106,38 +87,7 @@ export function BosstiaryPage() {
           })}
         </nav>
 
-        {tab === "comunidade" ? (
-          <>
-            <nav aria-label="Área da comunidade" className="bosstiary-community-subnav">
-              {COMMUNITY_INNER_VIEWS.map((item) => {
-                const active = communityView === item.id;
-                return (
-                  <button
-                    aria-current={active ? "page" : undefined}
-                    className={`bosstiary-community-subnav__tab${active ? " is-active" : ""}`}
-                    key={item.id}
-                    onClick={() => setCommunityView(item.id)}
-                    type="button"
-                  >
-                    {item.label}
-                  </button>
-                );
-              })}
-            </nav>
-
-            {communityView === "feed" || communityView === "planner" ? <CommunityRotationsFeed /> : null}
-            {communityView === "party" ? <PartyPanel /> : null}
-            {communityView === "level" ? (
-              loading && !catalog ? (
-                <CatalogLoading label="Carregando Bosstiário" />
-              ) : error && !catalog ? (
-                <CatalogError description={error} onRetry={load} />
-              ) : (
-                <BossByLevelPanel entries={entries} />
-              )
-            ) : null}
-          </>
-        ) : null}
+        {tab === "comunidade" ? <CommunityRotationsFeed /> : null}
 
         {tab === "progresso" ? <BosstiaryProgressPanel /> : null}
 

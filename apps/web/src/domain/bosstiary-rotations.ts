@@ -1,7 +1,7 @@
 import type { VocationCode } from "./vocation";
 
 export type BosstiaryTab = "comunidade" | "progresso" | "enciclopedia";
-export type CommunityInnerView = "feed" | "planner" | "level" | "party";
+export type CommunityInnerView = "feed";
 
 export type BosstiaryHuntMode = "SOLO" | "PARTY";
 
@@ -21,7 +21,7 @@ export const BOSSTIARY_TABS: Array<{
     id: "progresso",
     label: "Meu Progresso",
     kicker: "Acompanhe suas conquistas",
-    image: "/images/bosstiary/nav-rotacoes.jpg",
+    image: "/images/bosstiary/nav-boss-level.jpg",
   },
   {
     id: "enciclopedia",
@@ -118,22 +118,10 @@ export function parseBosstiaryTab(value: string | null): BosstiaryTab {
   return "comunidade";
 }
 
-export const COMMUNITY_INNER_VIEWS: Array<{
-  id: Exclude<CommunityInnerView, "planner">;
-  label: string;
-}> = [
-  { id: "feed", label: "Rotações publicadas" },
-  { id: "level", label: "Recomendações por level" },
-  { id: "party", label: "Minhas Partys" },
-];
-
 export function parseCommunityInnerView(
-  tabParam: string | null,
-  view: string | null,
+  _tabParam: string | null,
+  _view: string | null,
 ): CommunityInnerView {
-  if (tabParam === "rotas" || view === "planner") return "feed";
-  if (tabParam === "level" || view === "level") return "level";
-  if (view === "party") return "party";
   return "feed";
 }
 

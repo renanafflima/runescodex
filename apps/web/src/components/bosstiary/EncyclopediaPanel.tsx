@@ -1,25 +1,9 @@
 import { useMemo, useState } from "react";
 import { CatalogImage } from "../catalog/CatalogImage";
 import { CatalogEmpty, CatalogError, CatalogLoading } from "../catalog/CatalogState";
-import { Badge } from "../ui/Badge";
-import { Chip } from "../ui/Chip";
 import { SearchInput } from "../ui/FormControls";
 import { Modal } from "../ui/Modal";
-import {
-  BOSS_LEVELS,
-  bossPartyLabel,
-  filterBosstiary,
-  type BossLevelFilter,
-  type BossPartyFilter,
-  type BosstiaryEntry,
-} from "../../domain/bosstiary";
-
-const PARTY_FILTERS: Array<{ id: BossPartyFilter; label: string }> = [
-  { id: "all", label: "Todos" },
-  { id: "solo", label: "Solo" },
-  { id: "party", label: "PT" },
-  { id: "event", label: "Evento" },
-];
+import { bossPartyLabel, filterBosstiary, type BosstiaryEntry } from "../../domain/bosstiary";
 
 type EncyclopediaPanelProps = {
   entries: BosstiaryEntry[];
@@ -30,56 +14,28 @@ type EncyclopediaPanelProps = {
 
 export function EncyclopediaPanel({ entries, loading, error, onRetry }: EncyclopediaPanelProps) {
   const [query, setQuery] = useState("");
-  const [party, setParty] = useState<BossPartyFilter>("all");
-  const [level, setLevel] = useState<BossLevelFilter>("all");
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
   const filtered = useMemo(
-    () => filterBosstiary(entries, { query, party, level }),
-    [entries, query, party, level],
+    () => filterBosstiary(entries, { query, party: "all", level: "all" }),
+    [entries, query],
   );
   const selected = entries.find((entry) => entry.slug === selectedSlug) ?? null;
-  const classificationActive = party !== "all" || level !== "all";
 
   return (
     <section className="bosstiary-encyclopedia" aria-labelledby="encyclopedia-title">
       <div className="bosstiary-section-title">
         <h2 id="encyclopedia-title">Enciclopédia</h2>
-        <p>
-          Candidatos da TibiaWiki e fichas revisadas do RuneCodex. A classificação editorial não
-          substitui requisitos oficiais do Tibia.
-        </p>
+        <p>Consulte os bosses do catálogo visual. Os detalhes completos abrem ao selecionar um card.</p>
       </div>
 
-      <p className="bosstiary-note">
-        A lista inicial reúne candidatos da TibiaWiki com isboss = sim. Ela ainda não é o catálogo
-        definitivo nem define Solo, PT, Evento, nível, loot, localização ou Boss Points.
-      </p>
-
-      <div className="catalog-filters">
+      <div className="bosstiary-encyclopedia__filters">
         <SearchInput
           label="Buscar boss pelo nome"
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Buscar boss pelo nome"
           value={query}
         />
-        <div className="chip-row" aria-label="Categoria do boss">
-          {PARTY_FILTERS.map((item) => (
-            <Chip active={party === item.id} key={item.id} onClick={() => setParty(item.id)}>
-              {item.label}
-            </Chip>
-          ))}
-        </div>
-        <div className="chip-row" aria-label="Nível recomendado pelo RuneCodex">
-          <Chip active={level === "all"} onClick={() => setLevel("all")}>
-            Todas as faixas
-          </Chip>
-          {BOSS_LEVELS.map((item) => (
-            <Chip active={level === item} key={item} onClick={() => setLevel(item)}>
-              {item}
-            </Chip>
-          ))}
-        </div>
       </div>
 
       {loading ? (
@@ -87,16 +43,9 @@ export function EncyclopediaPanel({ entries, loading, error, onRetry }: Encyclop
       ) : error ? (
         <CatalogError description={error} onRetry={onRetry} />
       ) : filtered.length === 0 ? (
-        <CatalogEmpty
-          description={
-            classificationActive
-              ? "Nenhum boss com classificação revisada corresponde a essa combinação de categoria e faixa."
-              : "Nenhum boss corresponde à busca."
-          }
-          title="Nenhum boss encontrado"
-        />
+        <CatalogEmpty description="Nenhum boss corresponde à busca." title="Nenhum boss encontrado" />
       ) : (
-        <div className="catalog-grid catalog-grid--bestiary">
+        <div className="catalog-grid catalog-grid--encyclopedia">
           {filtered.map((entry) => (
             <BossCard entry={entry} key={entry.slug} onOpen={() => setSelectedSlug(entry.slug)} />
           ))}
@@ -120,21 +69,11 @@ export function EncyclopediaPanel({ entries, loading, error, onRetry }: Encyclop
 }
 
 function BossCard({ entry, onOpen }: { entry: BosstiaryEntry; onOpen: () => void }) {
-  const party = bossPartyLabel(entry.party);
   return (
-    <button className="catalog-card bosstiary-card" onClick={onOpen} type="button">
+    <button className="catalog-card bosstiary-card bosstiary-card--simple" onClick={onOpen} type="button">
       <CatalogImage alt="" className="catalog-card__art" name={entry.name} src={entry.imageUrl} />
       <div className="catalog-card__body">
-        <div className="catalog-card__meta">
-          <Badge tone={party ? "gold" : "neutral"}>{party ?? "Classificação pendente"}</Badge>
-          {entry.recommendedLevel ? (
-            <Badge tone="info">Recomendação RuneCodex · {entry.recommendedLevel}</Badge>
-          ) : (
-            <Badge>Nível não revisado</Badge>
-          )}
-        </div>
         <h2>{entry.name}</h2>
-        <p>Candidato TibiaWiki · isboss = {entry.isboss}</p>
       </div>
     </button>
   );

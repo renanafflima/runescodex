@@ -21,6 +21,7 @@ describe("Navigation admin entry", () => {
     );
 
     expect(screen.queryByRole("link", { name: "Administração" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Partys" })).toHaveAttribute("href", "/bosstiary/parties");
   });
 
   it("shows the administration portal to an administrator", () => {

@@ -11,6 +11,7 @@ const navigationItems: Array<{
   { icon: "swords", label: "Hunts", to: "/hunts" },
   { icon: "book", label: "Bestiário", to: "/bestiary" },
   { icon: "crown", label: "Bosstiário", to: "/bosstiary" },
+  { icon: "swords", label: "Partys", to: "/bosstiary/parties" },
   { icon: "message", label: "Fórum", to: "/forum" },
   { icon: "gift", label: "Rewards", to: "/rewards" },
   { icon: "user", label: "Perfil", to: "/profile" },
@@ -47,7 +48,13 @@ export function Navigation({ onNavigate, open = false }: NavigationProps) {
       return location.pathname === "/bestiary" || location.pathname.startsWith("/bestiary/");
     }
     if (pathname === "/bosstiary") {
-      return location.pathname === "/bosstiary" || location.pathname.startsWith("/bosstiary/");
+      return (
+        (location.pathname === "/bosstiary" || location.pathname.startsWith("/bosstiary/")) &&
+        !location.pathname.startsWith("/bosstiary/parties")
+      );
+    }
+    if (pathname === "/bosstiary/parties") {
+      return location.pathname === "/bosstiary/parties" || location.pathname.startsWith("/bosstiary/parties/");
     }
     if (pathname === "/forum") {
       return location.pathname === "/forum" || location.pathname.startsWith("/forum/");
