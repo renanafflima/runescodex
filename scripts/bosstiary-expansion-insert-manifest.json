@@ -1,0 +1,1813 @@
+{
+  "generatedAt": "2026-11-13T18:52:05.496Z",
+  "source": "scripts/bosstiary-catalog-final-validation.json",
+  "insertCount": 295,
+  "preservedExistingTargets": [
+    "abyssador",
+    "banebringer",
+    "black-knight",
+    "bragrumol",
+    "count-vlarkor",
+    "deathstrike",
+    "drume",
+    "duke-krenos",
+    "fluffy",
+    "gnomevil",
+    "grand-master-oberon",
+    "kroazur",
+    "lord-azaram",
+    "mazoran",
+    "ragiaz",
+    "scarlett-etzel",
+    "sir-nicator",
+    "timira-the-many",
+    "xenia",
+    "yube"
+  ],
+  "excludedSlugs": [
+    "owin-criatura",
+    "the-first-dragon-criatura",
+    "tentuglys-head",
+    "tentugly-s-head",
+    "hatebreeder"
+  ],
+  "aliasWikiSlugsSkipped": [
+    "count-vlarkorth",
+    "duke-krule",
+    "sir-nictros",
+    "timira-the-many-headed"
+  ],
+  "expectedTotalAfterMigration": 315,
+  "bosses": [
+    {
+      "slug": "adlerauge",
+      "name": "Adlerauge",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Adlerauge"
+    },
+    {
+      "slug": "adventurer-group",
+      "name": "Adventurer Group",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Adventurer_Group"
+    },
+    {
+      "slug": "ahau",
+      "name": "Ahau",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ahau"
+    },
+    {
+      "slug": "alptramun",
+      "name": "Alptramun",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Alptramun"
+    },
+    {
+      "slug": "amenef-the-burning",
+      "name": "Amenef The Burning",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Amenef_The_Burning"
+    },
+    {
+      "slug": "ancient-spawn-of-morgathla",
+      "name": "Ancient Spawn of Morgathla",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ancient_Spawn_of_Morgathla"
+    },
+    {
+      "slug": "anmothra",
+      "name": "Anmothra",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Anmothra"
+    },
+    {
+      "slug": "annihilon",
+      "name": "Annihilon",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Annihilon"
+    },
+    {
+      "slug": "anomaly",
+      "name": "Anomaly",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Anomaly"
+    },
+    {
+      "slug": "arachir-the-ancient-one",
+      "name": "Arachir the Ancient One",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Arachir_the_Ancient_One"
+    },
+    {
+      "slug": "arbaziloth",
+      "name": "Arbaziloth",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Arbaziloth"
+    },
+    {
+      "slug": "arthei",
+      "name": "Arthei",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Arthei"
+    },
+    {
+      "slug": "arthom-the-hunter",
+      "name": "Arthom the Hunter",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Arthom_the_Hunter"
+    },
+    {
+      "slug": "ashmunrah",
+      "name": "Ashmunrah",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ashmunrah"
+    },
+    {
+      "slug": "atab",
+      "name": "Atab",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Atab"
+    },
+    {
+      "slug": "ayana-the-crimson-curse",
+      "name": "Ayana the Crimson Curse",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ayana_the_Crimson_Curse"
+    },
+    {
+      "slug": "bakragore",
+      "name": "Bakragore",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Bakragore"
+    },
+    {
+      "slug": "bane-lord",
+      "name": "Bane Lord",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Bane_Lord"
+    },
+    {
+      "slug": "barbaria",
+      "name": "Barbaria",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Barbaria"
+    },
+    {
+      "slug": "battlemaster-zunzu",
+      "name": "Battlemaster Zunzu",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Battlemaster_Zunzu"
+    },
+    {
+      "slug": "bibby-bloodbath",
+      "name": "Bibby Bloodbath",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Bibby_Bloodbath"
+    },
+    {
+      "slug": "big-boss-trolliver",
+      "name": "Big Boss Trolliver",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Big_Boss_Trolliver"
+    },
+    {
+      "slug": "black-vixen",
+      "name": "Black Vixen",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Black_Vixen"
+    },
+    {
+      "slug": "blight-mariner",
+      "name": "Blight Mariner",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Blight_Mariner"
+    },
+    {
+      "slug": "bloodback",
+      "name": "Bloodback",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Bloodback"
+    },
+    {
+      "slug": "bone-overlord",
+      "name": "Bone Overlord",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Bone_Overlord"
+    },
+    {
+      "slug": "boogey",
+      "name": "Boogey",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Boogey"
+    },
+    {
+      "slug": "boreth",
+      "name": "Boreth",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Boreth"
+    },
+    {
+      "slug": "brain-head",
+      "name": "Brain Head",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Brain_Head"
+    },
+    {
+      "slug": "brokul",
+      "name": "Brokul",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Brokul"
+    },
+    {
+      "slug": "bullwark",
+      "name": "Bullwark",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Bullwark"
+    },
+    {
+      "slug": "burster",
+      "name": "Burster",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Burster"
+    },
+    {
+      "slug": "captain-jones",
+      "name": "Captain Jones",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Captain_Jones"
+    },
+    {
+      "slug": "chagorz",
+      "name": "Chagorz",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Chagorz"
+    },
+    {
+      "slug": "chikhaton",
+      "name": "Chikhaton",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Chikhaton"
+    },
+    {
+      "slug": "chizzoron-the-distorter",
+      "name": "Chizzoron the Distorter",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Chizzoron_the_Distorter"
+    },
+    {
+      "slug": "chopper",
+      "name": "Chopper",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Chopper"
+    },
+    {
+      "slug": "clavius",
+      "name": "Clavius",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Clavius"
+    },
+    {
+      "slug": "countess-sorrow",
+      "name": "Countess Sorrow",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Countess_Sorrow"
+    },
+    {
+      "slug": "court-warlock",
+      "name": "Court Warlock",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Court_Warlock"
+    },
+    {
+      "slug": "cublarc-the-plunderer",
+      "name": "Cublarc the Plunderer",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Cublarc_the_Plunderer"
+    },
+    {
+      "slug": "custodian",
+      "name": "Custodian",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Custodian"
+    },
+    {
+      "slug": "darkfang",
+      "name": "Darkfang",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Darkfang"
+    },
+    {
+      "slug": "dazed-leaf-golem",
+      "name": "Dazed Leaf Golem",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dazed_Leaf_Golem"
+    },
+    {
+      "slug": "death-priest-shargon",
+      "name": "Death Priest Shargon",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Death_Priest_Shargon"
+    },
+    {
+      "slug": "deep-terror",
+      "name": "Deep Terror",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Deep_Terror"
+    },
+    {
+      "slug": "devovorga",
+      "name": "Devovorga",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Devovorga"
+    },
+    {
+      "slug": "dharalion",
+      "name": "Dharalion",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dharalion"
+    },
+    {
+      "slug": "diblis-the-fair",
+      "name": "Diblis the Fair",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Diblis_the_Fair"
+    },
+    {
+      "slug": "dipthrah",
+      "name": "Dipthrah",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dipthrah"
+    },
+    {
+      "slug": "dirtbeard",
+      "name": "Dirtbeard",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dirtbeard"
+    },
+    {
+      "slug": "diseased-bill",
+      "name": "Diseased Bill",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Diseased_Bill"
+    },
+    {
+      "slug": "diseased-dan",
+      "name": "Diseased Dan",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Diseased_Dan"
+    },
+    {
+      "slug": "diseased-fred",
+      "name": "Diseased Fred",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Diseased_Fred"
+    },
+    {
+      "slug": "doctor-perhaps",
+      "name": "Doctor Perhaps",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Doctor_Perhaps"
+    },
+    {
+      "slug": "dracola",
+      "name": "Dracola",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dracola"
+    },
+    {
+      "slug": "dragon-pack",
+      "name": "Dragon Pack",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dragon_Pack"
+    },
+    {
+      "slug": "dreadful-disruptor",
+      "name": "Dreadful Disruptor",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dreadful_Disruptor"
+    },
+    {
+      "slug": "dreadmaw",
+      "name": "Dreadmaw",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dreadmaw"
+    },
+    {
+      "slug": "earl-osam",
+      "name": "Earl Osam",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Earl_Osam"
+    },
+    {
+      "slug": "ekatrix",
+      "name": "Ekatrix",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ekatrix"
+    },
+    {
+      "slug": "eldritch-dragon-lord",
+      "name": "Eldritch Dragon Lord",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Eldritch_Dragon_Lord"
+    },
+    {
+      "slug": "elvira-hammerthrust",
+      "name": "Elvira Hammerthrust",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Elvira_Hammerthrust"
+    },
+    {
+      "slug": "enusat-the-onyx-wing",
+      "name": "Enusat The Onyx Wing",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Enusat_The_Onyx_Wing"
+    },
+    {
+      "slug": "eradicator",
+      "name": "Eradicator",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Eradicator"
+    },
+    {
+      "slug": "essence-of-malice",
+      "name": "Essence Of Malice",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Essence_Of_Malice"
+    },
+    {
+      "slug": "evil-mastermind",
+      "name": "Evil Mastermind",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Evil_Mastermind"
+    },
+    {
+      "slug": "faceless-bane",
+      "name": "Faceless Bane",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Faceless_Bane"
+    },
+    {
+      "slug": "feroxa-mortal",
+      "name": "Feroxa (Mortal)",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Feroxa_(Mortal)"
+    },
+    {
+      "slug": "ferumbras",
+      "name": "Ferumbras",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ferumbras"
+    },
+    {
+      "slug": "ferumbras-mortal-shell",
+      "name": "Ferumbras Mortal Shell",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ferumbras_Mortal_Shell"
+    },
+    {
+      "slug": "flamecaller-zazrak",
+      "name": "Flamecaller Zazrak",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Flamecaller_Zazrak"
+    },
+    {
+      "slug": "fleabringer",
+      "name": "Fleabringer",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Fleabringer"
+    },
+    {
+      "slug": "fleshslicer",
+      "name": "Fleshslicer",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Fleshslicer"
+    },
+    {
+      "slug": "foreman-kneebiter",
+      "name": "Foreman Kneebiter",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Foreman_Kneebiter"
+    },
+    {
+      "slug": "furyosa",
+      "name": "Furyosa",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Furyosa"
+    },
+    {
+      "slug": "gaffir",
+      "name": "Gaffir",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gaffir"
+    },
+    {
+      "slug": "gazharagoth",
+      "name": "Gaz'Haragoth",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gaz'Haragoth"
+    },
+    {
+      "slug": "gelidrazah-the-frozen",
+      "name": "Gelidrazah the Frozen",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gelidrazah_the_Frozen"
+    },
+    {
+      "slug": "general-murius",
+      "name": "General Murius",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/General_Murius"
+    },
+    {
+      "slug": "ghazbaran",
+      "name": "Ghazbaran",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ghazbaran"
+    },
+    {
+      "slug": "ghulosh",
+      "name": "Ghulosh",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ghulosh"
+    },
+    {
+      "slug": "glitterscale",
+      "name": "Glitterscale",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Glitterscale"
+    },
+    {
+      "slug": "glooth-fairy",
+      "name": "Glooth Fairy",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Glooth_Fairy"
+    },
+    {
+      "slug": "golgordan",
+      "name": "Golgordan",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Golgordan"
+    },
+    {
+      "slug": "gorga",
+      "name": "Gorga",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gorga"
+    },
+    {
+      "slug": "gorzindel",
+      "name": "Gorzindel",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gorzindel"
+    },
+    {
+      "slug": "goshnars-cruelty",
+      "name": "Goshnar's Cruelty",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Cruelty"
+    },
+    {
+      "slug": "goshnars-greed",
+      "name": "Goshnar's Greed",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Greed"
+    },
+    {
+      "slug": "goshnars-hatred",
+      "name": "Goshnar's Hatred",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Hatred"
+    },
+    {
+      "slug": "goshnars-malice",
+      "name": "Goshnar's Malice",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Malice"
+    },
+    {
+      "slug": "goshnars-megalomania",
+      "name": "Goshnar's Megalomania",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Megalomania"
+    },
+    {
+      "slug": "goshnars-spite",
+      "name": "Goshnar's Spite",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Spite"
+    },
+    {
+      "slug": "gralvalon",
+      "name": "Gralvalon",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gralvalon"
+    },
+    {
+      "slug": "grand-canon-dominus",
+      "name": "Grand Canon Dominus",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Grand_Canon_Dominus"
+    },
+    {
+      "slug": "grand-chaplain-gaunder",
+      "name": "Grand Chaplain Gaunder",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Grand_Chaplain_Gaunder"
+    },
+    {
+      "slug": "grand-commander-soeren",
+      "name": "Grand Commander Soeren",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Grand_Commander_Soeren"
+    },
+    {
+      "slug": "grand-mother-foulscale",
+      "name": "Grand Mother Foulscale",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Grand_Mother_Foulscale"
+    },
+    {
+      "slug": "grandfather-tridian",
+      "name": "Grandfather Tridian",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Grandfather_Tridian"
+    },
+    {
+      "slug": "gravelord-oshuran",
+      "name": "Gravelord Oshuran",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gravelord_Oshuran"
+    },
+    {
+      "slug": "groam",
+      "name": "Groam",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Groam"
+    },
+    {
+      "slug": "grorlam",
+      "name": "Grorlam",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Grorlam"
+    },
+    {
+      "slug": "guard-captain-quaid",
+      "name": "Guard Captain Quaid",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Guard_Captain_Quaid"
+    },
+    {
+      "slug": "hairman-the-huge",
+      "name": "Hairman The Huge",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Hairman_The_Huge"
+    },
+    {
+      "slug": "hellgorak",
+      "name": "Hellgorak",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Hellgorak"
+    },
+    {
+      "slug": "heoni",
+      "name": "Heoni",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Heoni"
+    },
+    {
+      "slug": "herald-of-fire",
+      "name": "Herald of Fire",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Herald_of_Fire"
+    },
+    {
+      "slug": "high-templar-cobrass",
+      "name": "High Templar Cobrass",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/High_Templar_Cobrass"
+    },
+    {
+      "slug": "hirintror",
+      "name": "Hirintror",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Hirintror"
+    },
+    {
+      "slug": "horestis",
+      "name": "Horestis",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Horestis"
+    },
+    {
+      "slug": "ice-horror",
+      "name": "Ice Horror",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ice_Horror"
+    },
+    {
+      "slug": "ichgahal",
+      "name": "Ichgahal",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ichgahal"
+    },
+    {
+      "slug": "inkwing",
+      "name": "Inkwing",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Inkwing"
+    },
+    {
+      "slug": "irahsae",
+      "name": "Irahsae",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Irahsae"
+    },
+    {
+      "slug": "irgix-the-flimsy",
+      "name": "Irgix the Flimsy",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Irgix_the_Flimsy"
+    },
+    {
+      "slug": "izcandar-champion-of-summer",
+      "name": "Izcandar Champion of Summer",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Izcandar_Champion_of_Summer"
+    },
+    {
+      "slug": "izcandar-champion-of-winter",
+      "name": "Izcandar Champion of Winter",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Izcandar_Champion_of_Winter"
+    },
+    {
+      "slug": "izcandar-the-banished",
+      "name": "Izcandar the Banished",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Izcandar_the_Banished"
+    },
+    {
+      "slug": "jailer",
+      "name": "Jailer",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Jailer"
+    },
+    {
+      "slug": "jaul",
+      "name": "Jaul",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Jaul"
+    },
+    {
+      "slug": "jesse-the-wicked",
+      "name": "Jesse the Wicked",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Jesse_the_Wicked"
+    },
+    {
+      "slug": "kalyassa",
+      "name": "Kalyassa",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Kalyassa"
+    },
+    {
+      "slug": "katex-blood-tongue",
+      "name": "Katex Blood Tongue",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Katex_Blood_Tongue"
+    },
+    {
+      "slug": "king-chuck",
+      "name": "King Chuck",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/King_Chuck"
+    },
+    {
+      "slug": "king-zelos",
+      "name": "King Zelos",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/King_Zelos"
+    },
+    {
+      "slug": "kusuma",
+      "name": "Kusuma",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Kusuma"
+    },
+    {
+      "slug": "lady-tenebris",
+      "name": "Lady Tenebris",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lady_Tenebris"
+    },
+    {
+      "slug": "latrivan",
+      "name": "Latrivan",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Latrivan"
+    },
+    {
+      "slug": "lersatio",
+      "name": "Lersatio",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lersatio"
+    },
+    {
+      "slug": "lisa",
+      "name": "Lisa",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lisa"
+    },
+    {
+      "slug": "lizard-gate-guardian",
+      "name": "Lizard Gate Guardian",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lizard_Gate_Guardian"
+    },
+    {
+      "slug": "lloyd",
+      "name": "Lloyd",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lloyd"
+    },
+    {
+      "slug": "lokathmor",
+      "name": "Lokathmor",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lokathmor"
+    },
+    {
+      "slug": "lord-of-the-elements",
+      "name": "Lord of the Elements",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lord_of_the_Elements"
+    },
+    {
+      "slug": "lord-retro",
+      "name": "Lord Retro",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lord_Retro"
+    },
+    {
+      "slug": "mad-mage",
+      "name": "Mad Mage",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mad_Mage"
+    },
+    {
+      "slug": "madareth",
+      "name": "Madareth",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Madareth"
+    },
+    {
+      "slug": "magma-bubble",
+      "name": "Magma Bubble",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Magma_Bubble"
+    },
+    {
+      "slug": "mahatheb",
+      "name": "Mahatheb",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mahatheb"
+    },
+    {
+      "slug": "mahrdis",
+      "name": "Mahrdis",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mahrdis"
+    },
+    {
+      "slug": "maior-domus",
+      "name": "Maior Domus",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Maior_Domus"
+    },
+    {
+      "slug": "malofur-mangrinder",
+      "name": "Malofur Mangrinder",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Malofur_Mangrinder"
+    },
+    {
+      "slug": "malvaroth",
+      "name": "Malvaroth",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Malvaroth"
+    },
+    {
+      "slug": "man-in-the-cave",
+      "name": "Man In The Cave",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Man_In_The_Cave"
+    },
+    {
+      "slug": "marziel",
+      "name": "Marziel",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Marziel"
+    },
+    {
+      "slug": "massacre",
+      "name": "Massacre",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Massacre"
+    },
+    {
+      "slug": "maw",
+      "name": "Maw",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Maw"
+    },
+    {
+      "slug": "mawhawk",
+      "name": "Mawhawk",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mawhawk"
+    },
+    {
+      "slug": "maxxenius",
+      "name": "Maxxenius",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Maxxenius"
+    },
+    {
+      "slug": "mazzinor",
+      "name": "Mazzinor",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mazzinor"
+    },
+    {
+      "slug": "megasylvan-yselda",
+      "name": "Megasylvan Yselda",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Megasylvan_Yselda"
+    },
+    {
+      "slug": "melting-frozen-horror",
+      "name": "Melting Frozen Horror",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Melting_Frozen_Horror"
+    },
+    {
+      "slug": "mephiles",
+      "name": "Mephiles",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mephiles"
+    },
+    {
+      "slug": "michael-the-stalwart",
+      "name": "Michael the Stalwart",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Michael_the_Stalwart"
+    },
+    {
+      "slug": "mimar-haffar",
+      "name": "Mimar Haffar",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mimar_Haffar"
+    },
+    {
+      "slug": "mindmasher",
+      "name": "Mindmasher",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mindmasher"
+    },
+    {
+      "slug": "mitmah-vanguard",
+      "name": "Mitmah Vanguard",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mitmah_Vanguard"
+    },
+    {
+      "slug": "monstor",
+      "name": "Monstor",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Monstor"
+    },
+    {
+      "slug": "morgaroth",
+      "name": "Morgaroth",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Morgaroth"
+    },
+    {
+      "slug": "morguthis",
+      "name": "Morguthis",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Morguthis"
+    },
+    {
+      "slug": "mornenion",
+      "name": "Mornenion",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mornenion"
+    },
+    {
+      "slug": "morshabaal",
+      "name": "Morshabaal",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Morshabaal"
+    },
+    {
+      "slug": "mozradek",
+      "name": "Mozradek",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mozradek"
+    },
+    {
+      "slug": "mr-punish",
+      "name": "Mr. Punish",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mr._Punish"
+    },
+    {
+      "slug": "murcion",
+      "name": "Murcion",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Murcion"
+    },
+    {
+      "slug": "neferi-the-spy",
+      "name": "Neferi The Spy",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Neferi_The_Spy"
+    },
+    {
+      "slug": "obujos",
+      "name": "Obujos",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Obujos"
+    },
+    {
+      "slug": "ocyakao",
+      "name": "Ocyakao",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ocyakao"
+    },
+    {
+      "slug": "omrafir",
+      "name": "Omrafir",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Omrafir"
+    },
+    {
+      "slug": "omruc",
+      "name": "Omruc",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Omruc"
+    },
+    {
+      "slug": "oodok-witchmaster",
+      "name": "Oodok Witchmaster",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Oodok_Witchmaster"
+    },
+    {
+      "slug": "orshabaal",
+      "name": "Orshabaal",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Orshabaal"
+    },
+    {
+      "slug": "outburst",
+      "name": "Outburst",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Outburst"
+    },
+    {
+      "slug": "overseer-osverger",
+      "name": "Overseer Osverger",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Overseer_Osverger"
+    },
+    {
+      "slug": "phosphorus",
+      "name": "Phosphorus",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Phosphorus"
+    },
+    {
+      "slug": "phrodomo",
+      "name": "Phrodomo",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Phrodomo"
+    },
+    {
+      "slug": "plagirath",
+      "name": "Plagirath",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Plagirath"
+    },
+    {
+      "slug": "plagueroot",
+      "name": "Plagueroot",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Plagueroot"
+    },
+    {
+      "slug": "preceptor-lazare",
+      "name": "Preceptor Lazare",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Preceptor_Lazare"
+    },
+    {
+      "slug": "professor-maxxen",
+      "name": "Professor Maxxen",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Professor_Maxxen"
+    },
+    {
+      "slug": "raging-mage",
+      "name": "Raging Mage",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Raging_Mage"
+    },
+    {
+      "slug": "rahemos",
+      "name": "Rahemos",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rahemos"
+    },
+    {
+      "slug": "rakesh-moonfang",
+      "name": "Rakesh Moonfang",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rakesh_Moonfang"
+    },
+    {
+      "slug": "ratmiral-blackwhiskers",
+      "name": "Ratmiral Blackwhiskers",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ratmiral_Blackwhiskers"
+    },
+    {
+      "slug": "ravenous-hunger",
+      "name": "Ravenous Hunger",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ravenous_Hunger"
+    },
+    {
+      "slug": "raxias",
+      "name": "Raxias",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Raxias"
+    },
+    {
+      "slug": "razzagorn",
+      "name": "Razzagorn",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Razzagorn"
+    },
+    {
+      "slug": "realityquake",
+      "name": "Realityquake",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Realityquake"
+    },
+    {
+      "slug": "robby-the-reckless",
+      "name": "Robby the Reckless",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Robby_the_Reckless"
+    },
+    {
+      "slug": "rotrender",
+      "name": "Rotrender",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rotrender"
+    },
+    {
+      "slug": "rotspit",
+      "name": "Rotspit",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rotspit"
+    },
+    {
+      "slug": "rotworm-queen",
+      "name": "Rotworm Queen",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rotworm_Queen"
+    },
+    {
+      "slug": "rukor-zad",
+      "name": "Rukor Zad",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rukor_Zad"
+    },
+    {
+      "slug": "rupture",
+      "name": "Rupture",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rupture"
+    },
+    {
+      "slug": "shadowpelt",
+      "name": "Shadowpelt",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Shadowpelt"
+    },
+    {
+      "slug": "shadowstalker",
+      "name": "Shadowstalker",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Shadowstalker"
+    },
+    {
+      "slug": "sharpclaw",
+      "name": "Sharpclaw",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sharpclaw"
+    },
+    {
+      "slug": "shlorg",
+      "name": "Shlorg",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Shlorg"
+    },
+    {
+      "slug": "shulgrax",
+      "name": "Shulgrax",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Shulgrax"
+    },
+    {
+      "slug": "sir-baeloc",
+      "name": "Sir Baeloc",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sir_Baeloc"
+    },
+    {
+      "slug": "sir-leonard",
+      "name": "Sir Leonard",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sir_Leonard"
+    },
+    {
+      "slug": "sir-leopold",
+      "name": "Sir Leopold",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sir_Leopold"
+    },
+    {
+      "slug": "sir-valorcrest",
+      "name": "Sir Valorcrest",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sir_Valorcrest"
+    },
+    {
+      "slug": "sister-hetai",
+      "name": "Sister Hetai",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sister_Hetai"
+    },
+    {
+      "slug": "smuggler-baron-silvertoe",
+      "name": "Smuggler Baron Silvertoe",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Smuggler_Baron_Silvertoe"
+    },
+    {
+      "slug": "soul-of-dragonking-zyrtarch",
+      "name": "Soul of Dragonking Zyrtarch",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Soul_of_Dragonking_Zyrtarch"
+    },
+    {
+      "slug": "srezz-yellow-eyes",
+      "name": "Srezz Yellow Eyes",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Srezz_Yellow_Eyes"
+    },
+    {
+      "slug": "sugar-daddy",
+      "name": "Sugar Daddy",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sugar_Daddy"
+    },
+    {
+      "slug": "sugar-mommy",
+      "name": "Sugar Mommy",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sugar_Mommy"
+    },
+    {
+      "slug": "tamru-the-black",
+      "name": "Tamru the Black",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tamru_the_Black"
+    },
+    {
+      "slug": "tanjis",
+      "name": "Tanjis",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tanjis"
+    },
+    {
+      "slug": "tarbaz",
+      "name": "Tarbaz",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tarbaz"
+    },
+    {
+      "slug": "tazhadur",
+      "name": "Tazhadur",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tazhadur"
+    },
+    {
+      "slug": "teneshpar",
+      "name": "Teneshpar",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Teneshpar"
+    },
+    {
+      "slug": "thaian",
+      "name": "Thaian",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Thaian"
+    },
+    {
+      "slug": "thalas",
+      "name": "Thalas",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Thalas"
+    },
+    {
+      "slug": "thawing-dragon-lord",
+      "name": "Thawing Dragon Lord",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Thawing_Dragon_Lord"
+    },
+    {
+      "slug": "the-abomination",
+      "name": "The Abomination",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Abomination"
+    },
+    {
+      "slug": "the-baron-from-below",
+      "name": "The Baron from Below",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Baron_from_Below"
+    },
+    {
+      "slug": "the-big-bad-one",
+      "name": "The Big Bad One",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Big_Bad_One"
+    },
+    {
+      "slug": "the-blazing-rose",
+      "name": "The Blazing Rose",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Blazing_Rose"
+    },
+    {
+      "slug": "the-blightfather",
+      "name": "The Blightfather",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Blightfather"
+    },
+    {
+      "slug": "the-brainstealer",
+      "name": "The Brainstealer",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Brainstealer"
+    },
+    {
+      "slug": "the-count-of-the-core",
+      "name": "The Count Of The Core",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Count_Of_The_Core"
+    },
+    {
+      "slug": "the-diamond-blossom",
+      "name": "The Diamond Blossom",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Diamond_Blossom"
+    },
+    {
+      "slug": "the-dread-maiden",
+      "name": "The Dread Maiden",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Dread_Maiden"
+    },
+    {
+      "slug": "the-duke-of-the-depths",
+      "name": "The Duke Of The Depths",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Duke_Of_The_Depths"
+    },
+    {
+      "slug": "the-enraged-thorn-knight",
+      "name": "The Enraged Thorn Knight",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Enraged_Thorn_Knight"
+    },
+    {
+      "slug": "the-evil-eye",
+      "name": "The Evil Eye",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Evil_Eye"
+    },
+    {
+      "slug": "the-false-god",
+      "name": "The False God",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_False_God"
+    },
+    {
+      "slug": "the-fear-feaster",
+      "name": "The Fear Feaster",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Fear_Feaster"
+    },
+    {
+      "slug": "the-flaming-orchid",
+      "name": "The Flaming Orchid",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Flaming_Orchid"
+    },
+    {
+      "slug": "the-frog-prince",
+      "name": "The Frog Prince",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Frog_Prince"
+    },
+    {
+      "slug": "the-gravedigger",
+      "name": "The Gravedigger",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Gravedigger"
+    },
+    {
+      "slug": "the-handmaiden",
+      "name": "The Handmaiden",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Handmaiden"
+    },
+    {
+      "slug": "the-hungerer",
+      "name": "The Hungerer",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Hungerer"
+    },
+    {
+      "slug": "the-imperor",
+      "name": "The Imperor",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Imperor"
+    },
+    {
+      "slug": "the-last-lore-keeper",
+      "name": "The Last Lore Keeper",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Last_Lore_Keeper"
+    },
+    {
+      "slug": "the-lily-of-night",
+      "name": "The Lily Of Night",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Lily_Of_Night"
+    },
+    {
+      "slug": "the-lord-of-the-lice",
+      "name": "The Lord of the Lice",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Lord_of_the_Lice"
+    },
+    {
+      "slug": "the-manhunter",
+      "name": "The Manhunter",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Manhunter"
+    },
+    {
+      "slug": "the-mean-masher",
+      "name": "The Mean Masher",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Mean_Masher"
+    },
+    {
+      "slug": "the-mega-magmaoid",
+      "name": "The Mega Magmaoid",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Mega_Magmaoid"
+    },
+    {
+      "slug": "the-monster",
+      "name": "The Monster",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Monster"
+    },
+    {
+      "slug": "the-moonlight-aster",
+      "name": "The Moonlight Aster",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Moonlight_Aster"
+    },
+    {
+      "slug": "the-moonsnow-magnolia",
+      "name": "The Moonsnow Magnolia",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Moonsnow_Magnolia"
+    },
+    {
+      "slug": "the-mutated-pumpkin",
+      "name": "The Mutated Pumpkin",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Mutated_Pumpkin"
+    },
+    {
+      "slug": "the-nightmare-beast",
+      "name": "The Nightmare Beast",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Nightmare_Beast"
+    },
+    {
+      "slug": "the-old-whopper",
+      "name": "The Old Whopper",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Old_Whopper"
+    },
+    {
+      "slug": "the-pale-count",
+      "name": "The Pale Count",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Pale_Count"
+    },
+    {
+      "slug": "the-pale-worm",
+      "name": "The Pale Worm",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Pale_Worm"
+    },
+    {
+      "slug": "the-percht-queen",
+      "name": "The Percht Queen",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Percht_Queen"
+    },
+    {
+      "slug": "the-plasmother",
+      "name": "The Plasmother",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Plasmother"
+    },
+    {
+      "slug": "the-ravager",
+      "name": "The Ravager",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Ravager"
+    },
+    {
+      "slug": "the-rootkraken",
+      "name": "The Rootkraken",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Rootkraken"
+    },
+    {
+      "slug": "the-sandking",
+      "name": "The Sandking",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Sandking"
+    },
+    {
+      "slug": "the-scourge-of-oblivion",
+      "name": "The Scourge of Oblivion",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Scourge_of_Oblivion"
+    },
+    {
+      "slug": "the-shatterer",
+      "name": "The Shatterer",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Shatterer"
+    },
+    {
+      "slug": "the-souldespoiler",
+      "name": "The Souldespoiler",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Souldespoiler"
+    },
+    {
+      "slug": "the-source-of-corruption",
+      "name": "The Source Of Corruption",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Source_Of_Corruption"
+    },
+    {
+      "slug": "the-time-guardian",
+      "name": "The Time Guardian",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Time_Guardian"
+    },
+    {
+      "slug": "the-unarmored-voidborn",
+      "name": "The Unarmored Voidborn",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Unarmored_Voidborn"
+    },
+    {
+      "slug": "the-unwelcome",
+      "name": "The Unwelcome",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Unwelcome"
+    },
+    {
+      "slug": "the-voice-of-ruin",
+      "name": "The Voice of Ruin",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Voice_of_Ruin"
+    },
+    {
+      "slug": "the-welter",
+      "name": "The Welter",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Welter"
+    },
+    {
+      "slug": "the-winter-bloom",
+      "name": "The Winter Bloom",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Winter_Bloom"
+    },
+    {
+      "slug": "tropical-desolator",
+      "name": "Tropical Desolator",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tropical_Desolator"
+    },
+    {
+      "slug": "twisterror",
+      "name": "Twisterror",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Twisterror"
+    },
+    {
+      "slug": "tyrn",
+      "name": "Tyrn",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tyrn"
+    },
+    {
+      "slug": "tzumrah-the-dazzler",
+      "name": "Tzumrah the Dazzler",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tzumrah_the_Dazzler"
+    },
+    {
+      "slug": "unaz-the-mean",
+      "name": "Unaz the Mean",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Unaz_the_Mean"
+    },
+    {
+      "slug": "urmahlullu-the-weakened",
+      "name": "Urmahlullu the Weakened",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Urmahlullu_the_Weakened"
+    },
+    {
+      "slug": "ushuriel",
+      "name": "Ushuriel",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ushuriel"
+    },
+    {
+      "slug": "utua-stone-sting",
+      "name": "Utua Stone Sting",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Utua_Stone_Sting"
+    },
+    {
+      "slug": "vashresamun",
+      "name": "Vashresamun",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Vashresamun"
+    },
+    {
+      "slug": "vemiath",
+      "name": "Vemiath",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Vemiath"
+    },
+    {
+      "slug": "vladrukh",
+      "name": "Vladrukh",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Vladrukh"
+    },
+    {
+      "slug": "vok-the-freakish",
+      "name": "Vok the Freakish",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Vok_the_Freakish"
+    },
+    {
+      "slug": "warlord-ruzad",
+      "name": "Warlord Ruzad",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Warlord_Ruzad"
+    },
+    {
+      "slug": "white-pale",
+      "name": "White Pale",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/White_Pale"
+    },
+    {
+      "slug": "willi-wasp",
+      "name": "Willi Wasp",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Willi_Wasp"
+    },
+    {
+      "slug": "world-devourer",
+      "name": "World Devourer",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/World_Devourer"
+    },
+    {
+      "slug": "wrathful-archivist",
+      "name": "Wrathful Archivist",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Wrathful_Archivist"
+    },
+    {
+      "slug": "xogixath",
+      "name": "Xogixath",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Xogixath"
+    },
+    {
+      "slug": "yaga-the-crone",
+      "name": "Yaga the Crone",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Yaga_the_Crone"
+    },
+    {
+      "slug": "yakchal",
+      "name": "Yakchal",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Yakchal"
+    },
+    {
+      "slug": "yirkas-blue-scales",
+      "name": "Yirkas Blue Scales",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Yirkas_Blue_Scales"
+    },
+    {
+      "slug": "zamulosh",
+      "name": "Zamulosh",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zamulosh"
+    },
+    {
+      "slug": "zarabustor",
+      "name": "Zarabustor",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zarabustor"
+    },
+    {
+      "slug": "zevelon-duskbringer",
+      "name": "Zevelon Duskbringer",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zevelon_Duskbringer"
+    },
+    {
+      "slug": "zomba",
+      "name": "Zomba",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zomba"
+    },
+    {
+      "slug": "zorvorax",
+      "name": "Zorvorax",
+      "officialCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zorvorax"
+    },
+    {
+      "slug": "zugurosh",
+      "name": "Zugurosh",
+      "officialCategory": "Bane",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zugurosh"
+    },
+    {
+      "slug": "zulazza-the-corruptor",
+      "name": "Zulazza the Corruptor",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zulazza_the_Corruptor"
+    },
+    {
+      "slug": "zushuka",
+      "name": "Zushuka",
+      "officialCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zushuka"
+    }
+  ]
+}

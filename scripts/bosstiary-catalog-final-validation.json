@@ -1,0 +1,3080 @@
+{
+  "generatedAt": "2026-11-13T18:45:13.039Z",
+  "inputs": [
+    "scripts/bosstiary-catalog-audit.json",
+    "scripts/bosstiary-catalog-confirmed.json",
+    "scripts/bosstiary-catalog-pending.json",
+    "scripts/bosstiary-wiki-aliases.json",
+    "scripts/bosses-extracted.json",
+    "scripts/bosstiary-enrichment-targets.json",
+    "scripts/bosstiary-enrichment-status.json",
+    "scripts/.tmp-official-bosstiary-wiki.json"
+  ],
+  "reconciliation": {
+    "confirmedFromCandidateAudit": 314,
+    "runecodexTargetsTotal": 20,
+    "runecodexConfirmedBosstiaryIdentities": 17,
+    "runecodexLegacyNotInBosstiary": 3,
+    "newValidExpansionBosses": 297,
+    "expectedNewBySubtraction": 297,
+    "auditReportedNewBeyondTwenty": 301,
+    "auditMetricGap": 4,
+    "fourSlugsInflatingAuditMetric": [
+      {
+        "wikiSlug": "count-vlarkorth",
+        "officialWikiName": "Count Vlarkorth",
+        "runecodexSlug": "count-vlarkor",
+        "explanation": "Contado em newConfirmedBeyondTwenty porque o slug wiki não está em bosstiary-enrichment-targets.json, embora o boss já esteja no Neon sob slug interno diferente."
+      },
+      {
+        "wikiSlug": "duke-krule",
+        "officialWikiName": "Duke Krule",
+        "runecodexSlug": "duke-krenos",
+        "explanation": "Contado em newConfirmedBeyondTwenty porque o slug wiki não está em bosstiary-enrichment-targets.json, embora o boss já esteja no Neon sob slug interno diferente."
+      },
+      {
+        "wikiSlug": "sir-nictros",
+        "officialWikiName": "Sir Nictros",
+        "runecodexSlug": "sir-nicator",
+        "explanation": "Contado em newConfirmedBeyondTwenty porque o slug wiki não está em bosstiary-enrichment-targets.json, embora o boss já esteja no Neon sob slug interno diferente."
+      },
+      {
+        "wikiSlug": "timira-the-many-headed",
+        "officialWikiName": "Timira the Many-Headed",
+        "runecodexSlug": "timira-the-many",
+        "explanation": "Contado em newConfirmedBeyondTwenty porque o slug wiki não está em bosstiary-enrichment-targets.json, embora o boss já esteja no Neon sob slug interno diferente."
+      }
+    ],
+    "formula": "314 confirmados − 17 identidades wiki já no Neon = 297 novos; 301 − 4 slugs fantasmas de alias = 297."
+  },
+  "wiki316vs314": {
+    "wikiCategoryMemberSum": 316,
+    "wikiUniqueTitles": 316,
+    "confirmedClassifiedAmongCandidates": 314,
+    "differenceExplainedAs": "2 título(s) oficiais da Wiki não classificados entre os 538 candidatos (não é sobreposição de categorias).",
+    "titlesOfficialButNotInConfirmedAudit": [
+      {
+        "officialWikiName": "Tentugly's Head",
+        "proposedWikiSlug": "tentuglys-head",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tentugly's_Head",
+        "reason": "Candidato em bosses-extracted.json com nome de template MediaWiki, não casou com a lista oficial."
+      },
+      {
+        "officialWikiName": "Hatebreeder",
+        "proposedWikiSlug": "hatebreeder",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Hatebreeder",
+        "reason": "Ausente de bosses-extracted.json; não passou pela auditoria de candidatos."
+      }
+    ],
+    "categoryOverlapDetected": []
+  },
+  "currentTwenty": [
+    {
+      "runecodexSlug": "abyssador",
+      "registeredName": "Abyssador",
+      "officialWikiName": "Abyssador",
+      "wikiSlug": "abyssador",
+      "aliases": [],
+      "bosstiaryCategory": "Archfoe",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca",
+      "notes": []
+    },
+    {
+      "runecodexSlug": "banebringer",
+      "registeredName": "Banebringer",
+      "officialWikiName": null,
+      "wikiSlug": null,
+      "aliases": [],
+      "bosstiaryCategory": null,
+      "status": "NOT_IN_BOSSTIARY",
+      "matchCertainty": "legacy — sem entrada Bosstiary",
+      "notes": [
+        "Registro legacy; não desativar nesta etapa."
+      ]
+    },
+    {
+      "runecodexSlug": "black-knight",
+      "registeredName": "Black Knight",
+      "officialWikiName": "Black Knight",
+      "wikiSlug": "black-knight",
+      "aliases": [],
+      "bosstiaryCategory": "Bane",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca",
+      "notes": []
+    },
+    {
+      "runecodexSlug": "bragrumol",
+      "registeredName": "Bragrumol",
+      "officialWikiName": "Bragrumol",
+      "wikiSlug": "bragrumol",
+      "aliases": [],
+      "bosstiaryCategory": "Bane",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca",
+      "notes": []
+    },
+    {
+      "runecodexSlug": "count-vlarkor",
+      "registeredName": "Count Vlarkor",
+      "officialWikiName": "Count Vlarkorth",
+      "wikiSlug": "count-vlarkorth",
+      "aliases": [
+        "Count Vlarkorth"
+      ],
+      "bosstiaryCategory": "Archfoe",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca via alias",
+      "notes": [
+        "Alias explícito: Count Vlarkorth",
+        "Nome Neon \"Count Vlarkor\" difere do título wiki \"Count Vlarkorth\" (slug preservado)."
+      ]
+    },
+    {
+      "runecodexSlug": "deathstrike",
+      "registeredName": "Deathstrike",
+      "officialWikiName": "Deathstrike",
+      "wikiSlug": "deathstrike",
+      "aliases": [],
+      "bosstiaryCategory": "Archfoe",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca",
+      "notes": []
+    },
+    {
+      "runecodexSlug": "drume",
+      "registeredName": "Drume",
+      "officialWikiName": "Drume",
+      "wikiSlug": "drume",
+      "aliases": [],
+      "bosstiaryCategory": "Archfoe",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca",
+      "notes": []
+    },
+    {
+      "runecodexSlug": "duke-krenos",
+      "registeredName": "Duke Krenos",
+      "officialWikiName": "Duke Krule",
+      "wikiSlug": "duke-krule",
+      "aliases": [
+        "Duke Krule"
+      ],
+      "bosstiaryCategory": "Archfoe",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca via alias",
+      "notes": [
+        "Alias explícito: Duke Krule",
+        "Nome Neon \"Duke Krenos\" difere do título wiki \"Duke Krule\" (slug preservado)."
+      ]
+    },
+    {
+      "runecodexSlug": "fluffy",
+      "registeredName": "Fluffy",
+      "officialWikiName": "Fluffy",
+      "wikiSlug": null,
+      "aliases": [],
+      "bosstiaryCategory": null,
+      "status": "NOT_IN_BOSSTIARY",
+      "matchCertainty": "legacy — sem entrada Bosstiary",
+      "notes": [
+        "Registro legacy; não desativar nesta etapa."
+      ]
+    },
+    {
+      "runecodexSlug": "gnomevil",
+      "registeredName": "Gnomevil",
+      "officialWikiName": "Gnomevil",
+      "wikiSlug": "gnomevil",
+      "aliases": [],
+      "bosstiaryCategory": "Archfoe",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca",
+      "notes": []
+    },
+    {
+      "runecodexSlug": "grand-master-oberon",
+      "registeredName": "Grand Master Oberon",
+      "officialWikiName": "Grand Master Oberon",
+      "wikiSlug": "grand-master-oberon",
+      "aliases": [],
+      "bosstiaryCategory": "Archfoe",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca",
+      "notes": []
+    },
+    {
+      "runecodexSlug": "kroazur",
+      "registeredName": "Kroazur",
+      "officialWikiName": "Kroazur",
+      "wikiSlug": "kroazur",
+      "aliases": [],
+      "bosstiaryCategory": "Bane",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca",
+      "notes": []
+    },
+    {
+      "runecodexSlug": "lord-azaram",
+      "registeredName": "Lord Azaram",
+      "officialWikiName": "Lord Azaram",
+      "wikiSlug": "lord-azaram",
+      "aliases": [],
+      "bosstiaryCategory": "Archfoe",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca",
+      "notes": []
+    },
+    {
+      "runecodexSlug": "mazoran",
+      "registeredName": "Mazoran",
+      "officialWikiName": "Mazoran",
+      "wikiSlug": "mazoran",
+      "aliases": [],
+      "bosstiaryCategory": "Archfoe",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca",
+      "notes": []
+    },
+    {
+      "runecodexSlug": "ragiaz",
+      "registeredName": "Ragiaz",
+      "officialWikiName": "Ragiaz",
+      "wikiSlug": "ragiaz",
+      "aliases": [],
+      "bosstiaryCategory": "Archfoe",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca",
+      "notes": []
+    },
+    {
+      "runecodexSlug": "scarlett-etzel",
+      "registeredName": "Scarlett Etzel",
+      "officialWikiName": "Scarlett Etzel",
+      "wikiSlug": "scarlett-etzel",
+      "aliases": [],
+      "bosstiaryCategory": "Archfoe",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca",
+      "notes": []
+    },
+    {
+      "runecodexSlug": "sir-nicator",
+      "registeredName": "Sir Nicator",
+      "officialWikiName": "Sir Nictros",
+      "wikiSlug": "sir-nictros",
+      "aliases": [
+        "Sir Nictros"
+      ],
+      "bosstiaryCategory": "Archfoe",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca via alias",
+      "notes": [
+        "Alias explícito: Sir Nictros",
+        "Nome Neon \"Sir Nicator\" difere do título wiki \"Sir Nictros\" (slug preservado)."
+      ]
+    },
+    {
+      "runecodexSlug": "timira-the-many",
+      "registeredName": "Timira the Many",
+      "officialWikiName": "Timira the Many-Headed",
+      "wikiSlug": "timira-the-many-headed",
+      "aliases": [
+        "Timira the Many-Headed"
+      ],
+      "bosstiaryCategory": "Archfoe",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca via alias",
+      "notes": [
+        "Alias explícito: Timira the Many-Headed",
+        "Nome Neon \"Timira the Many\" difere do título wiki \"Timira the Many-Headed\" (slug preservado)."
+      ]
+    },
+    {
+      "runecodexSlug": "xenia",
+      "registeredName": "Xenia",
+      "officialWikiName": "Xenia",
+      "wikiSlug": "xenia",
+      "aliases": [],
+      "bosstiaryCategory": "Nemesis",
+      "status": "CONFIRMED_BOSSTIARY",
+      "matchCertainty": "inequívoca",
+      "notes": []
+    },
+    {
+      "runecodexSlug": "yube",
+      "registeredName": "Yube",
+      "officialWikiName": null,
+      "wikiSlug": null,
+      "aliases": [],
+      "bosstiaryCategory": null,
+      "status": "NOT_IN_BOSSTIARY",
+      "matchCertainty": "legacy — sem entrada Bosstiary",
+      "notes": [
+        "Registro legacy; não desativar nesta etapa."
+      ]
+    }
+  ],
+  "legacyPreserved": [
+    {
+      "runecodexSlug": "banebringer",
+      "note": "Legacy não confirmado no Bosstiary; registro preservado."
+    },
+    {
+      "runecodexSlug": "fluffy",
+      "note": "Legacy não confirmado no Bosstiary; registro preservado."
+    },
+    {
+      "runecodexSlug": "yube",
+      "note": "Legacy não confirmado no Bosstiary; registro preservado."
+    }
+  ],
+  "newValidBosses": {
+    "count": 297,
+    "bosses": [
+      {
+        "officialWikiName": "Adlerauge",
+        "wikiSlug": "adlerauge",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Adlerauge",
+        "proposedInternalSlug": "adlerauge",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Adlerauge"
+      },
+      {
+        "officialWikiName": "Adventurer Group",
+        "wikiSlug": "adventurer-group",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Adventurer_Group",
+        "proposedInternalSlug": "adventurer-group",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Adventurer_Group"
+      },
+      {
+        "officialWikiName": "Ahau",
+        "wikiSlug": "ahau",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ahau",
+        "proposedInternalSlug": "ahau",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ahau"
+      },
+      {
+        "officialWikiName": "Alptramun",
+        "wikiSlug": "alptramun",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Alptramun",
+        "proposedInternalSlug": "alptramun",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Alptramun"
+      },
+      {
+        "officialWikiName": "Amenef The Burning",
+        "wikiSlug": "amenef-the-burning",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Amenef_The_Burning",
+        "proposedInternalSlug": "amenef-the-burning",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Amenef_The_Burning"
+      },
+      {
+        "officialWikiName": "Ancient Spawn of Morgathla",
+        "wikiSlug": "ancient-spawn-of-morgathla",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ancient_Spawn_of_Morgathla",
+        "proposedInternalSlug": "ancient-spawn-of-morgathla",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ancient_Spawn_of_Morgathla"
+      },
+      {
+        "officialWikiName": "Anmothra",
+        "wikiSlug": "anmothra",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Anmothra",
+        "proposedInternalSlug": "anmothra",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Anmothra"
+      },
+      {
+        "officialWikiName": "Annihilon",
+        "wikiSlug": "annihilon",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Annihilon",
+        "proposedInternalSlug": "annihilon",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Annihilon"
+      },
+      {
+        "officialWikiName": "Anomaly",
+        "wikiSlug": "anomaly",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Anomaly",
+        "proposedInternalSlug": "anomaly",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Anomaly"
+      },
+      {
+        "officialWikiName": "Arachir the Ancient One",
+        "wikiSlug": "arachir-the-ancient-one",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Arachir_the_Ancient_One",
+        "proposedInternalSlug": "arachir-the-ancient-one",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Arachir_the_Ancient_One"
+      },
+      {
+        "officialWikiName": "Arbaziloth",
+        "wikiSlug": "arbaziloth",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Arbaziloth",
+        "proposedInternalSlug": "arbaziloth",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Arbaziloth"
+      },
+      {
+        "officialWikiName": "Arthei",
+        "wikiSlug": "arthei",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Arthei",
+        "proposedInternalSlug": "arthei",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Arthei"
+      },
+      {
+        "officialWikiName": "Arthom the Hunter",
+        "wikiSlug": "arthom-the-hunter",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Arthom_the_Hunter",
+        "proposedInternalSlug": "arthom-the-hunter",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Arthom_the_Hunter"
+      },
+      {
+        "officialWikiName": "Ashmunrah",
+        "wikiSlug": "ashmunrah",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ashmunrah",
+        "proposedInternalSlug": "ashmunrah",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ashmunrah"
+      },
+      {
+        "officialWikiName": "Atab",
+        "wikiSlug": "atab",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Atab",
+        "proposedInternalSlug": "atab",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Atab"
+      },
+      {
+        "officialWikiName": "Ayana the Crimson Curse",
+        "wikiSlug": "ayana-the-crimson-curse",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ayana_the_Crimson_Curse",
+        "proposedInternalSlug": "ayana-the-crimson-curse",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ayana_the_Crimson_Curse"
+      },
+      {
+        "officialWikiName": "Bakragore",
+        "wikiSlug": "bakragore",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Bakragore",
+        "proposedInternalSlug": "bakragore",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Bakragore"
+      },
+      {
+        "officialWikiName": "Bane Lord",
+        "wikiSlug": "bane-lord",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Bane_Lord",
+        "proposedInternalSlug": "bane-lord",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Bane_Lord"
+      },
+      {
+        "officialWikiName": "Barbaria",
+        "wikiSlug": "barbaria",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Barbaria",
+        "proposedInternalSlug": "barbaria",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Barbaria"
+      },
+      {
+        "officialWikiName": "Battlemaster Zunzu",
+        "wikiSlug": "battlemaster-zunzu",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Battlemaster_Zunzu",
+        "proposedInternalSlug": "battlemaster-zunzu",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Battlemaster_Zunzu"
+      },
+      {
+        "officialWikiName": "Bibby Bloodbath",
+        "wikiSlug": "bibby-bloodbath",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Bibby_Bloodbath",
+        "proposedInternalSlug": "bibby-bloodbath",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Bibby_Bloodbath"
+      },
+      {
+        "officialWikiName": "Big Boss Trolliver",
+        "wikiSlug": "big-boss-trolliver",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Big_Boss_Trolliver",
+        "proposedInternalSlug": "big-boss-trolliver",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Big_Boss_Trolliver"
+      },
+      {
+        "officialWikiName": "Black Vixen",
+        "wikiSlug": "black-vixen",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Black_Vixen",
+        "proposedInternalSlug": "black-vixen",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Black_Vixen"
+      },
+      {
+        "officialWikiName": "Blight Mariner",
+        "wikiSlug": "blight-mariner",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Blight_Mariner",
+        "proposedInternalSlug": "blight-mariner",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Blight_Mariner"
+      },
+      {
+        "officialWikiName": "Bloodback",
+        "wikiSlug": "bloodback",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Bloodback",
+        "proposedInternalSlug": "bloodback",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Bloodback"
+      },
+      {
+        "officialWikiName": "Bone Overlord",
+        "wikiSlug": "bone-overlord",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Bone_Overlord",
+        "proposedInternalSlug": "bone-overlord",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Bone_Overlord"
+      },
+      {
+        "officialWikiName": "Boogey",
+        "wikiSlug": "boogey",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Boogey",
+        "proposedInternalSlug": "boogey",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Boogey"
+      },
+      {
+        "officialWikiName": "Boreth",
+        "wikiSlug": "boreth",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Boreth",
+        "proposedInternalSlug": "boreth",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Boreth"
+      },
+      {
+        "officialWikiName": "Brain Head",
+        "wikiSlug": "brain-head",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Brain_Head",
+        "proposedInternalSlug": "brain-head",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Brain_Head"
+      },
+      {
+        "officialWikiName": "Brokul",
+        "wikiSlug": "brokul",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Brokul",
+        "proposedInternalSlug": "brokul",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Brokul"
+      },
+      {
+        "officialWikiName": "Bullwark",
+        "wikiSlug": "bullwark",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Bullwark",
+        "proposedInternalSlug": "bullwark",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Bullwark"
+      },
+      {
+        "officialWikiName": "Burster",
+        "wikiSlug": "burster",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Burster",
+        "proposedInternalSlug": "burster",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Burster"
+      },
+      {
+        "officialWikiName": "Captain Jones",
+        "wikiSlug": "captain-jones",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Captain_Jones",
+        "proposedInternalSlug": "captain-jones",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Captain_Jones"
+      },
+      {
+        "officialWikiName": "Chagorz",
+        "wikiSlug": "chagorz",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Chagorz",
+        "proposedInternalSlug": "chagorz",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Chagorz"
+      },
+      {
+        "officialWikiName": "Chikhaton",
+        "wikiSlug": "chikhaton",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Chikhaton",
+        "proposedInternalSlug": "chikhaton",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Chikhaton"
+      },
+      {
+        "officialWikiName": "Chizzoron the Distorter",
+        "wikiSlug": "chizzoron-the-distorter",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Chizzoron_the_Distorter",
+        "proposedInternalSlug": "chizzoron-the-distorter",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Chizzoron_the_Distorter"
+      },
+      {
+        "officialWikiName": "Chopper",
+        "wikiSlug": "chopper",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Chopper",
+        "proposedInternalSlug": "chopper",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Chopper"
+      },
+      {
+        "officialWikiName": "Clavius",
+        "wikiSlug": "clavius",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Clavius",
+        "proposedInternalSlug": "clavius",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Clavius"
+      },
+      {
+        "officialWikiName": "Countess Sorrow",
+        "wikiSlug": "countess-sorrow",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Countess_Sorrow",
+        "proposedInternalSlug": "countess-sorrow",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Countess_Sorrow"
+      },
+      {
+        "officialWikiName": "Court Warlock",
+        "wikiSlug": "court-warlock",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Court_Warlock",
+        "proposedInternalSlug": "court-warlock",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Court_Warlock"
+      },
+      {
+        "officialWikiName": "Cublarc the Plunderer",
+        "wikiSlug": "cublarc-the-plunderer",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Cublarc_the_Plunderer",
+        "proposedInternalSlug": "cublarc-the-plunderer",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Cublarc_the_Plunderer"
+      },
+      {
+        "officialWikiName": "Custodian",
+        "wikiSlug": "custodian",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Custodian",
+        "proposedInternalSlug": "custodian",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Custodian"
+      },
+      {
+        "officialWikiName": "Darkfang",
+        "wikiSlug": "darkfang",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Darkfang",
+        "proposedInternalSlug": "darkfang",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Darkfang"
+      },
+      {
+        "officialWikiName": "Dazed Leaf Golem",
+        "wikiSlug": "dazed-leaf-golem",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dazed_Leaf_Golem",
+        "proposedInternalSlug": "dazed-leaf-golem",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Dazed_Leaf_Golem"
+      },
+      {
+        "officialWikiName": "Death Priest Shargon",
+        "wikiSlug": "death-priest-shargon",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Death_Priest_Shargon",
+        "proposedInternalSlug": "death-priest-shargon",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Death_Priest_Shargon"
+      },
+      {
+        "officialWikiName": "Deep Terror",
+        "wikiSlug": "deep-terror",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Deep_Terror",
+        "proposedInternalSlug": "deep-terror",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Deep_Terror"
+      },
+      {
+        "officialWikiName": "Devovorga",
+        "wikiSlug": "devovorga",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Devovorga",
+        "proposedInternalSlug": "devovorga",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Devovorga"
+      },
+      {
+        "officialWikiName": "Dharalion",
+        "wikiSlug": "dharalion",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dharalion",
+        "proposedInternalSlug": "dharalion",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Dharalion"
+      },
+      {
+        "officialWikiName": "Diblis the Fair",
+        "wikiSlug": "diblis-the-fair",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Diblis_the_Fair",
+        "proposedInternalSlug": "diblis-the-fair",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Diblis_the_Fair"
+      },
+      {
+        "officialWikiName": "Dipthrah",
+        "wikiSlug": "dipthrah",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dipthrah",
+        "proposedInternalSlug": "dipthrah",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Dipthrah"
+      },
+      {
+        "officialWikiName": "Dirtbeard",
+        "wikiSlug": "dirtbeard",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dirtbeard",
+        "proposedInternalSlug": "dirtbeard",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Dirtbeard"
+      },
+      {
+        "officialWikiName": "Diseased Bill",
+        "wikiSlug": "diseased-bill",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Diseased_Bill",
+        "proposedInternalSlug": "diseased-bill",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Diseased_Bill"
+      },
+      {
+        "officialWikiName": "Diseased Dan",
+        "wikiSlug": "diseased-dan",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Diseased_Dan",
+        "proposedInternalSlug": "diseased-dan",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Diseased_Dan"
+      },
+      {
+        "officialWikiName": "Diseased Fred",
+        "wikiSlug": "diseased-fred",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Diseased_Fred",
+        "proposedInternalSlug": "diseased-fred",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Diseased_Fred"
+      },
+      {
+        "officialWikiName": "Doctor Perhaps",
+        "wikiSlug": "doctor-perhaps",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Doctor_Perhaps",
+        "proposedInternalSlug": "doctor-perhaps",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Doctor_Perhaps"
+      },
+      {
+        "officialWikiName": "Dracola",
+        "wikiSlug": "dracola",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dracola",
+        "proposedInternalSlug": "dracola",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Dracola"
+      },
+      {
+        "officialWikiName": "Dragon Pack",
+        "wikiSlug": "dragon-pack",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dragon_Pack",
+        "proposedInternalSlug": "dragon-pack",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Dragon_Pack"
+      },
+      {
+        "officialWikiName": "Dreadful Disruptor",
+        "wikiSlug": "dreadful-disruptor",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dreadful_Disruptor",
+        "proposedInternalSlug": "dreadful-disruptor",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Dreadful_Disruptor"
+      },
+      {
+        "officialWikiName": "Dreadmaw",
+        "wikiSlug": "dreadmaw",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Dreadmaw",
+        "proposedInternalSlug": "dreadmaw",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Dreadmaw"
+      },
+      {
+        "officialWikiName": "Earl Osam",
+        "wikiSlug": "earl-osam",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Earl_Osam",
+        "proposedInternalSlug": "earl-osam",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Earl_Osam"
+      },
+      {
+        "officialWikiName": "Ekatrix",
+        "wikiSlug": "ekatrix",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ekatrix",
+        "proposedInternalSlug": "ekatrix",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ekatrix"
+      },
+      {
+        "officialWikiName": "Eldritch Dragon Lord",
+        "wikiSlug": "eldritch-dragon-lord",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Eldritch_Dragon_Lord",
+        "proposedInternalSlug": "eldritch-dragon-lord",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Eldritch_Dragon_Lord"
+      },
+      {
+        "officialWikiName": "Elvira Hammerthrust",
+        "wikiSlug": "elvira-hammerthrust",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Elvira_Hammerthrust",
+        "proposedInternalSlug": "elvira-hammerthrust",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Elvira_Hammerthrust"
+      },
+      {
+        "officialWikiName": "Enusat The Onyx Wing",
+        "wikiSlug": "enusat-the-onyx-wing",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Enusat_The_Onyx_Wing",
+        "proposedInternalSlug": "enusat-the-onyx-wing",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Enusat_The_Onyx_Wing"
+      },
+      {
+        "officialWikiName": "Eradicator",
+        "wikiSlug": "eradicator",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Eradicator",
+        "proposedInternalSlug": "eradicator",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Eradicator"
+      },
+      {
+        "officialWikiName": "Essence Of Malice",
+        "wikiSlug": "essence-of-malice",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Essence_Of_Malice",
+        "proposedInternalSlug": "essence-of-malice",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Essence_Of_Malice"
+      },
+      {
+        "officialWikiName": "Evil Mastermind",
+        "wikiSlug": "evil-mastermind",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Evil_Mastermind",
+        "proposedInternalSlug": "evil-mastermind",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Evil_Mastermind"
+      },
+      {
+        "officialWikiName": "Faceless Bane",
+        "wikiSlug": "faceless-bane",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Faceless_Bane",
+        "proposedInternalSlug": "faceless-bane",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Faceless_Bane"
+      },
+      {
+        "officialWikiName": "Feroxa (Mortal)",
+        "wikiSlug": "feroxa-mortal",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Feroxa_(Mortal)",
+        "proposedInternalSlug": "feroxa-mortal",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Feroxa_(Mortal)"
+      },
+      {
+        "officialWikiName": "Ferumbras",
+        "wikiSlug": "ferumbras",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ferumbras",
+        "proposedInternalSlug": "ferumbras",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ferumbras"
+      },
+      {
+        "officialWikiName": "Ferumbras Mortal Shell",
+        "wikiSlug": "ferumbras-mortal-shell",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ferumbras_Mortal_Shell",
+        "proposedInternalSlug": "ferumbras-mortal-shell",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ferumbras_Mortal_Shell"
+      },
+      {
+        "officialWikiName": "Flamecaller Zazrak",
+        "wikiSlug": "flamecaller-zazrak",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Flamecaller_Zazrak",
+        "proposedInternalSlug": "flamecaller-zazrak",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Flamecaller_Zazrak"
+      },
+      {
+        "officialWikiName": "Fleabringer",
+        "wikiSlug": "fleabringer",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Fleabringer",
+        "proposedInternalSlug": "fleabringer",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Fleabringer"
+      },
+      {
+        "officialWikiName": "Fleshslicer",
+        "wikiSlug": "fleshslicer",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Fleshslicer",
+        "proposedInternalSlug": "fleshslicer",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Fleshslicer"
+      },
+      {
+        "officialWikiName": "Foreman Kneebiter",
+        "wikiSlug": "foreman-kneebiter",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Foreman_Kneebiter",
+        "proposedInternalSlug": "foreman-kneebiter",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Foreman_Kneebiter"
+      },
+      {
+        "officialWikiName": "Furyosa",
+        "wikiSlug": "furyosa",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Furyosa",
+        "proposedInternalSlug": "furyosa",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Furyosa"
+      },
+      {
+        "officialWikiName": "Gaffir",
+        "wikiSlug": "gaffir",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gaffir",
+        "proposedInternalSlug": "gaffir",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Gaffir"
+      },
+      {
+        "officialWikiName": "Gaz'Haragoth",
+        "wikiSlug": "gazharagoth",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gaz'Haragoth",
+        "proposedInternalSlug": "gazharagoth",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Gaz'Haragoth"
+      },
+      {
+        "officialWikiName": "Gelidrazah the Frozen",
+        "wikiSlug": "gelidrazah-the-frozen",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gelidrazah_the_Frozen",
+        "proposedInternalSlug": "gelidrazah-the-frozen",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Gelidrazah_the_Frozen"
+      },
+      {
+        "officialWikiName": "General Murius",
+        "wikiSlug": "general-murius",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/General_Murius",
+        "proposedInternalSlug": "general-murius",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/General_Murius"
+      },
+      {
+        "officialWikiName": "Ghazbaran",
+        "wikiSlug": "ghazbaran",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ghazbaran",
+        "proposedInternalSlug": "ghazbaran",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ghazbaran"
+      },
+      {
+        "officialWikiName": "Ghulosh",
+        "wikiSlug": "ghulosh",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ghulosh",
+        "proposedInternalSlug": "ghulosh",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ghulosh"
+      },
+      {
+        "officialWikiName": "Glitterscale",
+        "wikiSlug": "glitterscale",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Glitterscale",
+        "proposedInternalSlug": "glitterscale",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Glitterscale"
+      },
+      {
+        "officialWikiName": "Glooth Fairy",
+        "wikiSlug": "glooth-fairy",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Glooth_Fairy",
+        "proposedInternalSlug": "glooth-fairy",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Glooth_Fairy"
+      },
+      {
+        "officialWikiName": "Golgordan",
+        "wikiSlug": "golgordan",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Golgordan",
+        "proposedInternalSlug": "golgordan",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Golgordan"
+      },
+      {
+        "officialWikiName": "Gorga",
+        "wikiSlug": "gorga",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gorga",
+        "proposedInternalSlug": "gorga",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Gorga"
+      },
+      {
+        "officialWikiName": "Gorzindel",
+        "wikiSlug": "gorzindel",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gorzindel",
+        "proposedInternalSlug": "gorzindel",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Gorzindel"
+      },
+      {
+        "officialWikiName": "Goshnar's Cruelty",
+        "wikiSlug": "goshnars-cruelty",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Cruelty",
+        "proposedInternalSlug": "goshnars-cruelty",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Cruelty"
+      },
+      {
+        "officialWikiName": "Goshnar's Greed",
+        "wikiSlug": "goshnars-greed",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Greed",
+        "proposedInternalSlug": "goshnars-greed",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Greed"
+      },
+      {
+        "officialWikiName": "Goshnar's Hatred",
+        "wikiSlug": "goshnars-hatred",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Hatred",
+        "proposedInternalSlug": "goshnars-hatred",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Hatred"
+      },
+      {
+        "officialWikiName": "Goshnar's Malice",
+        "wikiSlug": "goshnars-malice",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Malice",
+        "proposedInternalSlug": "goshnars-malice",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Malice"
+      },
+      {
+        "officialWikiName": "Goshnar's Megalomania",
+        "wikiSlug": "goshnars-megalomania",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Megalomania",
+        "proposedInternalSlug": "goshnars-megalomania",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Megalomania"
+      },
+      {
+        "officialWikiName": "Goshnar's Spite",
+        "wikiSlug": "goshnars-spite",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Spite",
+        "proposedInternalSlug": "goshnars-spite",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Goshnar's_Spite"
+      },
+      {
+        "officialWikiName": "Gralvalon",
+        "wikiSlug": "gralvalon",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gralvalon",
+        "proposedInternalSlug": "gralvalon",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Gralvalon"
+      },
+      {
+        "officialWikiName": "Grand Canon Dominus",
+        "wikiSlug": "grand-canon-dominus",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Grand_Canon_Dominus",
+        "proposedInternalSlug": "grand-canon-dominus",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Grand_Canon_Dominus"
+      },
+      {
+        "officialWikiName": "Grand Chaplain Gaunder",
+        "wikiSlug": "grand-chaplain-gaunder",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Grand_Chaplain_Gaunder",
+        "proposedInternalSlug": "grand-chaplain-gaunder",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Grand_Chaplain_Gaunder"
+      },
+      {
+        "officialWikiName": "Grand Commander Soeren",
+        "wikiSlug": "grand-commander-soeren",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Grand_Commander_Soeren",
+        "proposedInternalSlug": "grand-commander-soeren",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Grand_Commander_Soeren"
+      },
+      {
+        "officialWikiName": "Grand Mother Foulscale",
+        "wikiSlug": "grand-mother-foulscale",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Grand_Mother_Foulscale",
+        "proposedInternalSlug": "grand-mother-foulscale",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Grand_Mother_Foulscale"
+      },
+      {
+        "officialWikiName": "Grandfather Tridian",
+        "wikiSlug": "grandfather-tridian",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Grandfather_Tridian",
+        "proposedInternalSlug": "grandfather-tridian",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Grandfather_Tridian"
+      },
+      {
+        "officialWikiName": "Gravelord Oshuran",
+        "wikiSlug": "gravelord-oshuran",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Gravelord_Oshuran",
+        "proposedInternalSlug": "gravelord-oshuran",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Gravelord_Oshuran"
+      },
+      {
+        "officialWikiName": "Groam",
+        "wikiSlug": "groam",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Groam",
+        "proposedInternalSlug": "groam",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Groam"
+      },
+      {
+        "officialWikiName": "Grorlam",
+        "wikiSlug": "grorlam",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Grorlam",
+        "proposedInternalSlug": "grorlam",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Grorlam"
+      },
+      {
+        "officialWikiName": "Guard Captain Quaid",
+        "wikiSlug": "guard-captain-quaid",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Guard_Captain_Quaid",
+        "proposedInternalSlug": "guard-captain-quaid",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Guard_Captain_Quaid"
+      },
+      {
+        "officialWikiName": "Hairman The Huge",
+        "wikiSlug": "hairman-the-huge",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Hairman_The_Huge",
+        "proposedInternalSlug": "hairman-the-huge",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Hairman_The_Huge"
+      },
+      {
+        "officialWikiName": "Hellgorak",
+        "wikiSlug": "hellgorak",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Hellgorak",
+        "proposedInternalSlug": "hellgorak",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Hellgorak"
+      },
+      {
+        "officialWikiName": "Heoni",
+        "wikiSlug": "heoni",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Heoni",
+        "proposedInternalSlug": "heoni",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Heoni"
+      },
+      {
+        "officialWikiName": "Herald of Fire",
+        "wikiSlug": "herald-of-fire",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Herald_of_Fire",
+        "proposedInternalSlug": "herald-of-fire",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Herald_of_Fire"
+      },
+      {
+        "officialWikiName": "High Templar Cobrass",
+        "wikiSlug": "high-templar-cobrass",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/High_Templar_Cobrass",
+        "proposedInternalSlug": "high-templar-cobrass",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/High_Templar_Cobrass"
+      },
+      {
+        "officialWikiName": "Hirintror",
+        "wikiSlug": "hirintror",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Hirintror",
+        "proposedInternalSlug": "hirintror",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Hirintror"
+      },
+      {
+        "officialWikiName": "Horestis",
+        "wikiSlug": "horestis",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Horestis",
+        "proposedInternalSlug": "horestis",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Horestis"
+      },
+      {
+        "officialWikiName": "Ice Horror",
+        "wikiSlug": "ice-horror",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ice_Horror",
+        "proposedInternalSlug": "ice-horror",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ice_Horror"
+      },
+      {
+        "officialWikiName": "Ichgahal",
+        "wikiSlug": "ichgahal",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ichgahal",
+        "proposedInternalSlug": "ichgahal",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ichgahal"
+      },
+      {
+        "officialWikiName": "Inkwing",
+        "wikiSlug": "inkwing",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Inkwing",
+        "proposedInternalSlug": "inkwing",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Inkwing"
+      },
+      {
+        "officialWikiName": "Irahsae",
+        "wikiSlug": "irahsae",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Irahsae",
+        "proposedInternalSlug": "irahsae",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Irahsae"
+      },
+      {
+        "officialWikiName": "Irgix the Flimsy",
+        "wikiSlug": "irgix-the-flimsy",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Irgix_the_Flimsy",
+        "proposedInternalSlug": "irgix-the-flimsy",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Irgix_the_Flimsy"
+      },
+      {
+        "officialWikiName": "Izcandar Champion of Summer",
+        "wikiSlug": "izcandar-champion-of-summer",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Izcandar_Champion_of_Summer",
+        "proposedInternalSlug": "izcandar-champion-of-summer",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Izcandar_Champion_of_Summer"
+      },
+      {
+        "officialWikiName": "Izcandar Champion of Winter",
+        "wikiSlug": "izcandar-champion-of-winter",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Izcandar_Champion_of_Winter",
+        "proposedInternalSlug": "izcandar-champion-of-winter",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Izcandar_Champion_of_Winter"
+      },
+      {
+        "officialWikiName": "Izcandar the Banished",
+        "wikiSlug": "izcandar-the-banished",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Izcandar_the_Banished",
+        "proposedInternalSlug": "izcandar-the-banished",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Izcandar_the_Banished"
+      },
+      {
+        "officialWikiName": "Jailer",
+        "wikiSlug": "jailer",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Jailer",
+        "proposedInternalSlug": "jailer",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Jailer"
+      },
+      {
+        "officialWikiName": "Jaul",
+        "wikiSlug": "jaul",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Jaul",
+        "proposedInternalSlug": "jaul",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Jaul"
+      },
+      {
+        "officialWikiName": "Jesse the Wicked",
+        "wikiSlug": "jesse-the-wicked",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Jesse_the_Wicked",
+        "proposedInternalSlug": "jesse-the-wicked",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Jesse_the_Wicked"
+      },
+      {
+        "officialWikiName": "Kalyassa",
+        "wikiSlug": "kalyassa",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Kalyassa",
+        "proposedInternalSlug": "kalyassa",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Kalyassa"
+      },
+      {
+        "officialWikiName": "Katex Blood Tongue",
+        "wikiSlug": "katex-blood-tongue",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Katex_Blood_Tongue",
+        "proposedInternalSlug": "katex-blood-tongue",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Katex_Blood_Tongue"
+      },
+      {
+        "officialWikiName": "King Chuck",
+        "wikiSlug": "king-chuck",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/King_Chuck",
+        "proposedInternalSlug": "king-chuck",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/King_Chuck"
+      },
+      {
+        "officialWikiName": "King Zelos",
+        "wikiSlug": "king-zelos",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/King_Zelos",
+        "proposedInternalSlug": "king-zelos",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/King_Zelos"
+      },
+      {
+        "officialWikiName": "Kusuma",
+        "wikiSlug": "kusuma",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Kusuma",
+        "proposedInternalSlug": "kusuma",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Kusuma"
+      },
+      {
+        "officialWikiName": "Lady Tenebris",
+        "wikiSlug": "lady-tenebris",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lady_Tenebris",
+        "proposedInternalSlug": "lady-tenebris",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Lady_Tenebris"
+      },
+      {
+        "officialWikiName": "Latrivan",
+        "wikiSlug": "latrivan",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Latrivan",
+        "proposedInternalSlug": "latrivan",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Latrivan"
+      },
+      {
+        "officialWikiName": "Lersatio",
+        "wikiSlug": "lersatio",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lersatio",
+        "proposedInternalSlug": "lersatio",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Lersatio"
+      },
+      {
+        "officialWikiName": "Lisa",
+        "wikiSlug": "lisa",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lisa",
+        "proposedInternalSlug": "lisa",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Lisa"
+      },
+      {
+        "officialWikiName": "Lizard Gate Guardian",
+        "wikiSlug": "lizard-gate-guardian",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lizard_Gate_Guardian",
+        "proposedInternalSlug": "lizard-gate-guardian",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Lizard_Gate_Guardian"
+      },
+      {
+        "officialWikiName": "Lloyd",
+        "wikiSlug": "lloyd",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lloyd",
+        "proposedInternalSlug": "lloyd",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Lloyd"
+      },
+      {
+        "officialWikiName": "Lokathmor",
+        "wikiSlug": "lokathmor",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lokathmor",
+        "proposedInternalSlug": "lokathmor",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Lokathmor"
+      },
+      {
+        "officialWikiName": "Lord of the Elements",
+        "wikiSlug": "lord-of-the-elements",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lord_of_the_Elements",
+        "proposedInternalSlug": "lord-of-the-elements",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Lord_of_the_Elements"
+      },
+      {
+        "officialWikiName": "Lord Retro",
+        "wikiSlug": "lord-retro",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Lord_Retro",
+        "proposedInternalSlug": "lord-retro",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Lord_Retro"
+      },
+      {
+        "officialWikiName": "Mad Mage",
+        "wikiSlug": "mad-mage",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mad_Mage",
+        "proposedInternalSlug": "mad-mage",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Mad_Mage"
+      },
+      {
+        "officialWikiName": "Madareth",
+        "wikiSlug": "madareth",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Madareth",
+        "proposedInternalSlug": "madareth",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Madareth"
+      },
+      {
+        "officialWikiName": "Magma Bubble",
+        "wikiSlug": "magma-bubble",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Magma_Bubble",
+        "proposedInternalSlug": "magma-bubble",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Magma_Bubble"
+      },
+      {
+        "officialWikiName": "Mahatheb",
+        "wikiSlug": "mahatheb",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mahatheb",
+        "proposedInternalSlug": "mahatheb",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Mahatheb"
+      },
+      {
+        "officialWikiName": "Mahrdis",
+        "wikiSlug": "mahrdis",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mahrdis",
+        "proposedInternalSlug": "mahrdis",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Mahrdis"
+      },
+      {
+        "officialWikiName": "Maior Domus",
+        "wikiSlug": "maior-domus",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Maior_Domus",
+        "proposedInternalSlug": "maior-domus",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Maior_Domus"
+      },
+      {
+        "officialWikiName": "Malofur Mangrinder",
+        "wikiSlug": "malofur-mangrinder",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Malofur_Mangrinder",
+        "proposedInternalSlug": "malofur-mangrinder",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Malofur_Mangrinder"
+      },
+      {
+        "officialWikiName": "Malvaroth",
+        "wikiSlug": "malvaroth",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Malvaroth",
+        "proposedInternalSlug": "malvaroth",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Malvaroth"
+      },
+      {
+        "officialWikiName": "Man In The Cave",
+        "wikiSlug": "man-in-the-cave",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Man_In_The_Cave",
+        "proposedInternalSlug": "man-in-the-cave",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Man_In_The_Cave"
+      },
+      {
+        "officialWikiName": "Marziel",
+        "wikiSlug": "marziel",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Marziel",
+        "proposedInternalSlug": "marziel",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Marziel"
+      },
+      {
+        "officialWikiName": "Massacre",
+        "wikiSlug": "massacre",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Massacre",
+        "proposedInternalSlug": "massacre",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Massacre"
+      },
+      {
+        "officialWikiName": "Maw",
+        "wikiSlug": "maw",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Maw",
+        "proposedInternalSlug": "maw",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Maw"
+      },
+      {
+        "officialWikiName": "Mawhawk",
+        "wikiSlug": "mawhawk",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mawhawk",
+        "proposedInternalSlug": "mawhawk",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Mawhawk"
+      },
+      {
+        "officialWikiName": "Maxxenius",
+        "wikiSlug": "maxxenius",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Maxxenius",
+        "proposedInternalSlug": "maxxenius",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Maxxenius"
+      },
+      {
+        "officialWikiName": "Mazzinor",
+        "wikiSlug": "mazzinor",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mazzinor",
+        "proposedInternalSlug": "mazzinor",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Mazzinor"
+      },
+      {
+        "officialWikiName": "Megasylvan Yselda",
+        "wikiSlug": "megasylvan-yselda",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Megasylvan_Yselda",
+        "proposedInternalSlug": "megasylvan-yselda",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Megasylvan_Yselda"
+      },
+      {
+        "officialWikiName": "Melting Frozen Horror",
+        "wikiSlug": "melting-frozen-horror",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Melting_Frozen_Horror",
+        "proposedInternalSlug": "melting-frozen-horror",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Melting_Frozen_Horror"
+      },
+      {
+        "officialWikiName": "Mephiles",
+        "wikiSlug": "mephiles",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mephiles",
+        "proposedInternalSlug": "mephiles",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Mephiles"
+      },
+      {
+        "officialWikiName": "Michael the Stalwart",
+        "wikiSlug": "michael-the-stalwart",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Michael_the_Stalwart",
+        "proposedInternalSlug": "michael-the-stalwart",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Michael_the_Stalwart"
+      },
+      {
+        "officialWikiName": "Mimar Haffar",
+        "wikiSlug": "mimar-haffar",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mimar_Haffar",
+        "proposedInternalSlug": "mimar-haffar",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Mimar_Haffar"
+      },
+      {
+        "officialWikiName": "Mindmasher",
+        "wikiSlug": "mindmasher",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mindmasher",
+        "proposedInternalSlug": "mindmasher",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Mindmasher"
+      },
+      {
+        "officialWikiName": "Mitmah Vanguard",
+        "wikiSlug": "mitmah-vanguard",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mitmah_Vanguard",
+        "proposedInternalSlug": "mitmah-vanguard",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Mitmah_Vanguard"
+      },
+      {
+        "officialWikiName": "Monstor",
+        "wikiSlug": "monstor",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Monstor",
+        "proposedInternalSlug": "monstor",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Monstor"
+      },
+      {
+        "officialWikiName": "Morgaroth",
+        "wikiSlug": "morgaroth",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Morgaroth",
+        "proposedInternalSlug": "morgaroth",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Morgaroth"
+      },
+      {
+        "officialWikiName": "Morguthis",
+        "wikiSlug": "morguthis",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Morguthis",
+        "proposedInternalSlug": "morguthis",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Morguthis"
+      },
+      {
+        "officialWikiName": "Mornenion",
+        "wikiSlug": "mornenion",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mornenion",
+        "proposedInternalSlug": "mornenion",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Mornenion"
+      },
+      {
+        "officialWikiName": "Morshabaal",
+        "wikiSlug": "morshabaal",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Morshabaal",
+        "proposedInternalSlug": "morshabaal",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Morshabaal"
+      },
+      {
+        "officialWikiName": "Mozradek",
+        "wikiSlug": "mozradek",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mozradek",
+        "proposedInternalSlug": "mozradek",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Mozradek"
+      },
+      {
+        "officialWikiName": "Mr. Punish",
+        "wikiSlug": "mr-punish",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Mr._Punish",
+        "proposedInternalSlug": "mr-punish",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Mr._Punish"
+      },
+      {
+        "officialWikiName": "Murcion",
+        "wikiSlug": "murcion",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Murcion",
+        "proposedInternalSlug": "murcion",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Murcion"
+      },
+      {
+        "officialWikiName": "Neferi The Spy",
+        "wikiSlug": "neferi-the-spy",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Neferi_The_Spy",
+        "proposedInternalSlug": "neferi-the-spy",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Neferi_The_Spy"
+      },
+      {
+        "officialWikiName": "Obujos",
+        "wikiSlug": "obujos",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Obujos",
+        "proposedInternalSlug": "obujos",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Obujos"
+      },
+      {
+        "officialWikiName": "Ocyakao",
+        "wikiSlug": "ocyakao",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ocyakao",
+        "proposedInternalSlug": "ocyakao",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ocyakao"
+      },
+      {
+        "officialWikiName": "Omrafir",
+        "wikiSlug": "omrafir",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Omrafir",
+        "proposedInternalSlug": "omrafir",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Omrafir"
+      },
+      {
+        "officialWikiName": "Omruc",
+        "wikiSlug": "omruc",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Omruc",
+        "proposedInternalSlug": "omruc",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Omruc"
+      },
+      {
+        "officialWikiName": "Oodok Witchmaster",
+        "wikiSlug": "oodok-witchmaster",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Oodok_Witchmaster",
+        "proposedInternalSlug": "oodok-witchmaster",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Oodok_Witchmaster"
+      },
+      {
+        "officialWikiName": "Orshabaal",
+        "wikiSlug": "orshabaal",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Orshabaal",
+        "proposedInternalSlug": "orshabaal",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Orshabaal"
+      },
+      {
+        "officialWikiName": "Outburst",
+        "wikiSlug": "outburst",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Outburst",
+        "proposedInternalSlug": "outburst",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Outburst"
+      },
+      {
+        "officialWikiName": "Overseer Osverger",
+        "wikiSlug": "overseer-osverger",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Overseer_Osverger",
+        "proposedInternalSlug": "overseer-osverger",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Overseer_Osverger"
+      },
+      {
+        "officialWikiName": "Owin (Criatura)",
+        "wikiSlug": "owin-criatura",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Owin_(Criatura)",
+        "proposedInternalSlug": "owin-criatura",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Owin_(Criatura)"
+      },
+      {
+        "officialWikiName": "Phosphorus",
+        "wikiSlug": "phosphorus",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Phosphorus",
+        "proposedInternalSlug": "phosphorus",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Phosphorus"
+      },
+      {
+        "officialWikiName": "Phrodomo",
+        "wikiSlug": "phrodomo",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Phrodomo",
+        "proposedInternalSlug": "phrodomo",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Phrodomo"
+      },
+      {
+        "officialWikiName": "Plagirath",
+        "wikiSlug": "plagirath",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Plagirath",
+        "proposedInternalSlug": "plagirath",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Plagirath"
+      },
+      {
+        "officialWikiName": "Plagueroot",
+        "wikiSlug": "plagueroot",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Plagueroot",
+        "proposedInternalSlug": "plagueroot",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Plagueroot"
+      },
+      {
+        "officialWikiName": "Preceptor Lazare",
+        "wikiSlug": "preceptor-lazare",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Preceptor_Lazare",
+        "proposedInternalSlug": "preceptor-lazare",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Preceptor_Lazare"
+      },
+      {
+        "officialWikiName": "Professor Maxxen",
+        "wikiSlug": "professor-maxxen",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Professor_Maxxen",
+        "proposedInternalSlug": "professor-maxxen",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Professor_Maxxen"
+      },
+      {
+        "officialWikiName": "Raging Mage",
+        "wikiSlug": "raging-mage",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Raging_Mage",
+        "proposedInternalSlug": "raging-mage",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Raging_Mage"
+      },
+      {
+        "officialWikiName": "Rahemos",
+        "wikiSlug": "rahemos",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rahemos",
+        "proposedInternalSlug": "rahemos",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Rahemos"
+      },
+      {
+        "officialWikiName": "Rakesh Moonfang",
+        "wikiSlug": "rakesh-moonfang",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rakesh_Moonfang",
+        "proposedInternalSlug": "rakesh-moonfang",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Rakesh_Moonfang"
+      },
+      {
+        "officialWikiName": "Ratmiral Blackwhiskers",
+        "wikiSlug": "ratmiral-blackwhiskers",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ratmiral_Blackwhiskers",
+        "proposedInternalSlug": "ratmiral-blackwhiskers",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ratmiral_Blackwhiskers"
+      },
+      {
+        "officialWikiName": "Ravenous Hunger",
+        "wikiSlug": "ravenous-hunger",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ravenous_Hunger",
+        "proposedInternalSlug": "ravenous-hunger",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ravenous_Hunger"
+      },
+      {
+        "officialWikiName": "Raxias",
+        "wikiSlug": "raxias",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Raxias",
+        "proposedInternalSlug": "raxias",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Raxias"
+      },
+      {
+        "officialWikiName": "Razzagorn",
+        "wikiSlug": "razzagorn",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Razzagorn",
+        "proposedInternalSlug": "razzagorn",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Razzagorn"
+      },
+      {
+        "officialWikiName": "Realityquake",
+        "wikiSlug": "realityquake",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Realityquake",
+        "proposedInternalSlug": "realityquake",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Realityquake"
+      },
+      {
+        "officialWikiName": "Robby the Reckless",
+        "wikiSlug": "robby-the-reckless",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Robby_the_Reckless",
+        "proposedInternalSlug": "robby-the-reckless",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Robby_the_Reckless"
+      },
+      {
+        "officialWikiName": "Rotrender",
+        "wikiSlug": "rotrender",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rotrender",
+        "proposedInternalSlug": "rotrender",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Rotrender"
+      },
+      {
+        "officialWikiName": "Rotspit",
+        "wikiSlug": "rotspit",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rotspit",
+        "proposedInternalSlug": "rotspit",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Rotspit"
+      },
+      {
+        "officialWikiName": "Rotworm Queen",
+        "wikiSlug": "rotworm-queen",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rotworm_Queen",
+        "proposedInternalSlug": "rotworm-queen",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Rotworm_Queen"
+      },
+      {
+        "officialWikiName": "Rukor Zad",
+        "wikiSlug": "rukor-zad",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rukor_Zad",
+        "proposedInternalSlug": "rukor-zad",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Rukor_Zad"
+      },
+      {
+        "officialWikiName": "Rupture",
+        "wikiSlug": "rupture",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Rupture",
+        "proposedInternalSlug": "rupture",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Rupture"
+      },
+      {
+        "officialWikiName": "Shadowpelt",
+        "wikiSlug": "shadowpelt",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Shadowpelt",
+        "proposedInternalSlug": "shadowpelt",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Shadowpelt"
+      },
+      {
+        "officialWikiName": "Shadowstalker",
+        "wikiSlug": "shadowstalker",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Shadowstalker",
+        "proposedInternalSlug": "shadowstalker",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Shadowstalker"
+      },
+      {
+        "officialWikiName": "Sharpclaw",
+        "wikiSlug": "sharpclaw",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sharpclaw",
+        "proposedInternalSlug": "sharpclaw",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Sharpclaw"
+      },
+      {
+        "officialWikiName": "Shlorg",
+        "wikiSlug": "shlorg",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Shlorg",
+        "proposedInternalSlug": "shlorg",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Shlorg"
+      },
+      {
+        "officialWikiName": "Shulgrax",
+        "wikiSlug": "shulgrax",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Shulgrax",
+        "proposedInternalSlug": "shulgrax",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Shulgrax"
+      },
+      {
+        "officialWikiName": "Sir Baeloc",
+        "wikiSlug": "sir-baeloc",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sir_Baeloc",
+        "proposedInternalSlug": "sir-baeloc",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Sir_Baeloc"
+      },
+      {
+        "officialWikiName": "Sir Leonard",
+        "wikiSlug": "sir-leonard",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sir_Leonard",
+        "proposedInternalSlug": "sir-leonard",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Sir_Leonard"
+      },
+      {
+        "officialWikiName": "Sir Leopold",
+        "wikiSlug": "sir-leopold",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sir_Leopold",
+        "proposedInternalSlug": "sir-leopold",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Sir_Leopold"
+      },
+      {
+        "officialWikiName": "Sir Valorcrest",
+        "wikiSlug": "sir-valorcrest",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sir_Valorcrest",
+        "proposedInternalSlug": "sir-valorcrest",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Sir_Valorcrest"
+      },
+      {
+        "officialWikiName": "Sister Hetai",
+        "wikiSlug": "sister-hetai",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sister_Hetai",
+        "proposedInternalSlug": "sister-hetai",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Sister_Hetai"
+      },
+      {
+        "officialWikiName": "Smuggler Baron Silvertoe",
+        "wikiSlug": "smuggler-baron-silvertoe",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Smuggler_Baron_Silvertoe",
+        "proposedInternalSlug": "smuggler-baron-silvertoe",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Smuggler_Baron_Silvertoe"
+      },
+      {
+        "officialWikiName": "Soul of Dragonking Zyrtarch",
+        "wikiSlug": "soul-of-dragonking-zyrtarch",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Soul_of_Dragonking_Zyrtarch",
+        "proposedInternalSlug": "soul-of-dragonking-zyrtarch",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Soul_of_Dragonking_Zyrtarch"
+      },
+      {
+        "officialWikiName": "Srezz Yellow Eyes",
+        "wikiSlug": "srezz-yellow-eyes",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Srezz_Yellow_Eyes",
+        "proposedInternalSlug": "srezz-yellow-eyes",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Srezz_Yellow_Eyes"
+      },
+      {
+        "officialWikiName": "Sugar Daddy",
+        "wikiSlug": "sugar-daddy",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sugar_Daddy",
+        "proposedInternalSlug": "sugar-daddy",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Sugar_Daddy"
+      },
+      {
+        "officialWikiName": "Sugar Mommy",
+        "wikiSlug": "sugar-mommy",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Sugar_Mommy",
+        "proposedInternalSlug": "sugar-mommy",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Sugar_Mommy"
+      },
+      {
+        "officialWikiName": "Tamru the Black",
+        "wikiSlug": "tamru-the-black",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tamru_the_Black",
+        "proposedInternalSlug": "tamru-the-black",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Tamru_the_Black"
+      },
+      {
+        "officialWikiName": "Tanjis",
+        "wikiSlug": "tanjis",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tanjis",
+        "proposedInternalSlug": "tanjis",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Tanjis"
+      },
+      {
+        "officialWikiName": "Tarbaz",
+        "wikiSlug": "tarbaz",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tarbaz",
+        "proposedInternalSlug": "tarbaz",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Tarbaz"
+      },
+      {
+        "officialWikiName": "Tazhadur",
+        "wikiSlug": "tazhadur",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tazhadur",
+        "proposedInternalSlug": "tazhadur",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Tazhadur"
+      },
+      {
+        "officialWikiName": "Teneshpar",
+        "wikiSlug": "teneshpar",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Teneshpar",
+        "proposedInternalSlug": "teneshpar",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Teneshpar"
+      },
+      {
+        "officialWikiName": "Thaian",
+        "wikiSlug": "thaian",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Thaian",
+        "proposedInternalSlug": "thaian",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Thaian"
+      },
+      {
+        "officialWikiName": "Thalas",
+        "wikiSlug": "thalas",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Thalas",
+        "proposedInternalSlug": "thalas",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Thalas"
+      },
+      {
+        "officialWikiName": "Thawing Dragon Lord",
+        "wikiSlug": "thawing-dragon-lord",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Thawing_Dragon_Lord",
+        "proposedInternalSlug": "thawing-dragon-lord",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Thawing_Dragon_Lord"
+      },
+      {
+        "officialWikiName": "The Abomination",
+        "wikiSlug": "the-abomination",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Abomination",
+        "proposedInternalSlug": "the-abomination",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Abomination"
+      },
+      {
+        "officialWikiName": "The Baron from Below",
+        "wikiSlug": "the-baron-from-below",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Baron_from_Below",
+        "proposedInternalSlug": "the-baron-from-below",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Baron_from_Below"
+      },
+      {
+        "officialWikiName": "The Big Bad One",
+        "wikiSlug": "the-big-bad-one",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Big_Bad_One",
+        "proposedInternalSlug": "the-big-bad-one",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Big_Bad_One"
+      },
+      {
+        "officialWikiName": "The Blazing Rose",
+        "wikiSlug": "the-blazing-rose",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Blazing_Rose",
+        "proposedInternalSlug": "the-blazing-rose",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Blazing_Rose"
+      },
+      {
+        "officialWikiName": "The Blightfather",
+        "wikiSlug": "the-blightfather",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Blightfather",
+        "proposedInternalSlug": "the-blightfather",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Blightfather"
+      },
+      {
+        "officialWikiName": "The Brainstealer",
+        "wikiSlug": "the-brainstealer",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Brainstealer",
+        "proposedInternalSlug": "the-brainstealer",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Brainstealer"
+      },
+      {
+        "officialWikiName": "The Count Of The Core",
+        "wikiSlug": "the-count-of-the-core",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Count_Of_The_Core",
+        "proposedInternalSlug": "the-count-of-the-core",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Count_Of_The_Core"
+      },
+      {
+        "officialWikiName": "The Diamond Blossom",
+        "wikiSlug": "the-diamond-blossom",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Diamond_Blossom",
+        "proposedInternalSlug": "the-diamond-blossom",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Diamond_Blossom"
+      },
+      {
+        "officialWikiName": "The Dread Maiden",
+        "wikiSlug": "the-dread-maiden",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Dread_Maiden",
+        "proposedInternalSlug": "the-dread-maiden",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Dread_Maiden"
+      },
+      {
+        "officialWikiName": "The Duke Of The Depths",
+        "wikiSlug": "the-duke-of-the-depths",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Duke_Of_The_Depths",
+        "proposedInternalSlug": "the-duke-of-the-depths",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Duke_Of_The_Depths"
+      },
+      {
+        "officialWikiName": "The Enraged Thorn Knight",
+        "wikiSlug": "the-enraged-thorn-knight",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Enraged_Thorn_Knight",
+        "proposedInternalSlug": "the-enraged-thorn-knight",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Enraged_Thorn_Knight"
+      },
+      {
+        "officialWikiName": "The Evil Eye",
+        "wikiSlug": "the-evil-eye",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Evil_Eye",
+        "proposedInternalSlug": "the-evil-eye",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Evil_Eye"
+      },
+      {
+        "officialWikiName": "The False God",
+        "wikiSlug": "the-false-god",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_False_God",
+        "proposedInternalSlug": "the-false-god",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_False_God"
+      },
+      {
+        "officialWikiName": "The Fear Feaster",
+        "wikiSlug": "the-fear-feaster",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Fear_Feaster",
+        "proposedInternalSlug": "the-fear-feaster",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Fear_Feaster"
+      },
+      {
+        "officialWikiName": "The First Dragon (Criatura)",
+        "wikiSlug": "the-first-dragon-criatura",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_First_Dragon_(Criatura)",
+        "proposedInternalSlug": "the-first-dragon-criatura",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_First_Dragon_(Criatura)"
+      },
+      {
+        "officialWikiName": "The Flaming Orchid",
+        "wikiSlug": "the-flaming-orchid",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Flaming_Orchid",
+        "proposedInternalSlug": "the-flaming-orchid",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Flaming_Orchid"
+      },
+      {
+        "officialWikiName": "The Frog Prince",
+        "wikiSlug": "the-frog-prince",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Frog_Prince",
+        "proposedInternalSlug": "the-frog-prince",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Frog_Prince"
+      },
+      {
+        "officialWikiName": "The Gravedigger",
+        "wikiSlug": "the-gravedigger",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Gravedigger",
+        "proposedInternalSlug": "the-gravedigger",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Gravedigger"
+      },
+      {
+        "officialWikiName": "The Handmaiden",
+        "wikiSlug": "the-handmaiden",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Handmaiden",
+        "proposedInternalSlug": "the-handmaiden",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Handmaiden"
+      },
+      {
+        "officialWikiName": "The Hungerer",
+        "wikiSlug": "the-hungerer",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Hungerer",
+        "proposedInternalSlug": "the-hungerer",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Hungerer"
+      },
+      {
+        "officialWikiName": "The Imperor",
+        "wikiSlug": "the-imperor",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Imperor",
+        "proposedInternalSlug": "the-imperor",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Imperor"
+      },
+      {
+        "officialWikiName": "The Last Lore Keeper",
+        "wikiSlug": "the-last-lore-keeper",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Last_Lore_Keeper",
+        "proposedInternalSlug": "the-last-lore-keeper",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Last_Lore_Keeper"
+      },
+      {
+        "officialWikiName": "The Lily Of Night",
+        "wikiSlug": "the-lily-of-night",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Lily_Of_Night",
+        "proposedInternalSlug": "the-lily-of-night",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Lily_Of_Night"
+      },
+      {
+        "officialWikiName": "The Lord of the Lice",
+        "wikiSlug": "the-lord-of-the-lice",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Lord_of_the_Lice",
+        "proposedInternalSlug": "the-lord-of-the-lice",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Lord_of_the_Lice"
+      },
+      {
+        "officialWikiName": "The Manhunter",
+        "wikiSlug": "the-manhunter",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Manhunter",
+        "proposedInternalSlug": "the-manhunter",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Manhunter"
+      },
+      {
+        "officialWikiName": "The Mean Masher",
+        "wikiSlug": "the-mean-masher",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Mean_Masher",
+        "proposedInternalSlug": "the-mean-masher",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Mean_Masher"
+      },
+      {
+        "officialWikiName": "The Mega Magmaoid",
+        "wikiSlug": "the-mega-magmaoid",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Mega_Magmaoid",
+        "proposedInternalSlug": "the-mega-magmaoid",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Mega_Magmaoid"
+      },
+      {
+        "officialWikiName": "The Monster",
+        "wikiSlug": "the-monster",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Monster",
+        "proposedInternalSlug": "the-monster",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Monster"
+      },
+      {
+        "officialWikiName": "The Moonlight Aster",
+        "wikiSlug": "the-moonlight-aster",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Moonlight_Aster",
+        "proposedInternalSlug": "the-moonlight-aster",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Moonlight_Aster"
+      },
+      {
+        "officialWikiName": "The Moonsnow Magnolia",
+        "wikiSlug": "the-moonsnow-magnolia",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Moonsnow_Magnolia",
+        "proposedInternalSlug": "the-moonsnow-magnolia",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Moonsnow_Magnolia"
+      },
+      {
+        "officialWikiName": "The Mutated Pumpkin",
+        "wikiSlug": "the-mutated-pumpkin",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Mutated_Pumpkin",
+        "proposedInternalSlug": "the-mutated-pumpkin",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Mutated_Pumpkin"
+      },
+      {
+        "officialWikiName": "The Nightmare Beast",
+        "wikiSlug": "the-nightmare-beast",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Nightmare_Beast",
+        "proposedInternalSlug": "the-nightmare-beast",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Nightmare_Beast"
+      },
+      {
+        "officialWikiName": "The Old Whopper",
+        "wikiSlug": "the-old-whopper",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Old_Whopper",
+        "proposedInternalSlug": "the-old-whopper",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Old_Whopper"
+      },
+      {
+        "officialWikiName": "The Pale Count",
+        "wikiSlug": "the-pale-count",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Pale_Count",
+        "proposedInternalSlug": "the-pale-count",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Pale_Count"
+      },
+      {
+        "officialWikiName": "The Pale Worm",
+        "wikiSlug": "the-pale-worm",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Pale_Worm",
+        "proposedInternalSlug": "the-pale-worm",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Pale_Worm"
+      },
+      {
+        "officialWikiName": "The Percht Queen",
+        "wikiSlug": "the-percht-queen",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Percht_Queen",
+        "proposedInternalSlug": "the-percht-queen",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Percht_Queen"
+      },
+      {
+        "officialWikiName": "The Plasmother",
+        "wikiSlug": "the-plasmother",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Plasmother",
+        "proposedInternalSlug": "the-plasmother",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Plasmother"
+      },
+      {
+        "officialWikiName": "The Ravager",
+        "wikiSlug": "the-ravager",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Ravager",
+        "proposedInternalSlug": "the-ravager",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Ravager"
+      },
+      {
+        "officialWikiName": "The Rootkraken",
+        "wikiSlug": "the-rootkraken",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Rootkraken",
+        "proposedInternalSlug": "the-rootkraken",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Rootkraken"
+      },
+      {
+        "officialWikiName": "The Sandking",
+        "wikiSlug": "the-sandking",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Sandking",
+        "proposedInternalSlug": "the-sandking",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Sandking"
+      },
+      {
+        "officialWikiName": "The Scourge of Oblivion",
+        "wikiSlug": "the-scourge-of-oblivion",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Scourge_of_Oblivion",
+        "proposedInternalSlug": "the-scourge-of-oblivion",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Scourge_of_Oblivion"
+      },
+      {
+        "officialWikiName": "The Shatterer",
+        "wikiSlug": "the-shatterer",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Shatterer",
+        "proposedInternalSlug": "the-shatterer",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Shatterer"
+      },
+      {
+        "officialWikiName": "The Souldespoiler",
+        "wikiSlug": "the-souldespoiler",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Souldespoiler",
+        "proposedInternalSlug": "the-souldespoiler",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Souldespoiler"
+      },
+      {
+        "officialWikiName": "The Source Of Corruption",
+        "wikiSlug": "the-source-of-corruption",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Source_Of_Corruption",
+        "proposedInternalSlug": "the-source-of-corruption",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Source_Of_Corruption"
+      },
+      {
+        "officialWikiName": "The Time Guardian",
+        "wikiSlug": "the-time-guardian",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Time_Guardian",
+        "proposedInternalSlug": "the-time-guardian",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Time_Guardian"
+      },
+      {
+        "officialWikiName": "The Unarmored Voidborn",
+        "wikiSlug": "the-unarmored-voidborn",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Unarmored_Voidborn",
+        "proposedInternalSlug": "the-unarmored-voidborn",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Unarmored_Voidborn"
+      },
+      {
+        "officialWikiName": "The Unwelcome",
+        "wikiSlug": "the-unwelcome",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Unwelcome",
+        "proposedInternalSlug": "the-unwelcome",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Unwelcome"
+      },
+      {
+        "officialWikiName": "The Voice of Ruin",
+        "wikiSlug": "the-voice-of-ruin",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Voice_of_Ruin",
+        "proposedInternalSlug": "the-voice-of-ruin",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Voice_of_Ruin"
+      },
+      {
+        "officialWikiName": "The Welter",
+        "wikiSlug": "the-welter",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Welter",
+        "proposedInternalSlug": "the-welter",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Welter"
+      },
+      {
+        "officialWikiName": "The Winter Bloom",
+        "wikiSlug": "the-winter-bloom",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/The_Winter_Bloom",
+        "proposedInternalSlug": "the-winter-bloom",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/The_Winter_Bloom"
+      },
+      {
+        "officialWikiName": "Tropical Desolator",
+        "wikiSlug": "tropical-desolator",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tropical_Desolator",
+        "proposedInternalSlug": "tropical-desolator",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Tropical_Desolator"
+      },
+      {
+        "officialWikiName": "Twisterror",
+        "wikiSlug": "twisterror",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Twisterror",
+        "proposedInternalSlug": "twisterror",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Twisterror"
+      },
+      {
+        "officialWikiName": "Tyrn",
+        "wikiSlug": "tyrn",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tyrn",
+        "proposedInternalSlug": "tyrn",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Tyrn"
+      },
+      {
+        "officialWikiName": "Tzumrah the Dazzler",
+        "wikiSlug": "tzumrah-the-dazzler",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tzumrah_the_Dazzler",
+        "proposedInternalSlug": "tzumrah-the-dazzler",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Tzumrah_the_Dazzler"
+      },
+      {
+        "officialWikiName": "Unaz the Mean",
+        "wikiSlug": "unaz-the-mean",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Unaz_the_Mean",
+        "proposedInternalSlug": "unaz-the-mean",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Unaz_the_Mean"
+      },
+      {
+        "officialWikiName": "Urmahlullu the Weakened",
+        "wikiSlug": "urmahlullu-the-weakened",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Urmahlullu_the_Weakened",
+        "proposedInternalSlug": "urmahlullu-the-weakened",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Urmahlullu_the_Weakened"
+      },
+      {
+        "officialWikiName": "Ushuriel",
+        "wikiSlug": "ushuriel",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Ushuriel",
+        "proposedInternalSlug": "ushuriel",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Ushuriel"
+      },
+      {
+        "officialWikiName": "Utua Stone Sting",
+        "wikiSlug": "utua-stone-sting",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Utua_Stone_Sting",
+        "proposedInternalSlug": "utua-stone-sting",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Utua_Stone_Sting"
+      },
+      {
+        "officialWikiName": "Vashresamun",
+        "wikiSlug": "vashresamun",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Vashresamun",
+        "proposedInternalSlug": "vashresamun",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Vashresamun"
+      },
+      {
+        "officialWikiName": "Vemiath",
+        "wikiSlug": "vemiath",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Vemiath",
+        "proposedInternalSlug": "vemiath",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Vemiath"
+      },
+      {
+        "officialWikiName": "Vladrukh",
+        "wikiSlug": "vladrukh",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Vladrukh",
+        "proposedInternalSlug": "vladrukh",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Vladrukh"
+      },
+      {
+        "officialWikiName": "Vok the Freakish",
+        "wikiSlug": "vok-the-freakish",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Vok_the_Freakish",
+        "proposedInternalSlug": "vok-the-freakish",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Vok_the_Freakish"
+      },
+      {
+        "officialWikiName": "Warlord Ruzad",
+        "wikiSlug": "warlord-ruzad",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Warlord_Ruzad",
+        "proposedInternalSlug": "warlord-ruzad",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Warlord_Ruzad"
+      },
+      {
+        "officialWikiName": "White Pale",
+        "wikiSlug": "white-pale",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/White_Pale",
+        "proposedInternalSlug": "white-pale",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/White_Pale"
+      },
+      {
+        "officialWikiName": "Willi Wasp",
+        "wikiSlug": "willi-wasp",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Willi_Wasp",
+        "proposedInternalSlug": "willi-wasp",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Willi_Wasp"
+      },
+      {
+        "officialWikiName": "World Devourer",
+        "wikiSlug": "world-devourer",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/World_Devourer",
+        "proposedInternalSlug": "world-devourer",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/World_Devourer"
+      },
+      {
+        "officialWikiName": "Wrathful Archivist",
+        "wikiSlug": "wrathful-archivist",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Wrathful_Archivist",
+        "proposedInternalSlug": "wrathful-archivist",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Wrathful_Archivist"
+      },
+      {
+        "officialWikiName": "Xogixath",
+        "wikiSlug": "xogixath",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Xogixath",
+        "proposedInternalSlug": "xogixath",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Xogixath"
+      },
+      {
+        "officialWikiName": "Yaga the Crone",
+        "wikiSlug": "yaga-the-crone",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Yaga_the_Crone",
+        "proposedInternalSlug": "yaga-the-crone",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Yaga_the_Crone"
+      },
+      {
+        "officialWikiName": "Yakchal",
+        "wikiSlug": "yakchal",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Yakchal",
+        "proposedInternalSlug": "yakchal",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Yakchal"
+      },
+      {
+        "officialWikiName": "Yirkas Blue Scales",
+        "wikiSlug": "yirkas-blue-scales",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Yirkas_Blue_Scales",
+        "proposedInternalSlug": "yirkas-blue-scales",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Yirkas_Blue_Scales"
+      },
+      {
+        "officialWikiName": "Zamulosh",
+        "wikiSlug": "zamulosh",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zamulosh",
+        "proposedInternalSlug": "zamulosh",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Zamulosh"
+      },
+      {
+        "officialWikiName": "Zarabustor",
+        "wikiSlug": "zarabustor",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zarabustor",
+        "proposedInternalSlug": "zarabustor",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Zarabustor"
+      },
+      {
+        "officialWikiName": "Zevelon Duskbringer",
+        "wikiSlug": "zevelon-duskbringer",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zevelon_Duskbringer",
+        "proposedInternalSlug": "zevelon-duskbringer",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Zevelon_Duskbringer"
+      },
+      {
+        "officialWikiName": "Zomba",
+        "wikiSlug": "zomba",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zomba",
+        "proposedInternalSlug": "zomba",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Zomba"
+      },
+      {
+        "officialWikiName": "Zorvorax",
+        "wikiSlug": "zorvorax",
+        "bosstiaryCategory": "Archfoe",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zorvorax",
+        "proposedInternalSlug": "zorvorax",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Zorvorax"
+      },
+      {
+        "officialWikiName": "Zugurosh",
+        "wikiSlug": "zugurosh",
+        "bosstiaryCategory": "Bane",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zugurosh",
+        "proposedInternalSlug": "zugurosh",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Zugurosh"
+      },
+      {
+        "officialWikiName": "Zulazza the Corruptor",
+        "wikiSlug": "zulazza-the-corruptor",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zulazza_the_Corruptor",
+        "proposedInternalSlug": "zulazza-the-corruptor",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Zulazza_the_Corruptor"
+      },
+      {
+        "officialWikiName": "Zushuka",
+        "wikiSlug": "zushuka",
+        "bosstiaryCategory": "Nemesis",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Zushuka",
+        "proposedInternalSlug": "zushuka",
+        "duplicateOfExistingTwenty": false,
+        "candidateSourceUrl": "https://www.tibiawiki.com.br/wiki/Zushuka"
+      }
+    ]
+  },
+  "duplicates": {
+    "amongNewVsTwenty": [],
+    "confirmedSlugDuplicates": []
+  },
+  "aliasesConfirmed": {
+    "count-vlarkor": [
+      "Count Vlarkorth"
+    ],
+    "timira-the-many": [
+      "Timira the Many-Headed"
+    ],
+    "sir-nicator": [
+      "Sir Nictros"
+    ],
+    "duke-krenos": [
+      "Duke Krule"
+    ]
+  },
+  "ambiguities": [
+    {
+      "name": "Owin (Criatura)",
+      "auditSlug": "owin-criatura",
+      "slugFromName": "owin",
+      "note": "Slug do audit segue bosses-extracted.json; diverge do slugify(nome wiki)."
+    },
+    {
+      "name": "The First Dragon (Criatura)",
+      "auditSlug": "the-first-dragon-criatura",
+      "slugFromName": "the-first-dragon",
+      "note": "Slug do audit segue bosses-extracted.json; diverge do slugify(nome wiki)."
+    },
+    {
+      "type": "wiki_official_missing_from_314",
+      "officialWikiName": "Tentugly's Head",
+      "proposedWikiSlug": "tentuglys-head",
+      "bosstiaryCategory": "Archfoe",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tentugly's_Head",
+      "reason": "Candidato em bosses-extracted.json com nome de template MediaWiki, não casou com a lista oficial."
+    },
+    {
+      "type": "wiki_official_missing_from_314",
+      "officialWikiName": "Hatebreeder",
+      "proposedWikiSlug": "hatebreeder",
+      "bosstiaryCategory": "Nemesis",
+      "sourceUrl": "https://www.tibiawiki.com.br/wiki/Hatebreeder",
+      "reason": "Ausente de bosses-extracted.json; não passou pela auditoria de candidatos."
+    },
+    {
+      "type": "audit_metric_definition",
+      "detail": "compare.newConfirmedBeyondTwenty compara slugs dos 20 targets com slugs wiki dos confirmados, ignorando aliases — gera 301 em vez de 297."
+    },
+    {
+      "type": "tentugly_candidate_corruption",
+      "candidate": {
+        "name": "{{#ifeq:|Home|Tentugly|Tentugly's Head}}",
+        "sourceUrl": "https://www.tibiawiki.com.br/wiki/Tentugly's_Head",
+        "slug": "ifeq-home-tentugly-tentuglys-head",
+        "isboss": "sim"
+      }
+    }
+  ],
+  "candidateStats": {
+    "extractedCount": 538,
+    "notInBosstiary": 224
+  },
+  "errors": [],
+  "validationPassed": true
+}
