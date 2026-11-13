@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
   applyBossReview,
+  bossCombatStrategyText,
   bossImageUrl,
+  bossLootText,
   bossesForLevelBand,
+  BOSSTIARY_COMBAT_STRATEGY_MARKER,
+  BOSSTIARY_LOOT_STRATEGY_PREFIX,
   filterBosstiary,
+  formatBosstiaryLocationLine,
+  formatBosstiaryReachLine,
   formatMinutes,
   indexBossImages,
+  mergeBosstiaryProfile,
+  splitBossStrategyContent,
   type BosstiaryEntry,
 } from "./bosstiary";
 
@@ -105,5 +113,67 @@ describe("bosstiary filters", () => {
     ]);
     expect(bossImageUrl("Ferumbras", "ferumbras", images)).toBe("/ferumbras.gif");
     expect(bossImageUrl("Rat", "rat", images)).toBeNull();
+  });
+});
+
+describe("bosstiary encyclopedia helpers", () => {
+  it("splits loot drops from combat strategy without duplicating content", () => {
+    const combined = `${BOSSTIARY_LOOT_STRATEGY_PREFIX} Demon Shield, Magic Sword${BOSSTIARY_COMBAT_STRATEGY_MARKER}Foque nas summons primeiro.`;
+    expect(splitBossStrategyContent(combined)).toEqual({
+      loot: "Demon Shield, Magic Sword",
+      combatStrategy: "Foque nas summons primeiro.",
+    });
+    expect(splitBossStrategyContent(`${BOSSTIARY_LOOT_STRATEGY_PREFIX} Golden Helmet`)).toEqual({
+      loot: "Golden Helmet",
+      combatStrategy: null,
+    });
+    expect(splitBossStrategyContent("Use fire e mantenha distância.")).toEqual({
+      loot: null,
+      combatStrategy: "Use fire e mantenha distância.",
+    });
+  });
+
+  it("formats location and reach lines from reviewed fields", () => {
+    const profile = {
+      location: "Ferumbras' Citadel",
+      locationRegion: "Zao",
+      originCity: "Farmine",
+      howToReach: "Barco em Farmine até.",
+      accessRequirements: "The Inquisition.",
+    };
+    expect(formatBosstiaryLocationLine(profile)).toBe("Ferumbras' Citadel · Zao · Farmine");
+    expect(formatBosstiaryReachLine(profile)).toBe("Barco em Farmine até.\n\nThe Inquisition.");
+  });
+
+  it("exposes loot and strategy separately on an entry", () => {
+    const encyclopediaEntry = entry({
+      strategy: `${BOSSTIARY_LOOT_STRATEGY_PREFIX} Soul Orb${BOSSTIARY_COMBAT_STRATEGY_MARKER}Stack and kite.`,
+    });
+    expect(bossLootText(encyclopediaEntry)).toBe("Soul Orb");
+    expect(bossCombatStrategyText(encyclopediaEntry)).toBe("Stack and kite.");
+  });
+
+  it("keeps wiki-estimated levels from the reviewed profile", () => {
+    const merged = mergeBosstiaryProfile(entry(), {
+      slug: "ferumbras",
+      officialCategory: null,
+      huntMode: null,
+      recommendedLevelSolo: 450,
+      recommendedLevelParty: 250,
+      difficulty: null,
+      locationName: null,
+      locationRegion: null,
+      originCity: null,
+      accessStatus: null,
+      accessRequirements: null,
+      howToReach: null,
+      cooldownSeconds: null,
+      estimatedCombatMinutes: null,
+      bossPoints: null,
+      mechanics: null,
+      strategy: null,
+    });
+    expect(merged.recommendedLevelSolo).toBe(450);
+    expect(merged.recommendedLevelParty).toBe(250);
   });
 });

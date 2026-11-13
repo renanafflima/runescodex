@@ -1,41 +1,74 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { PageContainer } from "../components/layout/PageContainer";
 import { BosstiaryProgressPanel } from "../components/bosstiary/BosstiaryProgressPanel";
 import { EncyclopediaPanel } from "../components/bosstiary/EncyclopediaPanel";
 import { CommunityRotationsFeed } from "../components/bosstiary/CommunityRotationsFeed";
-import { loadBosstiaryCatalog, type BosstiaryCatalog } from "../domain/bosstiary-catalog";
+import { loadBosstiaryCatalog, officialBossImage } from "../domain/bosstiary-catalog";
+import { entryFromReviewedBoss, type BosstiaryEntry } from "../domain/bosstiary";
 import { BOSSTIARY_TABS, parseBosstiaryTab, type BosstiaryTab } from "../domain/bosstiary-rotations";
+import { describeApiError } from "../services/api/errors";
+import { listBosstiaryProfiles, type BosstiaryReviewedBoss } from "../services/api/bosstiary";
+import { loadEntireCatalog } from "../services/api/page";
 
 export function BosstiaryPage() {
   const [params, setParams] = useSearchParams();
   const bossSlug = params.get("boss");
   const tab = parseBosstiaryTab(params.get("tab"));
-  const [catalog, setCatalog] = useState<BosstiaryCatalog | null>(null);
+  const [entries, setEntries] = useState<BosstiaryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const needsCatalog = tab === "enciclopedia";
 
-  function load() {
+  const loadEncyclopedia = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      setCatalog(loadBosstiaryCatalog());
+      const profiles = await loadEntireCatalog<BosstiaryReviewedBoss>((query) =>
+        listBosstiaryProfiles(query ?? {}),
+      );
+      if (profiles.length > 0) {
+        let catalogEntries: BosstiaryEntry[] = [];
+        try {
+          catalogEntries = loadBosstiaryCatalog().entries;
+        } catch {
+          catalogEntries = [];
+        }
+        setEntries(
+          profiles.map((profile) =>
+            entryFromReviewedBoss(
+              profile,
+              catalogEntries,
+              officialBossImage(profile.name, profile.slug),
+            ),
+          ),
+        );
+        return;
+      }
+      const catalog = loadBosstiaryCatalog();
+      setEntries(catalog.entries);
     } catch (err) {
-      setCatalog(null);
-      setError(err instanceof Error ? err.message : "Não foi possível ler o Bosstiário.");
+      try {
+        const catalog = loadBosstiaryCatalog();
+        setEntries(catalog.entries);
+        setError("");
+      } catch (fallbackErr) {
+        setEntries([]);
+        setError(
+          fallbackErr instanceof Error
+            ? fallbackErr.message
+            : describeApiError(err) || "Não foi possível ler o Bosstiário.",
+        );
+      }
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     if (!needsCatalog) return;
-    if (catalog || error) return;
-    load();
-  }, [needsCatalog, catalog, error]);
-
-  const entries = useMemo(() => catalog?.entries ?? [], [catalog]);
+    void loadEncyclopedia();
+  }, [loadEncyclopedia, needsCatalog]);
 
   function setTab(next: BosstiaryTab) {
     const search = new URLSearchParams(params);
@@ -95,8 +128,8 @@ export function BosstiaryPage() {
           <EncyclopediaPanel
             entries={entries}
             error={error}
-            loading={loading && !catalog}
-            onRetry={load}
+            loading={loading}
+            onRetry={() => void loadEncyclopedia()}
           />
         ) : null}
       </PageContainer>

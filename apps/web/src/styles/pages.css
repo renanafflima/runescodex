@@ -4611,6 +4611,11 @@ button.support-metric:focus-visible,
   color: var(--color-text-soft);
 }
 
+.bosstiary-detail__actions {
+  grid-column: 1 / -1;
+  margin-top: var(--space-4);
+}
+
 .bosstiary-rewards {
   display: grid;
   gap: var(--space-2);

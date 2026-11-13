@@ -27,8 +27,8 @@ export type BosstiaryEntry = {
   source: "tibiawiki-candidate" | "reviewed-profile";
   party: BossParty | null;
   recommendedLevel: BossLevel | null;
-  recommendedLevelSolo: BossLevel | null;
-  recommendedLevelParty: BossLevel | null;
+  recommendedLevelSolo: number | null;
+  recommendedLevelParty: number | null;
   imageUrl: string | null;
   rewards: BosstiaryReward[];
   location: string | null;
@@ -148,6 +148,140 @@ export function isBosstiaryDifficulty(value: string | null | undefined): value i
   return value === "EASY" || value === "MEDIUM" || value === "HARD" || value === "VERY_HARD";
 }
 
+export type BosstiaryReviewedBossLike = BosstiaryReviewedProfile & {
+  name: string;
+  slug: string;
+  source?: "reviewed-profile";
+};
+
+export function reviewedProfileFromApi(boss: BosstiaryReviewedBossLike): BosstiaryReviewedProfile {
+  return {
+    slug: boss.slug,
+    officialCategory: boss.officialCategory,
+    huntMode: boss.huntMode ?? null,
+    recommendedLevelSolo: boss.recommendedLevelSolo,
+    recommendedLevelParty: boss.recommendedLevelParty,
+    difficulty: boss.difficulty,
+    locationName: boss.locationName,
+    locationRegion: boss.locationRegion,
+    originCity: boss.originCity,
+    accessStatus: boss.accessStatus,
+    accessRequirements: boss.accessRequirements,
+    howToReach: boss.howToReach,
+    cooldownSeconds: boss.cooldownSeconds,
+    estimatedCombatMinutes: boss.estimatedCombatMinutes,
+    bossPoints: boss.bossPoints,
+    mechanics: boss.mechanics,
+    strategy: boss.strategy,
+  };
+}
+
+export function blankBosstiaryEntry(name: string, slug: string, imageUrl: string | null = null): BosstiaryEntry {
+  return {
+    name,
+    slug,
+    sourceUrl: `https://www.tibiawiki.com.br/wiki/${slug.replace(/-/g, "_")}`,
+    isboss: "sim",
+    source: "tibiawiki-candidate",
+    party: null,
+    recommendedLevel: null,
+    recommendedLevelSolo: null,
+    recommendedLevelParty: null,
+    imageUrl,
+    rewards: [],
+    location: null,
+    locationRegion: null,
+    originCity: null,
+    bossPoints: null,
+    officialCategory: null,
+    difficulty: null,
+    accessStatus: null,
+    accessRequirements: null,
+    howToReach: null,
+    cooldownSeconds: null,
+    estimatedCombatMinutes: null,
+    mechanics: null,
+    strategy: null,
+  };
+}
+
+export function entryFromReviewedBoss(
+  boss: BosstiaryReviewedBossLike,
+  catalogEntries?: BosstiaryEntry[],
+  imageUrl: string | null = null,
+): BosstiaryEntry {
+  const local = catalogEntries?.find((item) => item.slug === boss.slug);
+  const base = local ?? blankBosstiaryEntry(boss.name, boss.slug, imageUrl);
+  return mergeBosstiaryProfile(
+    {
+      ...base,
+      imageUrl: base.imageUrl ?? imageUrl,
+    },
+    reviewedProfileFromApi(boss),
+  );
+}
+
+export const BOSSTIARY_LOOT_STRATEGY_PREFIX = "Drops principais:";
+export const BOSSTIARY_COMBAT_STRATEGY_MARKER = "\n\n## Estratégia\n";
+
+export function splitBossStrategyContent(strategy: string | null | undefined): {
+  loot: string | null;
+  combatStrategy: string | null;
+} {
+  const raw = strategy?.trim();
+  if (!raw) return { loot: null, combatStrategy: null };
+
+  const markerIndex = raw.indexOf(BOSSTIARY_COMBAT_STRATEGY_MARKER);
+  if (markerIndex >= 0) {
+    const lootBlock = raw.slice(0, markerIndex).trim();
+    const combatStrategy = raw.slice(markerIndex + BOSSTIARY_COMBAT_STRATEGY_MARKER.length).trim() || null;
+    const loot = stripLootPrefix(lootBlock);
+    return { loot, combatStrategy };
+  }
+
+  if (raw.startsWith(BOSSTIARY_LOOT_STRATEGY_PREFIX)) {
+    return { loot: stripLootPrefix(raw), combatStrategy: null };
+  }
+
+  return { loot: null, combatStrategy: raw };
+}
+
+function stripLootPrefix(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith(BOSSTIARY_LOOT_STRATEGY_PREFIX)) {
+    const body = trimmed.slice(BOSSTIARY_LOOT_STRATEGY_PREFIX.length).trim();
+    return body || null;
+  }
+  return trimmed;
+}
+
+export function formatBosstiaryLocationLine(entry: Pick<BosstiaryEntry, "location" | "locationRegion" | "originCity">) {
+  const parts = [entry.location, entry.locationRegion, entry.originCity]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part));
+  const unique = [...new Set(parts)];
+  return unique.length ? unique.join(" · ") : null;
+}
+
+export function formatBosstiaryReachLine(entry: Pick<BosstiaryEntry, "howToReach" | "accessRequirements">) {
+  const parts = [entry.howToReach, entry.accessRequirements]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part));
+  return parts.length ? parts.join("\n\n") : null;
+}
+
+export function bossLootText(entry: BosstiaryEntry) {
+  const { loot } = splitBossStrategyContent(entry.strategy);
+  if (loot) return loot;
+  if (entry.rewards.length > 0) return entry.rewards.map((reward) => reward.name).join(", ");
+  return null;
+}
+
+export function bossCombatStrategyText(entry: BosstiaryEntry) {
+  return splitBossStrategyContent(entry.strategy).combatStrategy;
+}
+
 export function mergeBosstiaryProfile(
   entry: BosstiaryEntry,
   profile: BosstiaryReviewedProfile | null,
@@ -155,16 +289,17 @@ export function mergeBosstiaryProfile(
   if (!profile) return entry;
   const partyFromProfile =
     profile.huntMode === "SOLO" ? "solo" : profile.huntMode === "PARTY" ? "party" : null;
-  const soloLevel = isBossLevel(Number(profile.recommendedLevelSolo))
-    ? (profile.recommendedLevelSolo as BossLevel)
-    : entry.recommendedLevelSolo;
-  const partyLevel = isBossLevel(Number(profile.recommendedLevelParty))
-    ? (profile.recommendedLevelParty as BossLevel)
-    : entry.recommendedLevelParty;
+  const soloLevel =
+    profile.recommendedLevelSolo != null ? profile.recommendedLevelSolo : entry.recommendedLevelSolo;
+  const partyLevel =
+    profile.recommendedLevelParty != null ? profile.recommendedLevelParty : entry.recommendedLevelParty;
   const party = entry.party ?? partyFromProfile;
+  const levelForParty =
+    partyLevel != null && isBossLevel(partyLevel) ? (partyLevel as BossLevel) : null;
+  const levelForSolo = soloLevel != null && isBossLevel(soloLevel) ? (soloLevel as BossLevel) : null;
   const recommendedLevel =
     entry.recommendedLevel ??
-    (party === "party" ? partyLevel : party === "solo" ? soloLevel : soloLevel ?? partyLevel) ??
+    (party === "party" ? levelForParty : party === "solo" ? levelForSolo : levelForSolo ?? levelForParty) ??
     null;
   return {
     ...entry,

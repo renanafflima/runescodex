@@ -1,9 +1,17 @@
 import { useMemo, useState } from "react";
 import { CatalogImage } from "../catalog/CatalogImage";
 import { CatalogEmpty, CatalogError, CatalogLoading } from "../catalog/CatalogState";
+import { ButtonLink } from "../ui/Button";
 import { SearchInput } from "../ui/FormControls";
 import { Modal } from "../ui/Modal";
-import { bossPartyLabel, filterBosstiary, type BosstiaryEntry } from "../../domain/bosstiary";
+import {
+  bossCombatStrategyText,
+  bossLootText,
+  filterBosstiary,
+  formatBosstiaryLocationLine,
+  formatBosstiaryReachLine,
+  type BosstiaryEntry,
+} from "../../domain/bosstiary";
 
 type EncyclopediaPanelProps = {
   entries: BosstiaryEntry[];
@@ -26,7 +34,7 @@ export function EncyclopediaPanel({ entries, loading, error, onRetry }: Encyclop
     <section className="bosstiary-encyclopedia" aria-labelledby="encyclopedia-title">
       <div className="bosstiary-section-title">
         <h2 id="encyclopedia-title">Enciclopédia</h2>
-        <p>Consulte os bosses do catálogo visual. Os detalhes completos abrem ao selecionar um card.</p>
+        <p>Perfis sincronizados do Bosstiário revisado, com fallback no catálogo TibiaWiki quando necessário.</p>
       </div>
 
       <div className="bosstiary-encyclopedia__filters">
@@ -52,16 +60,7 @@ export function EncyclopediaPanel({ entries, loading, error, onRetry }: Encyclop
         </div>
       )}
 
-      <Modal
-        description={
-          selected?.party
-            ? "Recomendação editorial do RuneCodex, não requisito oficial do Tibia."
-            : "Candidato da TibiaWiki. A classificação do RuneCodex ainda não foi revisada."
-        }
-        onClose={() => setSelectedSlug(null)}
-        open={Boolean(selected)}
-        title={selected?.name ?? "Boss"}
-      >
+      <Modal onClose={() => setSelectedSlug(null)} open={Boolean(selected)} title={selected?.name ?? "Boss"}>
         {selected ? <BossDetail entry={selected} /> : null}
       </Modal>
     </section>
@@ -79,63 +78,45 @@ function BossCard({ entry, onOpen }: { entry: BosstiaryEntry; onOpen: () => void
   );
 }
 
+function DetailField({ label, value }: { label: string; value: string | null }) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>{value?.trim() ? value : "—"}</dd>
+    </div>
+  );
+}
+
 function BossDetail({ entry }: { entry: BosstiaryEntry }) {
-  const party = bossPartyLabel(entry.party);
+  const loot = bossLootText(entry);
+  const combatStrategy = bossCombatStrategyText(entry);
+  const location = formatBosstiaryLocationLine(entry);
+  const reach = formatBosstiaryReachLine(entry);
+  const mechanics = entry.mechanics?.trim() || null;
+
   return (
     <div className="bosstiary-detail">
       <CatalogImage alt="" className="bosstiary-detail__art" name={entry.name} src={entry.imageUrl} />
       <dl>
-        <div>
-          <dt>Fonte</dt>
-          <dd>
-            <a href={entry.sourceUrl} rel="noreferrer" target="_blank">
-              TibiaWiki
-            </a>
-            {" · "}isboss = {entry.isboss}
-          </dd>
-        </div>
-        <div>
-          <dt>Categoria</dt>
-          <dd>{party ?? "Solo, PT ou Evento ainda não revisados."}</dd>
-        </div>
-        <div>
-          <dt>Nível recomendado</dt>
-          <dd>
-            {entry.recommendedLevel
-              ? `Recomendação do RuneCodex: ${entry.recommendedLevel}. Não é nível mínimo oficial.`
-              : "Sem recomendação revisada do RuneCodex."}
-          </dd>
-        </div>
-        <div>
-          <dt>Recompensas</dt>
-          <dd>
-            {entry.rewards.length === 0 ? (
-              "Nenhuma recompensa cadastrada."
-            ) : (
-              <ul className="bosstiary-rewards">
-                {entry.rewards.map((reward) => (
-                  <li key={reward.name}>
-                    <CatalogImage alt="" name={reward.name} src={reward.imageUrl} />
-                    <span>{reward.name}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </dd>
-        </div>
-        <div>
-          <dt>Localização</dt>
-          <dd>{entry.location ?? "Localização ainda não cadastrada."}</dd>
-        </div>
-        <div>
-          <dt>Boss Points</dt>
-          <dd>
-            {entry.bossPoints == null
-              ? "Sem fonte de Boss Points no RuneCodex."
-              : entry.bossPoints}
-          </dd>
-        </div>
+        <DetailField
+          label="Nível recomendado (Solo)"
+          value={entry.recommendedLevelSolo != null ? String(entry.recommendedLevelSolo) : null}
+        />
+        <DetailField
+          label="Nível recomendado (PT)"
+          value={entry.recommendedLevelParty != null ? String(entry.recommendedLevelParty) : null}
+        />
+        <DetailField label="Recompensas / loot" value={loot} />
+        <DetailField label="Localização" value={location} />
+        <DetailField label="Como chegar / acesso" value={reach} />
+        <DetailField label="Mecânicas" value={mechanics} />
+        <DetailField label="Estratégia" value={combatStrategy} />
       </dl>
+      <div className="bosstiary-detail__actions">
+        <ButtonLink to={`/bosstiary/${entry.slug}`} variant="primary">
+          Abrir ficha completa
+        </ButtonLink>
+      </div>
     </div>
   );
 }

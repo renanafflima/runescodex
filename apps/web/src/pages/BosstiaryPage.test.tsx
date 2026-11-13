@@ -9,11 +9,13 @@ const {
   findBosstiaryRotations,
   listCommunityRotations,
   getBosstiaryProgressSummary,
+  listBosstiaryProfiles,
 } = vi.hoisted(() => ({
   loadBosstiaryCatalog: vi.fn(),
   findBosstiaryRotations: vi.fn(),
   listCommunityRotations: vi.fn(),
   getBosstiaryProgressSummary: vi.fn(),
+  listBosstiaryProfiles: vi.fn(),
 }));
 
 vi.mock("../domain/bosstiary-catalog", () => ({
@@ -22,6 +24,7 @@ vi.mock("../domain/bosstiary-catalog", () => ({
 
 vi.mock("../services/api/bosstiary", () => ({
   findBosstiaryRotations,
+  listBosstiaryProfiles,
   listBosstiaryBosses: vi.fn(async () => ({ items: [], page: 1, limit: 8, total: 0, hasMore: false })),
 }));
 
@@ -131,6 +134,8 @@ describe("BosstiaryPage", () => {
     findBosstiaryRotations.mockReset();
     listCommunityRotations.mockReset();
     getBosstiaryProgressSummary.mockReset();
+    listBosstiaryProfiles.mockReset();
+    listBosstiaryProfiles.mockResolvedValue({ items: [], page: 1, limit: 50, total: 0, hasMore: false });
     listCommunityRotations.mockResolvedValue({
       items: [],
       page: 1,
@@ -220,15 +225,16 @@ describe("BosstiaryPage", () => {
 
   it("loads encyclopedia content only on its tab", async () => {
     show();
-    expect(loadBosstiaryCatalog).not.toHaveBeenCalled();
+    expect(listBosstiaryProfiles).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: /Enciclopédia/i }));
+    await waitFor(() => expect(listBosstiaryProfiles).toHaveBeenCalled());
     await waitFor(() => expect(loadBosstiaryCatalog).toHaveBeenCalled());
     expect(screen.getByRole("heading", { name: "Enciclopédia" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Ferumbras/ })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("button", { name: /Ferumbras/ })).toBeInTheDocument());
     expect(screen.queryByText("Classificação pendente")).not.toBeInTheDocument();
     expect(screen.queryByText("Nível não revisado")).not.toBeInTheDocument();
-    expect(screen.queryByText(/Candidato TibiaWiki/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/isboss =/)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Solo" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "PT" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "300" })).not.toBeInTheDocument();
@@ -236,6 +242,7 @@ describe("BosstiaryPage", () => {
 
   it("filters encyclopedia entries by name and opens the boss modal", async () => {
     show("?tab=enciclopedia");
+    await waitFor(() => expect(loadBosstiaryCatalog).toHaveBeenCalled());
     await waitFor(() => expect(screen.getByRole("button", { name: /Ferumbras/ })).toBeInTheDocument());
 
     fireEvent.change(screen.getByLabelText("Buscar boss pelo nome"), { target: { value: "ghaz" } });
@@ -260,6 +267,7 @@ describe("BosstiaryPage", () => {
   });
 
   it("shows the catalog error state on the encyclopedia tab", async () => {
+    listBosstiaryProfiles.mockRejectedValue(new Error("API indisponível"));
     loadBosstiaryCatalog.mockImplementation(() => {
       throw new Error("Lista ilegível");
     });
