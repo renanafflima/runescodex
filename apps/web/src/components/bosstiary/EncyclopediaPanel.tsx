@@ -20,13 +20,22 @@ type EncyclopediaPanelProps = {
   onRetry: () => void;
 };
 
+const CATEGORY_OPTIONS = [
+  { value: "all", label: "Todas" },
+  { value: "Bane", label: "Bane" },
+  { value: "Archfoe", label: "Archfoe" },
+  { value: "Nemesis", label: "Nemesis" },
+] as const;
+
 export function EncyclopediaPanel({ entries, loading, error, onRetry }: EncyclopediaPanelProps) {
   const [query, setQuery] = useState("");
+  const [officialCategory, setOfficialCategory] =
+    useState<(typeof CATEGORY_OPTIONS)[number]["value"]>("all");
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
   const filtered = useMemo(
-    () => filterBosstiary(entries, { query, party: "all", level: "all" }),
-    [entries, query],
+    () => filterBosstiary(entries, { query, party: "all", level: "all", officialCategory }),
+    [entries, officialCategory, query],
   );
   const selected = entries.find((entry) => entry.slug === selectedSlug) ?? null;
 
@@ -44,6 +53,21 @@ export function EncyclopediaPanel({ entries, loading, error, onRetry }: Encyclop
           placeholder="Buscar boss pelo nome"
           value={query}
         />
+        <label className="bosstiary-encyclopedia__category">
+          <span>Categoria Bosstiário</span>
+          <select
+            onChange={(event) =>
+              setOfficialCategory(event.target.value as (typeof CATEGORY_OPTIONS)[number]["value"])
+            }
+            value={officialCategory}
+          >
+            {CATEGORY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {loading ? (
