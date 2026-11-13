@@ -73,7 +73,7 @@ export function CharmGuidesPanel({ onPublish }: CharmGuidesPanelProps) {
         <div>
           <div className="section-kicker">Escolha seu objetivo</div>
           <h2>Rotas de Charm Points</h2>
-          <p>Guias organizados por categoria de Charm Points. Os valores de CP vêm do Bestiário.</p>
+          <p>Guias organizados por categoria de Charm Points.</p>
         </div>
       </div>
 
@@ -121,7 +121,7 @@ export function CharmGuidesPanel({ onPublish }: CharmGuidesPanelProps) {
           <div>
             <div className="section-kicker">Compartilhe e aprenda</div>
             <h2 id="community-guides-title">Guias da Comunidade</h2>
-            <p>Sequências de Hunts e criaturas publicadas pelos jogadores.</p>
+            <p></p>
           </div>
           <Button onClick={onPublish} type="button">
             ＋ Compartilhe sua estratégia
