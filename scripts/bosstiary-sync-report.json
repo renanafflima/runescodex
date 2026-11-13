@@ -1,0 +1,139 @@
+{
+  "generatedAt": "2026-11-13T17:00:06.072Z",
+  "mode": "apply",
+  "appEnv": "production",
+  "dbHost": "ep-odd-shape-acvcp9ho-pooler.sa-east-1.aws.neon.tech",
+  "backupPath": "C:\\Projetos\\runescodexgit\\scripts\\backups\\bosstiary-pre-sync-2026-11-13T17-00-05-679Z.json",
+  "targets": [
+    "abyssador",
+    "banebringer",
+    "black-knight",
+    "bragrumol",
+    "count-vlarkor",
+    "deathstrike",
+    "drume",
+    "duke-krenos",
+    "fluffy",
+    "gnomevil",
+    "grand-master-oberon",
+    "kroazur",
+    "lord-azaram",
+    "mazoran",
+    "ragiaz",
+    "scarlett-etzel",
+    "sir-nicator",
+    "timira-the-many",
+    "xenia",
+    "yube"
+  ],
+  "totals": {
+    "updated": 0,
+    "unchanged": 20,
+    "dryRunChanges": 0,
+    "failed": 0,
+    "rejected": 0,
+    "skipped": 0
+  },
+  "rows": [
+    {
+      "slug": "abyssador",
+      "name": "Abyssador",
+      "status": "unchanged"
+    },
+    {
+      "slug": "banebringer",
+      "name": "Banebringer",
+      "status": "unchanged"
+    },
+    {
+      "slug": "black-knight",
+      "name": "Black Knight",
+      "status": "unchanged"
+    },
+    {
+      "slug": "bragrumol",
+      "name": "Bragrumol",
+      "status": "unchanged"
+    },
+    {
+      "slug": "count-vlarkor",
+      "name": "Count Vlarkor",
+      "status": "unchanged"
+    },
+    {
+      "slug": "deathstrike",
+      "name": "Deathstrike",
+      "status": "unchanged"
+    },
+    {
+      "slug": "drume",
+      "name": "Drume",
+      "status": "unchanged"
+    },
+    {
+      "slug": "duke-krenos",
+      "name": "Duke Krenos",
+      "status": "unchanged"
+    },
+    {
+      "slug": "fluffy",
+      "name": "Fluffy",
+      "status": "unchanged"
+    },
+    {
+      "slug": "gnomevil",
+      "name": "Gnomevil",
+      "status": "unchanged"
+    },
+    {
+      "slug": "grand-master-oberon",
+      "name": "Grand Master Oberon",
+      "status": "unchanged"
+    },
+    {
+      "slug": "kroazur",
+      "name": "Kroazur",
+      "status": "unchanged"
+    },
+    {
+      "slug": "lord-azaram",
+      "name": "Lord Azaram",
+      "status": "unchanged"
+    },
+    {
+      "slug": "mazoran",
+      "name": "Mazoran",
+      "status": "unchanged"
+    },
+    {
+      "slug": "ragiaz",
+      "name": "Ragiaz",
+      "status": "unchanged"
+    },
+    {
+      "slug": "scarlett-etzel",
+      "name": "Scarlett Etzel",
+      "status": "unchanged"
+    },
+    {
+      "slug": "sir-nicator",
+      "name": "Sir Nicator",
+      "status": "unchanged"
+    },
+    {
+      "slug": "timira-the-many",
+      "name": "Timira the Many",
+      "status": "unchanged"
+    },
+    {
+      "slug": "xenia",
+      "name": "Xenia",
+      "status": "unchanged"
+    },
+    {
+      "slug": "yube",
+      "name": "Yube",
+      "status": "unchanged"
+    }
+  ]
+}

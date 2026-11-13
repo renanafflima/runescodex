@@ -48,5 +48,9 @@ ios/build/
 *.tmp
 *.temp
 
+# Bosstiary sync backups (full DB exports)
+scripts/backups/
+scripts/bosstiary-enriched.json
+
 # Local ticket evidence files. Production uses S3-compatible storage.
 apps/api/.ticket-storage/

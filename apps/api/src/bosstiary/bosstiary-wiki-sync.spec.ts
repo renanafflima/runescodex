@@ -8,6 +8,7 @@ import {
   BOSSTIARY_LOOT_STRATEGY_PREFIX,
   combineWikiStrategyField,
   mergeWikiParsedIntoExisting,
+  normalizeLegacyStrategyField,
   type BosstiaryWikiParsed,
 } from './bosstiary-wiki-sync';
 
@@ -15,7 +16,9 @@ const emptyParsed: BosstiaryWikiParsed = {
   officialCategory: null,
   bossPoints: null,
   locationName: null,
+  locationRegion: null,
   originCity: null,
+  howToReach: null,
   accessRequirements: null,
   accessStatus: null,
   cooldownSeconds: null,
@@ -72,5 +75,29 @@ describe('bosstiary wiki sync merge', () => {
     expect(merged.locationName).toBe('Hellgorge');
     expect(merged.mechanics).toBe('Habilidades: rush');
     expect(merged.recommendedLevelParty).toBe(300);
+  });
+
+  it('preserves manual access requirements when wiki says no quest', () => {
+    const existing: BosstiaryWikiParsed = {
+      ...emptyParsed,
+      accessRequirements: 'Grave Danger Quest',
+      accessStatus: BosstiaryAccessStatus.REQUIRED,
+    };
+    const parsed: BosstiaryWikiParsed = {
+      ...emptyParsed,
+      accessStatus: BosstiaryAccessStatus.NONE,
+      accessRequirements: null,
+    };
+    const merged = mergeWikiParsedIntoExisting(existing, parsed);
+    expect(merged.accessRequirements).toBe('Grave Danger Quest');
+    expect(merged.accessStatus).toBe(BosstiaryAccessStatus.REQUIRED);
+  });
+
+  it('normalizes legacy mixed strategy prose', () => {
+    const mixed =
+      'O EK deve manter o boss trapado. Drops principais: Shiny Blade, Mycological Bow, Gill Coat.';
+    expect(normalizeLegacyStrategyField(mixed)).toBe(
+      `${BOSSTIARY_LOOT_STRATEGY_PREFIX} Shiny Blade, Mycological Bow, Gill Coat${BOSSTIARY_COMBAT_STRATEGY_MARKER}O EK deve manter o boss trapado.`,
+    );
   });
 });

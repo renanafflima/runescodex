@@ -1,0 +1,225 @@
+﻿{
+  "count": 20,
+  "bosses": [
+    {
+      "slug": "abyssador",
+      "name": "Abyssador",
+      "location": "Warzone 3 (Gnomebase Alpha) · Bigfoot's Burden · Kazordoon",
+      "reach": "Acessar Gnomebase Alpha via Kazordoon/Farmine, entrar no teleporte da Warzone 3. / Rank IV na Bigfoot's Burden Quest + Red Teleport Crystal.",
+      "loot": "Shiny Blade, Mycological Bow, Gill Coat",
+      "strategy": "sim",
+      "solo": 450,
+      "party": 200,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "banebringer",
+      "name": "Banebringer",
+      "location": "Grimvale Sanctuary · Edron",
+      "reach": "—",
+      "loot": "—",
+      "strategy": "—",
+      "solo": 150,
+      "party": 150,
+      "mechanics": "—"
+    },
+    {
+      "slug": "black-knight",
+      "name": "Black Knight",
+      "location": "Green Claw Swamp · Venore",
+      "reach": "—",
+      "loot": "Rope, Brass Legs, Dark Armor, Battle Hammer, Dark Helmet, Halberd, Plate Armor, Steel Helmet, Two Handed Sword, Knight Axe, Warrior Helmet, Knight Legs, Ruby Necklace, Knight Armor, Dragon Lance, Lightning Legs, Piggy Bank, Boots of Haste",
+      "strategy": "sim",
+      "solo": 70,
+      "party": 70,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "bragrumol",
+      "name": "Bragrumol",
+      "location": "Grimvale Sanctuary · Edron",
+      "reach": "—",
+      "loot": "Underworld Rod, Stone Skin Amulet, Giant Shimmering Pearl (Green), Magma Coat, Red Gem, Sea Horse Figurine, Golden Mask, Enchanted Theurgic Amulet, Enchanted Blister Ring, Winged Boots",
+      "strategy": "texto-misto",
+      "solo": 150,
+      "party": 150,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "count-vlarkor",
+      "name": "Count Vlarkor",
+      "location": "Edron Vampire Crypt (Grave Danger) · Edron · Edron",
+      "reach": "Descer na tumba ao norte de Edron até a sala da alavanca. / Acesso iniciado na Grave Danger Quest.",
+      "loot": "—",
+      "strategy": "sim",
+      "solo": 600,
+      "party": 300,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "deathstrike",
+      "name": "Deathstrike",
+      "location": "Warzone 1 (Gnomebase Alpha) · Bigfoot's Burden · Kazordoon",
+      "reach": "Acessar Gnomebase Alpha e entrar no teleporte da Warzone 1. / Rank IV na Bigfoot's Burden Quest + Red Teleport Crystal.",
+      "loot": "Crystalline Axe, Mycological Mace, Gill Legs",
+      "strategy": "sim",
+      "solo": 400,
+      "party": 180,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "drume",
+      "name": "Drume",
+      "location": "Bounac · Edron",
+      "reach": "—",
+      "loot": "Energy Bar, Giant Shimmering Pearl, Green Gem, Stone Skin Amulet, Yellow Gem, Blue Gem, Terra Legs, Terra Mantle, Giant Sapphire, Terra Hood, Underworld Rod, Raw Watermelon Tourmaline, Gold Ingot, Silver Token, Violet Gem, Wand of Voodoo, Terra Amulet, Terra Rod, Lion Amulet, Lion Axe, Lion Longbow, Lion Plate, Lion Spangenhelm, Lion Wand, Giant Ruby, Lion Spellbook, Lion Hammer, Lion Longsword, Lion Rod, Lion Shield, Lion Claws",
+      "strategy": "texto-misto",
+      "solo": 250,
+      "party": 200,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "duke-krenos",
+      "name": "Duke Krenos",
+      "location": "Darashia Dark Pyramid (Grave Danger) · Darashia · Darashia",
+      "reach": "Subsolo da pirâmide ao norte de Darashia. / Acesso iniciado na Grave Danger Quest.",
+      "loot": "—",
+      "strategy": "sim",
+      "solo": 650,
+      "party": 350,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "fluffy",
+      "name": "Fluffy",
+      "location": "Grimvale Sanctuary · Edron",
+      "reach": "—",
+      "loot": "Bone, Surprise Bag (Red), Demonic Essence, Flask of Demonic Blood, Knight Axe, Soul Orb, Spike Sword",
+      "strategy": "sim",
+      "solo": 150,
+      "party": 150,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "gnomevil",
+      "name": "Gnomevil",
+      "location": "Warzone 2 (Gnomebase Alpha) · Bigfoot's Burden · Kazordoon",
+      "reach": "Acessar Gnomebase Alpha e entrar no teleporte da Warzone 2. / Rank IV na Bigfoot's Burden Quest + Red Teleport Crystal.",
+      "loot": "Ornate Crossbow, Crystal Crossbow, Gill Gugel",
+      "strategy": "sim",
+      "solo": 420,
+      "party": 180,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "grand-master-oberon",
+      "name": "Grand Master Oberon",
+      "location": "Falcon Bastion · Edron",
+      "reach": "—",
+      "loot": "The Spatial Warp Almanac, Falcon Bow, Falcon Shield, Falcon Plate, Falcon Circlet, Falcon Battleaxe, Falcon Coif, Falcon Mace, Falcon Sai, Falcon Longsword, Falcon Greaves, Falcon Rod, Falcon Wand, Grant of Arms, Brass Shield, Torch, Pelvis Bone, Mace, Sword, Hatchet, Heavy Old Tome, Bone, Viking Helmet",
+      "strategy": "texto-misto",
+      "solo": 500,
+      "party": 250,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "kroazur",
+      "name": "Kroazur",
+      "location": "Feyrist Fey Cave · Feyrist",
+      "reach": "—",
+      "loot": "Fairy Wings, Gemmed Figurine, Cluster of Solace, Gold Ingot, Silver Token, Red Crystal Fragment, Nightmare Blade, Gold Token, Small Enchanted Sapphire, Small Enchanted Ruby",
+      "strategy": "sim",
+      "solo": 80,
+      "party": 80,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "lord-azaram",
+      "name": "Lord Azaram",
+      "location": "Ghostlands (Grave Danger) · Carlin · Carlin",
+      "reach": "Seguir pelas cavernas de Ghostlands a oeste de Carlin. / Acesso iniciado na Grave Danger Quest.",
+      "loot": "—",
+      "strategy": "sim",
+      "solo": 600,
+      "party": 300,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "mazoran",
+      "name": "Mazoran",
+      "location": "Hell Hub (Ferumbras' Ascendant) · Darashia · Darashia",
+      "reach": "Entrar no portal de fogo do Hell Hub. / Acesso aos selos da Ferumbras' Ascendant Quest.",
+      "loot": "—",
+      "strategy": "sim",
+      "solo": 700,
+      "party": 350,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "ragiaz",
+      "name": "Ragiaz",
+      "location": "Hell Hub (Ferumbras' Ascendant) · Darashia · Darashia",
+      "reach": "Entrar no portal de morte/ossos do Hell Hub. / Acesso aos selos da Ferumbras' Ascendant Quest.",
+      "loot": "—",
+      "strategy": "sim",
+      "solo": 700,
+      "party": 350,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "scarlett-etzel",
+      "name": "Scarlett Etzel",
+      "location": "Cobra Bastion · Ankrahmun",
+      "reach": "—",
+      "loot": "Cobra Axe, Cobra Club, Cobra Crossbow, Cobra Hood, Cobra Rod, Cobra Sword, Cobra Wand, Cobra Bo, The Cobra Amulet, Giant Ruby, Giant Sapphire, Gold Ingot, Giant Shimmering Pearl, Magma Amulet, Magma Monocle, Magma Coat, Terra Amulet, Terra Hood, Terra Mantle, Terra Legs, Terra Rod, Energy Bar",
+      "strategy": "sim",
+      "solo": 250,
+      "party": 200,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "sir-nicator",
+      "name": "Sir Nicator",
+      "location": "Cormaya (Grave Danger) · Edron · Edron",
+      "reach": "Barco de Edron para Cormaya, seguir para o sul. / Acesso iniciado na Grave Danger Quest.",
+      "loot": "—",
+      "strategy": "sim",
+      "solo": 650,
+      "party": 350,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "timira-the-many",
+      "name": "Timira the Many",
+      "location": "Feyrist Islands · Feyrist",
+      "reach": "—",
+      "loot": "Naga Basin, Giant Amethyst, Giant Sapphire, Bullseye Potion, Giant Emerald, Berserk Potion, Giant Ruby, Piece of Timira's Sensors, One of Timira's Many Heads, Frostflower Boots, Enchanted Turtle Amulet, Dawnfire Sherwani, Naga Crossbow, Feverbloom Boots, Naga Club, Midnight Tunic, Giant Topaz, Dawnfire Pantaloons, Midnight Sarong, Naga Quiver, Naga Rod, Naga Sword, Naga Wand, Naga Axe, Naga Katar, Naga Tanko",
+      "strategy": "sim",
+      "solo": 500,
+      "party": 400,
+      "mechanics": "sim"
+    },
+    {
+      "slug": "xenia",
+      "name": "Xenia",
+      "location": "Grimvale Sanctuary · Edron",
+      "reach": "—",
+      "loot": "Sabre, Studded Shield",
+      "strategy": "sim",
+      "solo": 150,
+      "party": 150,
+      "mechanics": "—"
+    },
+    {
+      "slug": "yube",
+      "name": "Yube",
+      "location": "Grimvale Sanctuary · Edron",
+      "reach": "—",
+      "loot": "—",
+      "strategy": "—",
+      "solo": 150,
+      "party": 150,
+      "mechanics": "—"
+    }
+  ]
+}
