@@ -1,5 +1,8 @@
 export const CATALOG_PAGE_SIZE = 50;
 
+/** Bosstiary encyclopedia: active rows can exceed global API page cap (50). */
+export const BOSSTIARY_ENCYCLOPEDIA_PAGE_SIZE = 100;
+
 export type PageResult<T> = {
   items: T[];
   page: number;
@@ -18,12 +21,16 @@ export function readPage<T>(payload: unknown): PageResult<T> {
       hasMore?: unknown;
     };
     const items = Array.isArray(data.items) ? (data.items as T[]) : [];
+    const page = Number(data.page) || 1;
+    const limit = Number(data.limit) || items.length || 1;
+    const total = Number(data.total) ?? 0;
+    const hasMore = resolveHasMore(data.hasMore, page, limit, total, items.length);
     return {
       items,
-      page: Number(data.page) || 1,
-      limit: Number(data.limit) || items.length,
-      total: Number(data.total) || 0,
-      hasMore: data.hasMore === true,
+      page,
+      limit,
+      total,
+      hasMore,
     };
   }
 
@@ -37,6 +44,22 @@ export function readPage<T>(payload: unknown): PageResult<T> {
   };
 }
 
+function resolveHasMore(
+  explicit: unknown,
+  page: number,
+  limit: number,
+  total: number,
+  itemCount: number,
+): boolean {
+  if (explicit === true) return true;
+  if (explicit === false) {
+    if (total > 0) return page * limit < total;
+    return false;
+  }
+  if (total > 0) return page * limit < total;
+  return itemCount >= limit && itemCount > 0;
+}
+
 export async function collectPages<T>(
   loadPage: (page: number) => Promise<unknown>,
   maxPages = 100,
@@ -47,9 +70,16 @@ export async function collectPages<T>(
 
   while (page <= maxPages) {
     const result = readPage<T>(await loadPage(page));
-    items.push(...result.items);
-    total = result.total;
-    if (!result.hasMore || result.items.length === 0) break;
+    if (result.items.length > 0) {
+      items.push(...result.items);
+    }
+    if (result.total > 0) {
+      total = result.total;
+    }
+    if (result.items.length === 0) break;
+    const collectedAll = total > 0 && items.length >= total;
+    if (collectedAll) break;
+    if (!result.hasMore) break;
     page += 1;
   }
 
@@ -58,12 +88,12 @@ export async function collectPages<T>(
 
 export async function loadEntireCatalog<T>(
   fetchPage: (query?: { page?: number; limit?: number }) => Promise<unknown>,
+  options: { pageSize?: number; maxPages?: number } = {},
 ) {
-  const first = await fetchPage();
-  const parsed = readPage<T>(first);
-  if (!parsed.hasMore) return parsed.items;
-  const collected = await collectPages<T>((page) =>
-    fetchPage({ page, limit: CATALOG_PAGE_SIZE }),
+  const pageSize = options.pageSize ?? CATALOG_PAGE_SIZE;
+  const collected = await collectPages<T>(
+    (page) => fetchPage({ page, limit: pageSize }),
+    options.maxPages ?? 100,
   );
   return collected.items;
 }

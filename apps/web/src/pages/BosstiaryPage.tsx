@@ -9,7 +9,7 @@ import { entryFromReviewedBoss, type BosstiaryEntry } from "../domain/bosstiary"
 import { BOSSTIARY_TABS, parseBosstiaryTab, type BosstiaryTab } from "../domain/bosstiary-rotations";
 import { describeApiError } from "../services/api/errors";
 import { listBosstiaryProfiles, type BosstiaryReviewedBoss } from "../services/api/bosstiary";
-import { loadEntireCatalog } from "../services/api/page";
+import { BOSSTIARY_ENCYCLOPEDIA_PAGE_SIZE, loadEntireCatalog } from "../services/api/page";
 
 export function BosstiaryPage() {
   const [params, setParams] = useSearchParams();
@@ -24,8 +24,9 @@ export function BosstiaryPage() {
     setLoading(true);
     setError("");
     try {
-      const profiles = await loadEntireCatalog<BosstiaryReviewedBoss>((query) =>
-        listBosstiaryProfiles(query ?? {}),
+      const profiles = await loadEntireCatalog<BosstiaryReviewedBoss>(
+        (query) => listBosstiaryProfiles(query ?? {}),
+        { pageSize: BOSSTIARY_ENCYCLOPEDIA_PAGE_SIZE, maxPages: 20 },
       );
       if (profiles.length > 0) {
         let catalogEntries: BosstiaryEntry[] = [];

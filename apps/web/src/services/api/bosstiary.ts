@@ -1,6 +1,6 @@
 import type { BosstiaryRotationQuery, BosstiaryRotationResult } from "../../domain/bosstiary-rotations";
 import { apiRequest, withQuery } from "./client";
-import { CATALOG_PAGE_SIZE, readPage, type PageResult } from "./page";
+import { BOSSTIARY_ENCYCLOPEDIA_PAGE_SIZE, readPage, type PageResult } from "./page";
 
 export type BosstiaryHuntMode = "SOLO" | "PARTY";
 
@@ -45,7 +45,7 @@ export function listBosstiaryProfiles(query: {
       difficulty: query.difficulty,
       officialCategory: query.officialCategory,
       page: query.page,
-      limit: query.limit ?? CATALOG_PAGE_SIZE,
+      limit: query.limit ?? BOSSTIARY_ENCYCLOPEDIA_PAGE_SIZE,
     }),
     { auth: true },
   );

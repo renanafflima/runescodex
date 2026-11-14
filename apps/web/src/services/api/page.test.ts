@@ -42,4 +42,37 @@ describe("pagination helpers", () => {
     }));
     expect(items).toEqual(["a", "b"]);
   });
+
+  it("infers hasMore when the API omits the flag but total exceeds the page", () => {
+    expect(
+      readPage({ items: Array.from({ length: 20 }, (_, i) => i), page: 1, limit: 20, total: 315 }),
+    ).toMatchObject({ hasMore: true, total: 315 });
+  });
+
+  it("aggregates every page for a 315-boss encyclopedia", async () => {
+    const pages: number[] = [];
+    const items = await loadEntireCatalog(
+      async (query) => {
+        const page = query?.page ?? 1;
+        const limit = query?.limit ?? 50;
+        pages.push(page);
+        const total = 315;
+        const start = (page - 1) * limit;
+        const chunk = Array.from(
+          { length: Math.min(limit, total - start) },
+          (_, i) => `boss-${start + i + 1}`,
+        );
+        return {
+          items: chunk,
+          page,
+          limit,
+          total,
+          hasMore: start + chunk.length < total,
+        };
+      },
+      { pageSize: 100 },
+    );
+    expect(items).toHaveLength(315);
+    expect(pages).toEqual([1, 2, 3, 4]);
+  });
 });
