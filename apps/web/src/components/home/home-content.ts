@@ -24,6 +24,41 @@ export type HomeAdCampaign = {
   title: string;
 };
 
+export type HomePartnerBanner = {
+  active: boolean;
+  alt: string;
+  campaignId: string;
+  external?: boolean;
+  href?: string;
+  id: string;
+  image: string;
+};
+
+export type HomeInstitutionalBanner = {
+  active: boolean;
+  alt: string;
+  href: string;
+  image: string;
+};
+
+export const homePartnerBanners: HomePartnerBanner[] = [
+  {
+    id: "partner-runescodex",
+    campaignId: "parceria-runescodex",
+    active: true,
+    alt: "Campanha de parceria RuneCodex",
+    image: assetUrl("images/home/banner_parceria_runescodex.png"),
+    // href: "/parcerias", — habilitar quando a rota de contato estiver publicada.
+  },
+];
+
+export const homeTriTechBanner: HomeInstitutionalBanner = {
+  active: true,
+  alt: "TriTech — Soluções Digitais que Conectam o Mundo",
+  href: "https://tritech.app.br",
+  image: assetUrl("images/home/tritech-institutional-banner.png"),
+};
+
 export const homeShortcuts: HomeShortcut[] = [
   {
     id: "hunts",
@@ -113,21 +148,5 @@ export const homeAdCampaigns: HomeAdCampaign[] = [
     title: "Campanha da temporada — evolua com Rewards",
     href: "/rewards",
     image: assetUrl("images/home/rewards.png"),
-  },
-  {
-    slot: "middle",
-    active: true,
-    campaignType: "house",
-    title: "Espaço publicitário intermediário",
-    href: "/hunts",
-    image: assetUrl("images/home/hunt.png"),
-  },
-  {
-    slot: "bottom",
-    active: true,
-    campaignType: "sponsor",
-    title: "Espaço publicitário inferior",
-    href: "/forum",
-    image: assetUrl("images/home/forum.png"),
   },
 ];

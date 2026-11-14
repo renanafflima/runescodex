@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HomePage } from "./HomePage";
 
 vi.mock("../auth/AuthContext", () => ({
@@ -14,6 +14,21 @@ vi.mock("../auth/AuthContext", () => ({
 vi.mock("../services/api/client", () => ({
   apiConfiguration: { configured: true },
 }));
+
+beforeEach(() => {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: vi.fn((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+});
 
 function renderHome() {
   return render(
@@ -53,26 +68,27 @@ describe("Home portal", () => {
     expect(screen.queryByText(/em breve/i)).not.toBeInTheDocument();
   });
 
-  it("keeps the audited home heading and stacks install CTA in the hero", () => {
+  it("replaces the hero with the partner banner carousel", () => {
     const { container } = renderHome();
-    expect(screen.getByRole("heading", { level: 1, name: /Mais que caçar/i })).toBeInTheDocument();
-    const hero = container.querySelector(".home-portal-hero");
-    expect(hero).not.toBeNull();
-    expect(hero?.querySelector(".home-portal-install, .home-portal-hero__actions")).not.toBeNull();
+    expect(screen.queryByRole("heading", { level: 1, name: /Mais que caçar/i })).not.toBeInTheDocument();
+    expect(container.querySelector(".home-portal-hero")).toBeNull();
+    expect(container.querySelector(".home-portal-partners")).not.toBeNull();
+    expect(screen.getByRole("img", { name: /Campanha de parceria RuneCodex/i })).toBeInTheDocument();
     expect(container.querySelector(".home-portal-shortcuts__grid")).not.toBeNull();
   });
 
-  it("renders independent ad slots as internal placeholders", () => {
+  it("keeps the season campaign and removes the middle ad slot", () => {
     renderHome();
     expect(screen.getByRole("link", { name: /Campanha da temporada/i })).toHaveAttribute("href", "/rewards");
-    expect(screen.getByRole("link", { name: /Espaço publicitário intermediário/i })).toHaveAttribute(
-      "href",
-      "/hunts",
-    );
-    expect(screen.getByRole("link", { name: /Espaço publicitário inferior/i })).toHaveAttribute(
-      "href",
-      "/forum",
-    );
+    expect(screen.queryByRole("link", { name: /Espaço publicitário intermediário/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Espaço publicitário inferior/i })).not.toBeInTheDocument();
+  });
+
+  it("shows the institutional TriTech banner at the end", () => {
+    renderHome();
+    const tritech = screen.getByRole("link", { name: /TriTech — Soluções Digitais/i });
+    expect(tritech).toHaveAttribute("href", "https://tritech.app.br");
+    expect(tritech).toHaveAttribute("target", "_blank");
   });
 
   it("uses editorial news and community content for anonymous visitors", () => {
