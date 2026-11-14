@@ -7,30 +7,13 @@ import { ButtonLink } from "../ui/Button";
 import { Icon } from "../ui/Icon";
 import { IconButton } from "../ui/IconButton";
 import { CharacterSwitcher } from "../characters/CharacterSwitcher";
+import { InstallAppButton } from "../pwa/InstallAppButton";
 import { Navigation } from "./Navigation";
 import { PageContainer } from "./PageContainer";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
 
 export function Header() {
   const { isAuthenticated, user, activeCharacter } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [installPrompt, setInstallPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-
-  useEffect(() => {
-    function onBeforeInstallPrompt(event: Event) {
-      event.preventDefault();
-      setInstallPrompt(event as BeforeInstallPromptEvent);
-    }
-
-    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-    return () =>
-      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-  }, []);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -40,13 +23,6 @@ export function Header() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
-
-  async function installApp() {
-    if (!installPrompt) return;
-    await installPrompt.prompt();
-    await installPrompt.userChoice;
-    setInstallPrompt(null);
-  }
 
   return (
     <header className="site-header">
@@ -68,12 +44,7 @@ export function Header() {
         <Navigation onNavigate={() => setMenuOpen(false)} open={menuOpen} />
 
         <div className="site-header__actions">
-          {installPrompt ? (
-            <button className="install-action" onClick={installApp} type="button">
-              <Icon name="download" size={17} />
-              <span>Instalar</span>
-            </button>
-          ) : null}
+          <InstallAppButton variant="header" />
           {isAuthenticated ? (
             <CharacterSwitcher className="character-switcher--header" id="header-character" />
           ) : null}

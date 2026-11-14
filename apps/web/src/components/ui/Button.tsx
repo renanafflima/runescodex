@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Link, type LinkProps } from "react-router-dom";
 import { Loading } from "./Feedback";
 
@@ -35,22 +35,26 @@ function buttonClassName({
     .join(" ");
 }
 
-export function Button({
-  children,
-  className,
-  disabled,
-  fullWidth,
-  leadingIcon,
-  loading = false,
-  size,
-  type = "button",
-  variant,
-  ...props
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    children,
+    className,
+    disabled,
+    fullWidth,
+    leadingIcon,
+    loading = false,
+    size,
+    type = "button",
+    variant,
+    ...props
+  },
+  ref,
+) {
   return (
     <button
       className={buttonClassName({ className, fullWidth, size, variant })}
       disabled={disabled || loading}
+      ref={ref}
       type={type}
       {...props}
     >
@@ -58,7 +62,7 @@ export function Button({
       <span>{children}</span>
     </button>
   );
-}
+});
 
 type ButtonLinkProps = LinkProps & SharedButtonProps;
 

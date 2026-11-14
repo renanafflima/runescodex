@@ -14,7 +14,7 @@ export default defineConfig({
       registerType: "autoUpdate",
       injectRegister: "script",
       scope: WEB_BASE_PATH,
-      includeAssets: ["icons/*.svg"],
+      includeAssets: ["icons/*.png", "icons/*.svg"],
       manifest: {
         id: WEB_BASE_PATH,
         name: "RuneCodex",
@@ -29,21 +29,21 @@ export default defineConfig({
         background_color: "#070b14",
         icons: [
           {
-            src: "icons/icon-192.svg",
+            src: "icons/icon-192.png",
             sizes: "192x192",
-            type: "image/svg+xml",
+            type: "image/png",
             purpose: "any",
           },
           {
-            src: "icons/icon-512.svg",
+            src: "icons/icon-512.png",
             sizes: "512x512",
-            type: "image/svg+xml",
+            type: "image/png",
             purpose: "any",
           },
           {
-            src: "icons/maskable-512.svg",
+            src: "icons/maskable-512.png",
             sizes: "512x512",
-            type: "image/svg+xml",
+            type: "image/png",
             purpose: "maskable",
           },
         ],

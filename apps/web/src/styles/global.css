@@ -2,6 +2,7 @@
 @import "./components.css";
 @import "./layout.css";
 @import "./pages.css";
+@import "./home-portal.css";
 
 *,
 *::before,

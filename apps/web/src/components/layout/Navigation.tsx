@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
+import { InstallAppButton } from "../pwa/InstallAppButton";
 import { Icon, type IconName } from "../ui/Icon";
 
 const navigationItems: Array<{
@@ -86,6 +87,7 @@ export function Navigation({ onNavigate, open = false }: NavigationProps) {
             <span>{item.label}</span>
           </Link>
         ))}
+        <InstallAppButton variant="nav" />
       </div>
     </nav>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
 
@@ -8,6 +8,7 @@ type ModalProps = {
   footer?: ReactNode;
   onClose: () => void;
   open: boolean;
+  returnFocusRef?: RefObject<HTMLElement | null>;
   title: string;
 };
 
@@ -17,6 +18,7 @@ export function Modal({
   footer,
   onClose,
   open,
+  returnFocusRef,
   title,
 }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -27,20 +29,37 @@ export function Modal({
     const dialog = dialogRef.current;
     if (!dialog) return;
 
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
+    if (open) {
+      if (!dialog.open) dialog.showModal();
+      const closeButton = dialog.querySelector<HTMLButtonElement>(".icon-button");
+      closeButton?.focus();
+      return;
+    }
+
+    if (dialog.open) {
+      dialog.close();
+      returnFocusRef?.current?.focus();
+    }
+  }, [open, returnFocusRef]);
+
+  function handleClose() {
+    onClose();
+    queueMicrotask(() => returnFocusRef?.current?.focus());
+  }
+
+  if (!open) return null;
 
   return (
     <dialog
       aria-describedby={description ? descriptionId : undefined}
       aria-labelledby={titleId}
+      aria-modal="true"
       className="modal"
       onCancel={(event) => {
         event.preventDefault();
-        onClose();
+        handleClose();
       }}
-      onClose={onClose}
+      onClose={handleClose}
       ref={dialogRef}
     >
       <header className="modal__header">
@@ -54,7 +73,7 @@ export function Modal({
             </p>
           ) : null}
         </div>
-        <IconButton label="Fechar modal" onClick={onClose} variant="ghost">
+        <IconButton label="Fechar modal" onClick={handleClose} variant="ghost">
           <Icon name="close" />
         </IconButton>
       </header>
