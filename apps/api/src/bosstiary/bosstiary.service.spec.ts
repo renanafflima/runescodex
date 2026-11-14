@@ -32,6 +32,15 @@ describe('BosstiaryService', () => {
     expect(service.meta().vocations.map((item) => item.code)).toEqual(['EK', 'RP', 'MS', 'ED', 'EM']);
   });
 
+  it('allows encyclopedia page sizes above the generic list cap', async () => {
+    prisma.bosstiaryBoss.count.mockResolvedValue(315);
+    prisma.bosstiaryBoss.findMany.mockResolvedValue([]);
+    await service.findAll({ limit: 100 });
+    expect(prisma.bosstiaryBoss.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 100, skip: 0 }),
+    );
+  });
+
   it('lists reviewed bosses and keeps pending facts explicit', async () => {
     prisma.bosstiaryBoss.count.mockResolvedValue(1);
     prisma.bosstiaryBoss.findMany.mockResolvedValue([

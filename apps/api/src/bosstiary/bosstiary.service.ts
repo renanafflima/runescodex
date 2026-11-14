@@ -7,6 +7,7 @@ import {
 import { pageResult, resolvePage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  BOSSTIARY_BOSS_LIST_LIMIT_MAX,
   BOSSTIARY_ORIGIN_CITIES,
   BOSSTIARY_TIME_OPTIONS,
 } from './bosstiary.constants';
@@ -50,7 +51,7 @@ export class BosstiaryService {
   }
 
   async findAll(query: ListBosstiaryQueryDto) {
-    const { page, limit, skip } = resolvePage(query);
+    const { page, limit, skip } = resolveBosstiaryBossPage(query);
     const where = this.listWhere(query);
     const [total, rows] = await Promise.all([
       this.prisma.bosstiaryBoss.count({ where }),
@@ -230,6 +231,18 @@ export class BosstiaryService {
 
 function fact(value: unknown, kind: 'official' | 'editorial' | 'estimated') {
   return { value: value ?? null, kind: value == null ? 'pending' : kind };
+}
+
+function resolveBosstiaryBossPage(query: ListBosstiaryQueryDto) {
+  const base = resolvePage(query);
+  const requested = query.limit ?? base.limit;
+  const limit = Math.min(Math.max(requested, 1), BOSSTIARY_BOSS_LIST_LIMIT_MAX);
+  const page = base.page;
+  return {
+    page,
+    limit,
+    skip: (page - 1) * limit,
+  };
 }
 
 function timeLabel(minutes: number) {

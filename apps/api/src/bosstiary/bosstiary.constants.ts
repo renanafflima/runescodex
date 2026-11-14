@@ -13,4 +13,7 @@ export const BOSSTIARY_ORIGIN_CITIES = [
 ] as const;
 
 export const BOSSTIARY_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/** Encyclopedia / publish search may request more than the generic list cap (50). */
+export const BOSSTIARY_BOSS_LIST_LIMIT_MAX = 500;
 export const BOSSTIARY_COMMENT_MAX_LENGTH = 1000;

@@ -5,16 +5,27 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
 } from 'class-validator';
 import {
   BosstiaryHuntMode,
   Difficulty,
 } from '../../../generated/prisma/client.js';
 import { PageQueryDto } from '../../common/dto/page-query.dto';
-import { BOSSTIARY_LEVEL_BANDS } from '../bosstiary.constants';
+import {
+  BOSSTIARY_BOSS_LIST_LIMIT_MAX,
+  BOSSTIARY_LEVEL_BANDS,
+} from '../bosstiary.constants';
 
 export class ListBosstiaryQueryDto extends PageQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(BOSSTIARY_BOSS_LIST_LIMIT_MAX)
+  declare limit?: number;
   @IsOptional()
   @IsString()
   @MaxLength(80)
