@@ -4152,31 +4152,32 @@ button.support-metric:focus-visible,
 
 .bosstiary-tabs__tab {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   min-width: 0;
-  min-height: 6.5rem;
+  min-height: auto;
   padding: 0;
-  border: 1px solid rgb(217 173 63 / 42%);
-  border-radius: 1rem;
-  background: #07111d;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: var(--color-gold-pale);
   text-align: left;
   cursor: pointer;
   isolation: isolate;
   transition:
-    border-color 0.22s ease,
-    box-shadow 0.22s ease,
+    filter 0.22s ease,
     transform 0.22s ease;
 }
 
 .bosstiary-tabs__art {
   display: block;
   width: 100%;
-  height: 6.5rem;
-  object-fit: cover;
+  height: auto;
+  min-height: 6.5rem;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
   object-position: center;
-  transform: scale(1.02);
-  transition: transform 0.35s ease;
+  transform: none;
+  transition: filter 0.25s ease;
 }
 
 .bosstiary-tabs__shade {
@@ -4220,24 +4221,25 @@ button.support-metric:focus-visible,
 
 .bosstiary-tabs__tab:hover .bosstiary-tabs__art,
 .bosstiary-tabs__tab:focus-visible .bosstiary-tabs__art {
-  transform: scale(1.08);
+  filter: brightness(1.06);
 }
 
 .bosstiary-tabs__tab:hover {
-  border-color: rgb(240 207 112 / 70%);
-  box-shadow: 0 8px 22px rgb(0 0 0 / 28%);
+  transform: translateY(-1px);
 }
 
 .bosstiary-tabs__tab:focus-visible {
   outline: 2px solid var(--color-gold-light);
   outline-offset: 3px;
+  border-radius: 1rem;
+}
+
+.bosstiary-tabs__tab--active .bosstiary-tabs__art {
+  filter: brightness(1.08);
 }
 
 .bosstiary-tabs__tab--active {
-  border-color: var(--color-gold);
-  box-shadow:
-    0 0 0 1px rgb(240 207 112 / 35%),
-    0 10px 24px rgb(0 0 0 / 32%);
+  box-shadow: none;
 }
 
 .bosstiary-tabs__tab--active .bosstiary-tabs__label {
@@ -4245,12 +4247,8 @@ button.support-metric:focus-visible,
 }
 
 @media (min-width: 40rem) {
-  .bosstiary-tabs__tab {
-    min-height: 8.5rem;
-  }
-
   .bosstiary-tabs__art {
-    height: 8.5rem;
+    min-height: 8.5rem;
   }
 
   .bosstiary-tabs {
@@ -4271,12 +4269,8 @@ button.support-metric:focus-visible,
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .bosstiary-tabs__tab {
-    min-height: 9.5rem;
-  }
-
   .bosstiary-tabs__art {
-    height: 9.5rem;
+    min-height: 9.5rem;
   }
 }
 

@@ -34,6 +34,14 @@ describe("bosstiary rotations domain", () => {
     ]);
   });
 
+  it("uses the framed Bosstiário navigation art assets", () => {
+    const images = BOSSTIARY_TABS.map((item) => item.image);
+    expect(images.some((src) => src.includes("runescodex-comunidade.png"))).toBe(true);
+    expect(images.some((src) => src.includes("runescodex-boss-por-level.png"))).toBe(true);
+    expect(images.some((src) => src.includes("runescodex-enciclopedia.png"))).toBe(true);
+    expect(new Set(images).size).toBe(3);
+  });
+
   it("exposes the four approved time cards", () => {
     expect(BOSSTIARY_TIME_OPTIONS.map((item) => item.minutes)).toEqual([15, 20, 30, 60]);
   });

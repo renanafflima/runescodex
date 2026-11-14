@@ -1,3 +1,4 @@
+import { assetUrl } from "../lib/assets";
 import type { VocationCode } from "./vocation";
 
 export type BosstiaryTab = "comunidade" | "progresso" | "enciclopedia";
@@ -15,19 +16,19 @@ export const BOSSTIARY_TABS: Array<{
     id: "comunidade",
     label: "Comunidade",
     kicker: "Planeje e compartilhe",
-    image: "/images/bosstiary/nav-comunidade.jpg",
+    image: assetUrl("images/bosstiary/runescodex-comunidade.png"),
   },
   {
     id: "progresso",
     label: "Meu Progresso",
     kicker: "Acompanhe suas conquistas",
-    image: "/images/bosstiary/nav-boss-level.jpg",
+    image: assetUrl("images/bosstiary/runescodex-boss-por-level.png"),
   },
   {
     id: "enciclopedia",
     label: "Enciclopédia",
     kicker: "Conheça cada boss",
-    image: "/images/bosstiary/nav-enciclopedia.jpg",
+    image: assetUrl("images/bosstiary/runescodex-enciclopedia.png"),
   },
 ];
 

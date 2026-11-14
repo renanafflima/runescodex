@@ -78,7 +78,7 @@ export const homeShortcuts: HomeShortcut[] = [
     id: "bosstiary",
     title: "Bosstiário",
     description: "Bosses, progresso e rotas",
-    image: assetUrl("images/bosstiary/nav-enciclopedia.jpg"),
+    image: assetUrl("images/bosstiary/runescodex-enciclopedia.png"),
     to: "/bosstiary",
   },
   {
