@@ -1,18 +1,15 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { GoogleSignInButton } from "../components/auth/GoogleSignInButton";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/FormControls";
 import { Toast } from "../components/ui/Toast";
-import { apiErrorCode, describeApiError, DEVICE_LIMIT_MESSAGE } from "../services/api/errors";
-
-type AuthMode = "login" | "register";
+import { DEVICE_LIMIT_MESSAGE } from "../services/api/errors";
 
 export function LoginPage() {
-  const { isAuthenticated, login, loginWithGoogle, register, status, user } = useAuth();
+  const { isAuthenticated, loginWithGoogle, status, user } = useAuth();
   const location = useLocation();
   const from =
     typeof location.state === "object" &&
@@ -22,13 +19,8 @@ export function LoginPage() {
       ? location.state.from
       : "/profile";
 
-  const [mode, setMode] = useState<AuthMode>("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [limited, setLimited] = useState(false);
   const [explainLimit, setExplainLimit] = useState(false);
-  const [fieldError, setFieldError] = useState(false);
   const [notice, setNotice] = useState<{
     message: string;
     title: string;
@@ -39,43 +31,6 @@ export function LoginPage() {
     const safeFrom =
       from.startsWith("/") && !from.startsWith("//") && from !== "/login" ? from : "/profile";
     return <Navigate replace to={user?.premium?.access ? safeFrom : "/checkout"} />;
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setNotice(null);
-
-    if (!email.trim() || !password || (mode === "register" && password.length < 8)) {
-      setFieldError(true);
-      setNotice({
-        title: "Preencha seus dados",
-        message:
-          mode === "register"
-            ? "Informe um email válido e uma senha com pelo menos 8 caracteres."
-            : "Informe email e senha para continuar.",
-        tone: "error",
-      });
-      return;
-    }
-
-    setFieldError(false);
-    setSubmitting(true);
-    try {
-      if (mode === "register") await register(email.trim(), password);
-      else await login(email.trim(), password);
-    } catch (error) {
-      if (apiErrorCode(error) === "DEVICE_LIMIT") {
-        setLimited(true);
-        return;
-      }
-      setNotice({
-        title: mode === "register" ? "Não foi possível criar a conta" : "Não foi possível entrar",
-        message: describeApiError(error),
-        tone: "error",
-      });
-    } finally {
-      setSubmitting(false);
-    }
   }
 
   return (
@@ -128,86 +83,32 @@ export function LoginPage() {
             </div>
           ) : (
             <>
-          <div className="auth-panel__heading">
-            <Badge tone="gold">Acesso RuneCodex</Badge>
-            <h2 id="login-title">
-              {mode === "register" ? "Criar sua conta" : "Entrar na sua conta"}
-            </h2>
-            <p>A autenticação usa a mesma API do aplicativo.</p>
-          </div>
+              <div className="auth-panel__heading">
+                <Badge tone="gold">Acesso RuneCodex</Badge>
+                <h2 id="login-title">Sua jornada começa com o Google.</h2>
+              </div>
 
-          <GoogleSignInButton
-            disabled={submitting}
-            onCredential={loginWithGoogle}
-            onError={(message) => {
-              if (message === DEVICE_LIMIT_MESSAGE) {
-                setLimited(true);
-                return;
-              }
-              setNotice({
-                title: "Não foi possível entrar com o Google",
-                message,
-                tone: "error",
-              });
-            }}
-          />
+              <div className="auth-panel__google-notice" role="note">
+                <p>
+                  Utilize sua conta Google para acessar o RuneCodex de forma simples e rápida. Assim, você entra na
+                  aventura sem complicação!
+                </p>
+              </div>
 
-          <div className="auth-divider">
-            <span>ou acesse com email</span>
-          </div>
-
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <Input
-              autoComplete="email"
-              error={fieldError && !email.trim() ? "Informe seu email." : undefined}
-              label="Email"
-              name="email"
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="voce@exemplo.com"
-              type="email"
-              value={email}
-            />
-            <Input
-              autoComplete={mode === "register" ? "new-password" : "current-password"}
-              error={
-                fieldError && (!password || (mode === "register" && password.length < 8))
-                  ? mode === "register"
-                    ? "A senha precisa ter pelo menos 8 caracteres."
-                    : "Informe sua senha."
-                  : undefined
-              }
-              label="Senha"
-              name="password"
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Digite sua senha"
-              type="password"
-              value={password}
-            />
-            <Button fullWidth loading={submitting} size="lg" type="submit">
-              {submitting
-                ? mode === "register"
-                  ? "Criando conta..."
-                  : "Entrando..."
-                : mode === "register"
-                  ? "Criar conta"
-                  : "Entrar"}
-            </Button>
-          </form>
-
-          <p className="auth-panel__footnote">
-            {mode === "register" ? "Já tem uma conta?" : "Ainda não tem conta?"}{" "}
-            <button
-              className="text-link"
-              onClick={() => {
-                setMode((current) => (current === "login" ? "register" : "login"));
-                setNotice(null);
-                setFieldError(false);
-              }}
-              type="button"
-            >
-              {mode === "register" ? "Entrar" : "Criar conta"}
-            </button>
-          </p>
+              <GoogleSignInButton
+                onCredential={loginWithGoogle}
+                onError={(message) => {
+                  if (message === DEVICE_LIMIT_MESSAGE) {
+                    setLimited(true);
+                    return;
+                  }
+                  setNotice({
+                    title: "Não foi possível entrar com o Google",
+                    message,
+                    tone: "error",
+                  });
+                }}
+              />
             </>
           )}
         </section>

@@ -10,30 +10,41 @@ describe("HomeAdSlot", () => {
     const { container } = render(
       <HomeAdSlot
         active={false}
-        campaignType="house"
-        slot="middle"
+        campaignId="demo"
+        description="Descrição"
+        eyebrow="Promoção"
+        id="inactive"
+        slot="primary"
         title="Oculto"
       />,
     );
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("exposes image, title, link and campaign type", () => {
+  it("exposes image, title, description and link", () => {
     render(
       <MemoryRouter>
         <HomeAdSlot
           active
-          campaignType="season"
+          campaignId="natal-demo"
+          description="Indique um amigo e ganhe 25 TC Globais."
+          eyebrow="Promoção de Natal"
           href="/rewards"
+          id="promo"
           image="/runescodex/images/home/rewards.png"
+          imageAlt="Recompensas"
           slot="primary"
-          title="Banner principal"
+          theme="seasonal"
+          title="Não perca a promoção de Natal!"
         />
       </MemoryRouter>,
     );
 
-    const link = screen.getByRole("link", { name: /Banner principal/i });
+    const link = screen.getByRole("link", {
+      name: /Não perca a promoção de Natal!/i,
+    });
     expect(link).toHaveAttribute("href", "/rewards");
+    expect(screen.getByText(/Indique um amigo e ganhe 25 TC Globais/i)).toBeInTheDocument();
     expect(link.querySelector("img")).toHaveAttribute("src", "/runescodex/images/home/rewards.png");
   });
 });

@@ -4,12 +4,21 @@
 
 .home-portal__body {
   display: grid;
-  gap: var(--space-6);
-  padding-block: var(--space-6) var(--space-8);
+  gap: 3.5rem;
+  padding-block: var(--space-5) var(--space-7);
+}
+
+.home-portal .section {
+  padding-block: 0;
+}
+
+.home-portal .section__header {
+  margin-bottom: var(--space-4);
 }
 
 .home-portal-partners {
-  padding-top: var(--space-5);
+  padding-top: var(--space-4);
+  padding-bottom: 0;
 }
 
 .home-portal-partners__inner {
@@ -269,11 +278,15 @@
 }
 
 .home-portal-shortcut--charms {
+  min-height: 11.5rem;
+  align-content: start;
+  padding: var(--space-3) var(--space-4) var(--space-4);
   border-color: rgb(168 120 255 / 42%);
   background:
     linear-gradient(145deg, rgb(90 52 140 / 22%), rgb(5 8 14 / 94%)),
     radial-gradient(circle at 12% 18%, rgb(212 167 44 / 14%), transparent 58%),
     var(--color-surface);
+  text-align: center;
 }
 
 .home-portal-shortcut--charms:hover {
@@ -281,12 +294,24 @@
 }
 
 .home-portal-shortcut--charms .home-portal-shortcut__emblem {
+  width: min(72%, 6.75rem);
+  height: auto;
+  max-height: 6.75rem;
+  margin: 0 auto var(--space-2);
   border-radius: var(--radius-sm);
-  padding: 0.25rem;
+  padding: 0.2rem;
   background: rgb(20 14 32 / 72%);
   box-shadow:
     0 0 1.25rem rgb(168 120 255 / 22%),
     0 0.5rem 1.25rem rgb(0 0 0 / 55%);
+}
+
+.home-portal-shortcut--charms h3 {
+  font-size: var(--text-lg);
+}
+
+.home-portal-shortcut--charms p {
+  margin-top: var(--space-1);
 }
 
 .home-portal-shortcut__emblem {
@@ -309,42 +334,65 @@
   font-size: var(--text-sm);
 }
 
-.home-portal-ad {
+.home-portal-promo {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
-  gap: var(--space-4);
-  min-height: 5.5rem;
-  padding: var(--space-4);
-  border: 0.0625rem dashed rgb(212 167 44 / 28%);
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border: 0.0625rem solid var(--color-line-strong);
   border-radius: var(--radius-md);
-  background: rgb(18 29 46 / 70%);
+  background: rgb(18 29 46 / 78%);
   text-decoration: none;
+  transition: border-color var(--transition-base), transform var(--transition-base);
 }
 
-.home-portal-ad--primary {
-  min-height: 6.5rem;
-  border-style: solid;
+.home-portal-promo:hover {
+  border-color: rgb(212 167 44 / 52%);
+  transform: translateY(-0.0625rem);
+}
+
+.home-portal-promo--primary.home-portal-promo--seasonal {
+  border-color: rgb(212 167 44 / 44%);
   background:
-    linear-gradient(90deg, rgb(212 167 44 / 12%), rgb(13 22 36 / 80%)),
+    radial-gradient(circle at 0% 0%, rgb(196 72 54 / 18%), transparent 55%),
+    linear-gradient(90deg, rgb(212 167 44 / 16%), rgb(13 22 36 / 88%)),
     var(--color-surface-raised);
+  box-shadow: 0 0.75rem 2.5rem rgb(212 167 44 / 10%);
 }
 
-.home-portal-ad__art {
-  width: 3.25rem;
-  height: 3.25rem;
+.home-portal-promo__art {
+  width: 4.5rem;
+  height: 4.5rem;
+  flex-shrink: 0;
   object-fit: contain;
+  filter: drop-shadow(0 0.5rem 1.25rem rgb(0 0 0 / 45%));
 }
 
-.home-portal-ad__copy {
+.home-portal-promo__copy {
   display: grid;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
-.home-portal-ad__copy strong {
+.home-portal-promo__eyebrow {
+  color: var(--color-gold-pale);
+  font-size: var(--text-xs);
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.home-portal-promo__title {
   font-family: var(--font-display);
-  font-size: var(--text-lg);
+  font-size: clamp(1.25rem, 2.4vw, 1.65rem);
   font-weight: 500;
+  line-height: 1.1;
+}
+
+.home-portal-promo__description {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.45;
 }
 
 .home-portal-feed__grid {
@@ -493,7 +541,8 @@
     grid-template-columns: 1fr;
   }
 
-  .home-portal-ad {
+  .home-portal-promo {
     grid-template-columns: 1fr;
+    justify-items: start;
   }
 }

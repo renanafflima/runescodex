@@ -77,9 +77,13 @@ describe("Home portal", () => {
     expect(container.querySelector(".home-portal-shortcuts__grid")).not.toBeNull();
   });
 
-  it("keeps the season campaign and removes the middle ad slot", () => {
+  it("shows the promo campaign and removes the middle ad slot", () => {
     renderHome();
-    expect(screen.getByRole("link", { name: /Campanha da temporada/i })).toHaveAttribute("href", "/rewards");
+    expect(screen.getByRole("link", { name: /Não perca a promoção de Natal!/i })).toHaveAttribute(
+      "href",
+      "/rewards",
+    );
+    expect(screen.getByText(/Indique um amigo e ganhe 25 TC Globais/i)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Espaço publicitário intermediário/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Espaço publicitário inferior/i })).not.toBeInTheDocument();
   });

@@ -359,6 +359,17 @@
   font-size: var(--text-sm);
 }
 
+.auth-panel__google-notice {
+  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+  border: 0.0625rem solid var(--color-line-strong);
+  border-radius: var(--radius-md);
+  background: rgb(13 22 36 / 72%);
+  color: var(--color-text-soft);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
 .auth-divider {
   display: flex;
   align-items: center;

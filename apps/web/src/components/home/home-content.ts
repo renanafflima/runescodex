@@ -15,14 +15,22 @@ export type HomeEditorialItem = {
   to: string;
 };
 
-export type HomeAdCampaign = {
+export type HomePromoCampaign = {
   active: boolean;
-  campaignType: "season" | "sponsor" | "house";
+  campaignId: string;
+  description: string;
+  eyebrow: string;
   href?: string;
+  id: string;
   image?: string;
-  slot: "primary" | "middle" | "bottom";
+  imageAlt?: string;
+  slot: "primary";
+  theme?: "seasonal" | "default";
   title: string;
 };
+
+/** @deprecated Use HomePromoCampaign — alias for existing imports. */
+export type HomeAdCampaign = HomePromoCampaign;
 
 export type HomePartnerBanner = {
   active: boolean;
@@ -140,13 +148,20 @@ export const editorialCommunity: HomeEditorialItem[] = [
   },
 ];
 
-export const homeAdCampaigns: HomeAdCampaign[] = [
+export const homePromoCampaigns: HomePromoCampaign[] = [
   {
+    id: "promo-natal-demo",
+    campaignId: "natal-referral-demo",
     slot: "primary",
     active: true,
-    campaignType: "season",
-    title: "Campanha da temporada — evolua com Rewards",
+    eyebrow: "Promoção de Natal",
+    title: "Não perca a promoção de Natal!",
+    description: "Indique um amigo e ganhe 25 TC Globais.",
     href: "/rewards",
     image: assetUrl("images/home/rewards.png"),
+    imageAlt: "Ícone temático de recompensas",
+    theme: "seasonal",
   },
 ];
+
+export const homeAdCampaigns = homePromoCampaigns;

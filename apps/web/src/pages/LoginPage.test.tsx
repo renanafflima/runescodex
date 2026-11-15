@@ -1,42 +1,61 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, DEVICE_LIMIT_MESSAGE } from "../services/api/errors";
+import { DEVICE_LIMIT_MESSAGE } from "../services/api/errors";
 import { LoginPage } from "./LoginPage";
 
-const login = vi.hoisted(() => vi.fn());
+const loginWithGoogle = vi.hoisted(() => vi.fn());
 
 vi.mock("../auth/AuthContext", () => ({
   useAuth: () => ({
     isAuthenticated: false,
     status: "anonymous",
     user: null,
-    login,
-    loginWithGoogle: vi.fn(),
-    register: vi.fn(),
+    loginWithGoogle,
   }),
 }));
 
 vi.mock("../components/auth/GoogleSignInButton", () => ({
-  GoogleSignInButton: () => null,
+  GoogleSignInButton: ({
+    onError,
+  }: {
+    onError?: (message: string) => void;
+  }) => (
+    <button onClick={() => onError?.(DEVICE_LIMIT_MESSAGE)} type="button">
+      Continuar com Google
+    </button>
+  ),
 }));
 
-describe("LoginPage device limit", () => {
+describe("LoginPage", () => {
   afterEach(() => {
     cleanup();
-    login.mockReset();
+    loginWithGoogle.mockReset();
   });
 
-  it("shows the limit screen and does not list another account's devices", async () => {
-    login.mockRejectedValue(new ApiError("HTTP_ERROR", 403, DEVICE_LIMIT_MESSAGE, { code: "DEVICE_LIMIT" }));
+  it("shows only Google access guidance", () => {
     render(
       <MemoryRouter>
         <LoginPage />
       </MemoryRouter>,
     );
-    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
-    fireEvent.change(screen.getByLabelText("Senha"), { target: { value: "password1" } });
-    fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(screen.getByRole("heading", { name: /Sua jornada começa com o Google/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continuar com Google" })).toBeInTheDocument();
+    expect(screen.getByText(/Utilize sua conta Google para acessar o RuneCodex/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Senha")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Entrar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Criar conta" })).not.toBeInTheDocument();
+  });
+
+  it("shows the limit screen and does not list another account's devices", async () => {
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Continuar com Google" }));
 
     expect(await screen.findByRole("heading", { name: "Limite de equipamentos atingido" })).toBeInTheDocument();
     expect(screen.getByText(DEVICE_LIMIT_MESSAGE)).toBeInTheDocument();
@@ -44,6 +63,6 @@ describe("LoginPage device limit", () => {
     fireEvent.click(screen.getByRole("button", { name: "Entender como funciona" }));
     expect(screen.getByText(/não pode ver nem remover os vínculos/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Voltar ao login" }));
-    expect(screen.getByRole("heading", { name: "Entrar na sua conta" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Sua jornada começa com o Google/i })).toBeInTheDocument();
   });
 });

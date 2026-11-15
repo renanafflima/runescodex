@@ -1,29 +1,35 @@
 import { Link } from "react-router-dom";
-import type { HomeAdCampaign } from "./home-content";
+import type { HomePromoCampaign } from "./home-content";
 
-type HomeAdSlotProps = HomeAdCampaign;
+type HomeAdSlotProps = HomePromoCampaign;
 
 export function HomeAdSlot({
   active = true,
-  campaignType,
+  description,
+  eyebrow,
   href,
   image,
+  imageAlt = "",
   slot,
+  theme = "default",
   title,
 }: HomeAdSlotProps) {
   if (!active) return null;
 
   const body = (
     <>
-      {image ? <img alt="" className="home-portal-ad__art" src={image} /> : null}
-      <div className="home-portal-ad__copy">
-        <span className="eyebrow">{campaignType === "house" ? "RuneCodex" : "Campanha"}</span>
-        <strong>{title}</strong>
+      {image ? (
+        <img alt={imageAlt} className="home-portal-promo__art" height="80" src={image} width="80" />
+      ) : null}
+      <div className="home-portal-promo__copy">
+        <span className="home-portal-promo__eyebrow">{eyebrow}</span>
+        <strong className="home-portal-promo__title">{title}</strong>
+        <p className="home-portal-promo__description">{description}</p>
       </div>
     </>
   );
 
-  const className = `home-portal-ad home-portal-ad--${slot}`;
+  const className = `home-portal-promo home-portal-promo--${slot} home-portal-promo--${theme}`;
 
   if (href) {
     return (
@@ -33,9 +39,5 @@ export function HomeAdSlot({
     );
   }
 
-  return (
-    <aside className={className} data-campaign-type={campaignType}>
-      {body}
-    </aside>
-  );
+  return <aside className={className}>{body}</aside>;
 }
