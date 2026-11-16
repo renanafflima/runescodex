@@ -259,79 +259,99 @@
 }
 
 .home-portal-shortcut {
-  display: grid;
-  min-height: 14rem;
-  align-content: end;
-  padding: var(--space-5);
+  position: relative;
+  display: block;
+  overflow: hidden;
+  isolation: isolate;
+  min-height: 13.75rem;
+  aspect-ratio: 16 / 11;
   border: 0.0625rem solid var(--color-line);
   border-radius: var(--radius-md);
-  background:
-    linear-gradient(180deg, rgb(13 22 36 / 20%), rgb(5 8 14 / 92%)),
-    var(--color-surface);
   text-decoration: none;
-  transition: transform var(--transition-base), border-color var(--transition-base);
+  transition:
+    transform var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
 }
 
 .home-portal-shortcut:hover {
   border-color: var(--color-line-strong);
   transform: translateY(-0.125rem);
+  box-shadow: 0 0.85rem 2rem rgb(0 0 0 / 32%);
+}
+
+.home-portal-shortcut__image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 300ms ease;
+}
+
+.home-portal-shortcut__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to top,
+    rgb(3 7 14 / 96%) 0%,
+    rgb(3 7 14 / 45%) 50%,
+    rgb(3 7 14 / 8%) 100%
+  );
+}
+
+.home-portal-shortcut__content {
+  position: absolute;
+  right: var(--space-5);
+  bottom: var(--space-5);
+  left: var(--space-5);
+  z-index: 2;
+}
+
+.home-portal-shortcut:hover .home-portal-shortcut__image {
+  transform: scale(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-portal-shortcut__image,
+  .home-portal-shortcut:hover .home-portal-shortcut__image {
+    transform: none;
+    transition: none;
+  }
 }
 
 .home-portal-shortcut--charms {
-  min-height: 11.5rem;
-  align-content: start;
-  padding: var(--space-3) var(--space-4) var(--space-4);
   border-color: rgb(168 120 255 / 42%);
-  background:
-    linear-gradient(145deg, rgb(90 52 140 / 22%), rgb(5 8 14 / 94%)),
-    radial-gradient(circle at 12% 18%, rgb(212 167 44 / 14%), transparent 58%),
-    var(--color-surface);
-  text-align: center;
+}
+
+.home-portal-shortcut--charms .home-portal-shortcut__overlay {
+  background: linear-gradient(
+    to top,
+    rgb(20 10 34 / 96%) 0%,
+    rgb(20 10 34 / 48%) 52%,
+    rgb(3 7 14 / 10%) 100%
+  );
 }
 
 .home-portal-shortcut--charms:hover {
   border-color: rgb(212 167 44 / 52%);
-}
-
-.home-portal-shortcut--charms .home-portal-shortcut__emblem {
-  width: min(72%, 6.75rem);
-  height: auto;
-  max-height: 6.75rem;
-  margin: 0 auto var(--space-2);
-  border-radius: var(--radius-sm);
-  padding: 0.2rem;
-  background: rgb(20 14 32 / 72%);
-  box-shadow:
-    0 0 1.25rem rgb(168 120 255 / 22%),
-    0 0.5rem 1.25rem rgb(0 0 0 / 55%);
-}
-
-.home-portal-shortcut--charms h3 {
-  font-size: var(--text-lg);
-}
-
-.home-portal-shortcut--charms p {
-  margin-top: var(--space-1);
-}
-
-.home-portal-shortcut__emblem {
-  width: 3.5rem;
-  height: 3.5rem;
-  margin-bottom: var(--space-3);
-  object-fit: contain;
-  filter: drop-shadow(0 0.5rem 1.25rem rgb(0 0 0 / 55%));
+  box-shadow: 0 0.85rem 2rem rgb(168 120 255 / 16%);
 }
 
 .home-portal-shortcut h3 {
   font-family: var(--font-display);
   font-size: var(--text-xl);
   font-weight: 500;
+  text-shadow: 0 0.15rem 0.85rem rgb(0 0 0 / 65%);
 }
 
 .home-portal-shortcut p {
   margin-top: var(--space-2);
-  color: var(--color-text-secondary);
+  color: var(--color-text-soft);
   font-size: var(--text-sm);
+  text-shadow: 0 0.15rem 0.65rem rgb(0 0 0 / 70%);
 }
 
 .home-portal-promo {
@@ -534,7 +554,8 @@
   }
 
   .home-portal-shortcut {
-    min-height: 11rem;
+    min-height: 12.5rem;
+    aspect-ratio: 16 / 12;
   }
 
   .home-portal-rewards {

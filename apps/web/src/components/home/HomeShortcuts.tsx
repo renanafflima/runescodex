@@ -18,9 +18,12 @@ export function HomeShortcuts() {
             key={area.id}
             to={area.to}
           >
-            <img alt="" className="home-portal-shortcut__emblem" height="72" src={area.image} width="72" />
-            <h3>{area.title}</h3>
-            <p>{area.description}</p>
+            <img alt="" className="home-portal-shortcut__image" src={area.image} />
+            <span aria-hidden="true" className="home-portal-shortcut__overlay" />
+            <div className="home-portal-shortcut__content">
+              <h3>{area.title}</h3>
+              <p>{area.description}</p>
+            </div>
           </Link>
         ))}
       </div>
