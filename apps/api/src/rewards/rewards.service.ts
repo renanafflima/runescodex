@@ -19,6 +19,7 @@ import {
 } from './rewards.constants';
 import {
   selectFeaturedForPeriod,
+  weeklyPeriodStartsInMonth,
   type RotationMissionPick,
 } from './rewards.rotation';
 import {
@@ -905,7 +906,6 @@ export class RewardsService {
       return { daysCompleted: rows };
     }
 
-    const { weeklyPeriodStartsInMonth } = await import('./rewards.rotation');
     const weeks = weeklyPeriodStartsInMonth(periodStart);
     if (weeks.length === 0) return { weeksCompleted: 0 };
     const count = await this.prisma.userRewardCycleCompletion.count({
