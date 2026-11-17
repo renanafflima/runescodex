@@ -59,3 +59,41 @@ export function hashCommunityRotationCreatePayload(
 
   return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
 }
+
+const IDEMPOTENCY_STORE_HINT = 'communityrotationpublishidempotency';
+
+function prismaErrorTarget(error: unknown): string {
+  if (!error || typeof error !== 'object' || !('meta' in error)) {
+    return '';
+  }
+  const meta = (error as { meta?: Record<string, unknown> }).meta;
+  if (!meta) {
+    return '';
+  }
+  const parts = [meta.modelName, meta.table, meta.table_name, meta.column_name];
+  return parts
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+    .toLowerCase();
+}
+
+/** True only when the idempotency table (not other CommunityRotation columns) is absent. */
+export function isMissingPublishIdempotencyStore(error: unknown): boolean {
+  if (!error || typeof error !== 'object' || !('code' in error)) {
+    return false;
+  }
+  const code = (error as { code?: string }).code;
+  if (code !== 'P2021' && code !== 'P2022') {
+    return false;
+  }
+  const target = prismaErrorTarget(error);
+  if (target.includes(IDEMPOTENCY_STORE_HINT)) {
+    return true;
+  }
+  if (code === 'P2021') {
+    const message =
+      error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+    return message.includes(IDEMPOTENCY_STORE_HINT);
+  }
+  return false;
+}

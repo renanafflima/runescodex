@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -32,8 +33,10 @@ import {
 } from './community-rotation-access';
 import {
   hashCommunityRotationCreatePayload,
+  isMissingPublishIdempotencyStore,
   sanitizeCommunityRotationIdempotencyKey,
 } from './community-rotation-publish.idempotency';
+import { loggedErrorStack, loggedErrorSummary } from '../common/redact-error';
 import { CommunityRotationBossInputDto } from './dto/community-rotation-boss-input.dto';
 import { CreateCommunityRotationDto } from './dto/create-community-rotation.dto';
 import { CreateCommunityRotationTestDto } from './dto/create-community-rotation-test.dto';
@@ -76,6 +79,8 @@ type EngagementState = {
 
 @Injectable()
 export class CommunityRotationsService {
+  private readonly logger = new Logger(CommunityRotationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly rewardsService: RewardsService,
@@ -201,7 +206,7 @@ export class CommunityRotationsService {
           return cached;
         }
       } catch (error) {
-        if (!isMissingIdempotencyStore(error)) {
+        if (!isMissingPublishIdempotencyStore(error)) {
           throw error;
         }
         idempotencyKey = null;
@@ -218,7 +223,7 @@ export class CommunityRotationsService {
         requestHash,
       );
     } catch (error) {
-      if (idempotencyKey && isMissingIdempotencyStore(error)) {
+      if (idempotencyKey && isMissingPublishIdempotencyStore(error)) {
         return this.persistRotation(userId, dto, bosses, share, undefined, requestHash);
       }
       if (idempotencyKey && isUniqueViolation(error)) {
@@ -230,6 +235,19 @@ export class CommunityRotationsService {
         if (cached) {
           return cached;
         }
+      }
+      if (
+        !(
+          error instanceof BadRequestException ||
+          error instanceof ConflictException ||
+          error instanceof ForbiddenException ||
+          error instanceof NotFoundException
+        )
+      ) {
+        this.logger.error(
+          `communityRotation.create userId=${userId} ${loggedErrorSummary(error)}`,
+          loggedErrorStack(error) || undefined,
+        );
       }
       throw error;
     }
@@ -980,14 +998,6 @@ function emptyEngagement(): EngagementState {
     authorTested: new Set(),
     testedByMe: new Set(),
   };
-}
-
-function isMissingIdempotencyStore(error: unknown) {
-  if (!error || typeof error !== 'object' || !('code' in error)) {
-    return false;
-  }
-  const code = (error as { code?: string }).code;
-  return code === 'P2021' || code === 'P2022';
 }
 
 function isUniqueViolation(error: unknown) {

@@ -10,6 +10,7 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/decorators/current-user.decorator';
@@ -26,9 +27,12 @@ import { CreateCommunityRotationTestDto } from './dto/create-community-rotation-
 import { ListCommunityRotationsQueryDto } from './dto/list-community-rotations-query.dto';
 import { UpdateCommunityRotationCommentDto } from './dto/update-community-rotation-comment.dto';
 import { UpdateCommunityRotationDto } from './dto/update-community-rotation.dto';
+import { COMMUNITY_ROTATIONS_MISSING_SCHEMA_MESSAGE } from './community-rotation.constants';
+import { missingSchemaInterceptor } from '../common/missing-schema';
 
 @Controller('bosstiary/community/rotations')
 @UseGuards(JwtAuthGuard, PremiumGuard)
+@UseInterceptors(missingSchemaInterceptor(COMMUNITY_ROTATIONS_MISSING_SCHEMA_MESSAGE))
 export class CommunityRotationsController {
   constructor(
     private readonly rotations: CommunityRotationsService,

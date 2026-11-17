@@ -71,11 +71,14 @@ describe("CommunityRotationPublishModal", () => {
 
     await waitFor(() => expect(createCommunityRotation).toHaveBeenCalled());
     const privatePayload = createCommunityRotation.mock.calls[0]?.[0];
+    const publishOptions = createCommunityRotation.mock.calls[0]?.[1];
     expect(privatePayload).toMatchObject({
       title: "Ferumbras e Orshabaal",
       visibility: "PRIVATE",
     });
     expect(privatePayload?.partyId).toBeUndefined();
+    expect(publishOptions?.idempotencyKey).toEqual(expect.any(String));
+    expect(publishOptions?.idempotencyKey?.length).toBeGreaterThan(8);
   });
 
   it("shares the same form with a selected party", async () => {

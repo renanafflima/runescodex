@@ -59,6 +59,7 @@ on weekly likes only. Full card payloads for ranking previews use `GET /ranking`
 | `20261107120000_add_community_rotations` | Core tables |
 | `20261107143000_community_rotation_publish_idempotency` | `Idempotency-Key` storage |
 | `20261107143500_drop_community_rotation_sort_enum` | Drops unused `CommunityRotationSort` PG enum |
+| `20261112120000_community_rotation_party_visibility` | `visibility` + `partyId` on `CommunityRotation` (public feed filter) |
 
 Apply with `prisma migrate deploy` after review.
 

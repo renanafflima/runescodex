@@ -17,6 +17,10 @@ export const PUBLIC_STATUSES: CommunityRotationStatus[] = [
 export const COMMUNITY_ROTATION_PUBLISHED_EVENT =
   'BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED';
 
+/** Returned as HTTP 503 when CommunityRotation DDL is missing on the database. */
+export const COMMUNITY_ROTATIONS_MISSING_SCHEMA_MESSAGE =
+  'As tabelas de rotações da Comunidade ainda não estão completas neste banco. Aplique as migrations da Comunidade (incluindo visibilidade/party: 20261112120000_community_rotation_party_visibility).';
+
 export const COMMUNITY_ROTATION_LEVEL_LABELS: Record<
   CommunityRotationRecommendedLevel,
   string

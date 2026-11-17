@@ -13,6 +13,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { RewardsService } from '../rewards/rewards.service';
 import { CommunityRotationsService } from './community-rotations.service';
+import { hashCommunityRotationCreatePayload } from './community-rotation-publish.idempotency';
 
 jest.mock('../prisma/prisma.service', () => ({
   PrismaService: class PrismaService {},
@@ -459,6 +460,201 @@ describe('CommunityRotationsService', () => {
     expect(ranking[0].id).toBe('rotation-2');
     expect(ranking[0].weeklyLikes).toBe(5);
     expect(ranking[0].featured).toBe(true);
+  });
+
+  it('resolves Grand Master Oberon from catalog slug', async () => {
+    const oberonId = 'boss-oberon';
+    prisma.bosstiaryBoss.findMany
+      .mockResolvedValueOnce([
+        {
+          id: oberonId,
+          slug: 'grand-master-oberon',
+          name: 'Grand Master Oberon',
+        },
+      ])
+      .mockResolvedValueOnce([{ id: oberonId }]);
+    prisma.communityRotation.create.mockResolvedValue(
+      rotationRow({
+        bosses: [
+          {
+            id: 'stop-1',
+            bossId: oberonId,
+            bossName: null,
+            position: 1,
+            notes: null,
+            boss: {
+              id: oberonId,
+              slug: 'grand-master-oberon',
+              name: 'Grand Master Oberon',
+            },
+          },
+        ],
+      }),
+    );
+
+    await service.create('user-1', {
+      title: 'Oberon loop',
+      recommendedLevel: 'L500',
+      huntMode: BosstiaryHuntMode.SOLO,
+      plannedDurationMinutes: 30,
+      bosses: [
+        { slug: 'grand-master-oberon', bossName: 'Grand Master Oberon', position: 1 },
+      ],
+    });
+
+    expect(prisma.communityRotation.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          bosses: {
+            create: [
+              {
+                bossId: oberonId,
+                bossName: null,
+                position: 1,
+                notes: null,
+              },
+            ],
+          },
+        }),
+      }),
+    );
+  });
+
+  it('publishes a rotation with a boss that has no catalog profile', async () => {
+    prisma.bosstiaryBoss.findMany.mockResolvedValue([]);
+    prisma.communityRotation.create.mockResolvedValue(
+      rotationRow({
+        bosses: [
+          {
+            id: 'stop-1',
+            bossId: null,
+            bossName: 'Unlisted Boss',
+            position: 1,
+            notes: null,
+            boss: null,
+          },
+        ],
+      }),
+    );
+
+    await service.create('user-1', {
+      title: 'Pending boss',
+      recommendedLevel: 'L300',
+      huntMode: BosstiaryHuntMode.SOLO,
+      plannedDurationMinutes: 30,
+      bosses: [{ bossName: 'Unlisted Boss', position: 1 }],
+    });
+
+    expect(prisma.communityRotation.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          bosses: {
+            create: [
+              {
+                bossId: null,
+                bossName: 'Unlisted Boss',
+                position: 1,
+                notes: null,
+              },
+            ],
+          },
+        }),
+      }),
+    );
+  });
+
+  it('replays create with the same idempotency key', async () => {
+    prisma.bosstiaryBoss.findMany.mockResolvedValue([{ id: 'boss-1' }]);
+    const dto = {
+      title: 'Quick bane loop',
+      recommendedLevel: 'L500' as const,
+      huntMode: BosstiaryHuntMode.SOLO,
+      plannedDurationMinutes: 30 as const,
+      bosses: [{ bossId: 'boss-1', position: 1 }],
+    };
+    const requestHash = hashCommunityRotationCreatePayload(dto);
+    prisma.communityRotationPublishIdempotency.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        requestHash,
+        rotationId: 'rotation-1',
+        rotation: rotationRow(),
+      });
+    prisma.communityRotation.create.mockResolvedValue(rotationRow());
+    prisma.communityRotationPublishIdempotency.create.mockResolvedValue({});
+
+    await service.create('user-1', dto, 'idem-key-1');
+    const second = await service.create('user-1', dto, 'idem-key-1');
+
+    expect(prisma.communityRotation.create).toHaveBeenCalledTimes(1);
+    expect(second.id).toBe('rotation-1');
+  });
+
+  it('falls back when only the idempotency table is missing', async () => {
+    prisma.bosstiaryBoss.findMany.mockResolvedValue([{ id: 'boss-1' }]);
+    prisma.communityRotationPublishIdempotency.findUnique.mockRejectedValue(
+      Object.assign(new Error('Table does not exist'), {
+        code: 'P2021',
+        meta: { modelName: 'CommunityRotationPublishIdempotency' },
+      }),
+    );
+    prisma.communityRotation.create.mockResolvedValue(rotationRow());
+
+    const result = await service.create(
+      'user-1',
+      {
+        title: 'Quick bane loop',
+        recommendedLevel: 'L500',
+        huntMode: BosstiaryHuntMode.SOLO,
+        plannedDurationMinutes: 30,
+        bosses: [{ bossId: 'boss-1', position: 1 }],
+      },
+      'idem-key-1',
+    );
+
+    expect(result.id).toBe('rotation-1');
+    expect(prisma.communityRotation.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not swallow missing visibility column as idempotency fallback', async () => {
+    prisma.bosstiaryBoss.findMany.mockResolvedValue([{ id: 'boss-1' }]);
+    prisma.communityRotationPublishIdempotency.findUnique.mockRejectedValue(
+      Object.assign(new Error('Column does not exist'), {
+        code: 'P2022',
+        meta: { modelName: 'CommunityRotation', column_name: 'visibility' },
+      }),
+    );
+
+    await expect(
+      service.create(
+        'user-1',
+        {
+          title: 'Quick bane loop',
+          recommendedLevel: 'L500',
+          huntMode: BosstiaryHuntMode.SOLO,
+          plannedDurationMinutes: 30,
+          bosses: [{ bossId: 'boss-1', position: 1 }],
+        },
+        'idem-key-1',
+      ),
+    ).rejects.toMatchObject({ code: 'P2022' });
+    expect(prisma.communityRotation.create).not.toHaveBeenCalled();
+  });
+
+  it('propagates persistence errors from the transaction', async () => {
+    prisma.bosstiaryBoss.findMany.mockResolvedValue([{ id: 'boss-1' }]);
+    prisma.communityRotation.create.mockRejectedValue(new Error('database down'));
+
+    await expect(
+      service.create('user-1', {
+        title: 'Quick bane loop',
+        recommendedLevel: 'L500',
+        huntMode: BosstiaryHuntMode.SOLO,
+        plannedDurationMinutes: 30,
+        bosses: [{ bossId: 'boss-1', position: 1 }],
+      }),
+    ).rejects.toThrow('database down');
   });
 
   it('rejects a second evaluation from the same user', async () => {
