@@ -26,6 +26,11 @@ function activeBanners(banners: HomePartnerBanner[]) {
 }
 
 function BannerSurface({ banner }: { banner: HomePartnerBanner }) {
+  const trackOpen = () => {
+    void import("../../domain/rewards-activity").then(({ reportRewardActivity }) => {
+      reportRewardActivity("PROMO_BANNER_OPENED", banner.id || banner.href || banner.image, "PromoBanner");
+    });
+  };
   const image = (
     <img
       alt={banner.alt}
@@ -46,6 +51,7 @@ function BannerSurface({ banner }: { banner: HomePartnerBanner }) {
       <a
         className="home-portal-partners__slide home-portal-partners__slide--link"
         href={banner.href}
+        onClick={trackOpen}
         rel="noopener noreferrer"
         target="_blank"
       >
@@ -55,7 +61,11 @@ function BannerSurface({ banner }: { banner: HomePartnerBanner }) {
   }
 
   return (
-    <Link className="home-portal-partners__slide home-portal-partners__slide--link" to={banner.href}>
+    <Link
+      className="home-portal-partners__slide home-portal-partners__slide--link"
+      onClick={trackOpen}
+      to={banner.href}
+    >
       {image}
     </Link>
   );

@@ -1,8 +1,10 @@
 /**
  * Rewards missions/catalog seed.
  * Catalog prices are provisional.
- * Only COMMUNITY missions with real forum events stay active.
+ * Catalog v2 (rotation) is seeded via seedRewardsCatalogV2.
  */
+import { seedRewardsCatalogV2 } from "./rewards-catalog-v2.js";
+
 export const REWARD_MISSIONS = [
   {
     title: "Explore 3 Novas Áreas",
@@ -33,6 +35,17 @@ export const REWARD_MISSIONS = [
     period: "WEEKLY",
     target: 1,
     pointsReward: 80,
+    imageKey: "missionHunts",
+    eventType: "BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED",
+    active: true,
+  },
+  {
+    title: "Compartilhe uma rotação",
+    description: "Publique uma rotação de bosses no Bosstiário hoje.",
+    category: "COMMUNITY",
+    period: "DAILY",
+    target: 1,
+    pointsReward: 35,
     imageKey: "missionHunts",
     eventType: "BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED",
     active: true,
@@ -69,6 +82,39 @@ export const REWARD_MISSIONS = [
     imageKey: "missionHunts",
     eventType: "HUNT_ACTION",
     active: false,
+  },
+  {
+    title: "Assista 3 anúncios",
+    description: "Assista anúncios recompensados para ganhar pontos.",
+    category: "PROMOTION",
+    period: "DAILY",
+    target: 3,
+    pointsReward: 30,
+    imageKey: "promotion",
+    eventType: "WATCH_AD",
+    active: true,
+  },
+  {
+    title: "Assista 5 anúncios",
+    description: "Continue assistindo anúncios recompensados nesta semana.",
+    category: "PROMOTION",
+    period: "WEEKLY",
+    target: 5,
+    pointsReward: 70,
+    imageKey: "promotion",
+    eventType: "WATCH_AD",
+    active: true,
+  },
+  {
+    title: "Assista 15 anúncios",
+    description: "Assista anúncios recompensados ao longo do mês.",
+    category: "PROMOTION",
+    period: "MONTHLY",
+    target: 15,
+    pointsReward: 250,
+    imageKey: "promotion",
+    eventType: "WATCH_AD",
+    active: true,
   },
   {
     title: "Compartilhe o RuneCodex",
@@ -165,12 +211,14 @@ export const REWARD_CATALOG = [
 ];
 
 export async function seedRewards(prisma) {
+  // Legacy seed kept for historical titles; catalog v2 is the source of truth for rotation.
   for (const mission of REWARD_MISSIONS) {
     const existing = await prisma.rewardMission.findFirst({
       where: {
         title: mission.title,
         period: mission.period,
         category: mission.category,
+        catalogKey: null,
       },
     });
     if (existing) {
@@ -182,13 +230,15 @@ export async function seedRewards(prisma) {
           pointsReward: mission.pointsReward,
           imageKey: mission.imageKey,
           eventType: mission.eventType,
-          active: mission.active,
+          active: false,
+          eventImplemented: false,
+          role: "LEGACY",
         },
       });
-    } else {
-      await prisma.rewardMission.create({ data: mission });
     }
   }
+
+  await seedRewardsCatalogV2(prisma);
 
   for (const item of REWARD_CATALOG) {
     await prisma.rewardCatalogItem.upsert({
@@ -206,6 +256,6 @@ export async function seedRewards(prisma) {
   }
 
   console.log(
-    `Seeded ${REWARD_MISSIONS.length} reward missions and ${REWARD_CATALOG.length} catalog items. Catalog prices are provisional (TC/RC Gold, Hat 3 Diamond) and may change in the database.`,
+    `Seeded rewards catalog v2 + ${REWARD_CATALOG.length} shop items. Legacy missions deactivated without deletion.`,
   );
 }

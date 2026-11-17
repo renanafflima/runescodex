@@ -13,6 +13,7 @@ import { formatCount } from "../domain/format";
 import { mapHuntListItem, preferredHuntVocation } from "../domain/hunts";
 import { describeApiError } from "../services/api/errors";
 import { ReportProblem } from "../components/tickets/ReportProblem";
+import { reportRewardActivity } from "../domain/rewards-activity";
 import { recordContentView } from "../services/api/admin-portal";
 import { getBestiaryBySlug } from "../services/api/bestiary";
 import { listHuntsPage } from "../services/api/hunts";
@@ -104,6 +105,7 @@ export function BestiaryCreaturePage() {
   useEffect(() => {
     if (entry?.id && /^[0-9a-f-]{36}$/i.test(entry.id)) {
       recordContentView("CREATURE", entry.id);
+      reportRewardActivity("CREATURE_VIEWED", entry.id, "Creature");
     }
   }, [entry?.id]);
   const huntTimeSummary = useMemo(

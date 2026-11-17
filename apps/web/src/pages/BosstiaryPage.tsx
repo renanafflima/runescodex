@@ -7,6 +7,7 @@ import { CommunityRotationsFeed } from "../components/bosstiary/CommunityRotatio
 import { loadBosstiaryCatalog, officialBossImage } from "../domain/bosstiary-catalog";
 import { entryFromReviewedBoss, type BosstiaryEntry } from "../domain/bosstiary";
 import { BOSSTIARY_TABS, parseBosstiaryTab, type BosstiaryTab } from "../domain/bosstiary-rotations";
+import { reportRewardActivity } from "../domain/rewards-activity";
 import { describeApiError } from "../services/api/errors";
 import { listBosstiaryProfiles, type BosstiaryReviewedBoss } from "../services/api/bosstiary";
 import { BOSSTIARY_ENCYCLOPEDIA_PAGE_SIZE, loadEntireCatalog } from "../services/api/page";
@@ -19,6 +20,10 @@ export function BosstiaryPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const needsCatalog = tab === "enciclopedia";
+
+  useEffect(() => {
+    reportRewardActivity("BOSSTIARY_OPENED", `bosstiary:${tab}`, "BosstiaryTab");
+  }, [tab]);
 
   const loadEncyclopedia = useCallback(async () => {
     setLoading(true);

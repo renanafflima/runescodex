@@ -21,18 +21,16 @@ export type MissionPeriod = (typeof MISSION_PERIODS)[number];
 
 export type RewardCurrencyCode = 'GOLD' | 'DIAMOND';
 
-/** Events actually emitted by existing product features. */
-export const REWARD_EVENTS = {
-  FORUM_TOPIC_CREATED: 'FORUM_TOPIC_CREATED',
-  FORUM_COMMENT_CREATED: 'FORUM_COMMENT_CREATED',
-  BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED:
-    'BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED',
-} as const;
+export {
+  CLIENT_TRACKABLE_EVENTS,
+  IMPLEMENTED_REWARD_EVENTS,
+  REWARD_EVENTS,
+  isImplementedRewardEvent,
+  isSupportedRewardEvent,
+  type RewardEventType,
+} from './rewards.events';
 
-export type RewardEventType =
-  (typeof REWARD_EVENTS)[keyof typeof REWARD_EVENTS];
-
-/** Reserved for future features. recordEvent rejects them until implemented. */
+/** Legacy reserved names kept for seed/history compatibility (not accepted by recordEvent). */
 export const FUTURE_REWARD_EVENTS = {
   BESTIARY_ACTION: 'BESTIARY_ACTION',
   HUNT_ACTION: 'HUNT_ACTION',
@@ -43,10 +41,10 @@ export const FUTURE_REWARD_EVENTS = {
   EXPLORATION_COMPLETED: 'EXPLORATION_COMPLETED',
 } as const;
 
-const SUPPORTED_EVENTS = new Set<string>(Object.values(REWARD_EVENTS));
-
-export function isSupportedRewardEvent(
-  eventType: string,
-): eventType is RewardEventType {
-  return SUPPORTED_EVENTS.has(eventType);
-}
+export const MISSION_ROLES = {
+  LEGACY: 'LEGACY',
+  POOL: 'POOL',
+  FIXED_ADS: 'FIXED_ADS',
+  FIXED_WEEKLY_STREAK: 'FIXED_WEEKLY_STREAK',
+  FIXED_MONTHLY_STREAK: 'FIXED_MONTHLY_STREAK',
+} as const;

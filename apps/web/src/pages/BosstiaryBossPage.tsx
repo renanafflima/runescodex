@@ -17,6 +17,7 @@ import {
   type BosstiaryEntry,
   type BosstiaryFactKind,
 } from "../domain/bosstiary";
+import { reportRewardActivity } from "../domain/rewards-activity";
 import { ApiError, describeApiError } from "../services/api/errors";
 import { recordContentView } from "../services/api/admin-portal";
 import { getBosstiaryProfile } from "../services/api/bosstiary";
@@ -85,7 +86,18 @@ export function BosstiaryBossPage() {
     if (entry?.slug && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.slug)) {
       recordContentView("BOSS", entry.slug);
     }
-  }, [entry?.slug]);
+    const category = entry?.officialCategory;
+    if (
+      entry?.slug &&
+      (category === "Archfoe" || category === "Nemesis")
+    ) {
+      reportRewardActivity("ARCHFOE_BOSS_VIEWED", entry.slug, "Boss");
+    }
+    const loot = entry ? bossLootText(entry) : null;
+    if (entry?.slug && loot?.trim()) {
+      reportRewardActivity("LOOT_ITEM_VIEWED", `boss-loot:${entry.slug}`, "BossLoot");
+    }
+  }, [entry]);
 
   const facts = useMemo(() => (entry ? detailFacts(entry) : []), [entry]);
 

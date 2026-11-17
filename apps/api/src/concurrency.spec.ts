@@ -42,6 +42,32 @@ function createLock() {
   };
 }
 
+function poolMission(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'mission-1',
+    title: 'Poste no Fórum',
+    description: 'Crie um tópico',
+    category: 'COMMUNITY',
+    period: 'DAILY',
+    target: 1,
+    pointsReward: 20,
+    imageKey: 'missionForum',
+    eventType: 'FORUM_TOPIC_CREATED',
+    catalogKey: 'KINGDOM_SCRIBE',
+    pillar: 'COMMUNITY',
+    role: 'POOL',
+    eventImplemented: true,
+    active: true,
+    ...overrides,
+  };
+}
+
+const cycleCompletionStub = {
+  createMany: async () => ({ count: 0 }),
+  count: async () => 0,
+  findMany: async () => [],
+};
+
 describe('concurrent writes', () => {
   it('keeps both mission increments and pays the reward once', async () => {
     const state = {
@@ -57,18 +83,14 @@ describe('concurrent writes', () => {
       $transaction: (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
       rewardMission: {
         findMany: async () => [
-          {
-            id: 'mission-1',
+          poolMission({
             title: 'Comentários',
             description: 'Faça 3 comentários',
-            category: 'COMMUNITY',
-            period: 'DAILY',
             target: 2,
             pointsReward: 25,
-            imageKey: 'missionForum',
             eventType: 'FORUM_COMMENT_CREATED',
-            active: true,
-          },
+            catalogKey: 'TAVERN_VOICE',
+          }),
         ],
       },
       rewardEventReceipt: {
@@ -107,6 +129,7 @@ describe('concurrent writes', () => {
         },
       },
       userMissionProgress: {
+        findMany: async () => [],
         findUnique: async () =>
           state.created
             ? {
@@ -151,6 +174,7 @@ describe('concurrent writes', () => {
             return { count: 1 };
           }),
       },
+      userRewardCycleCompletion: cycleCompletionStub,
       rewardLedgerEntry: {
         create: async () => {
           state.ledger += 1;
@@ -203,20 +227,7 @@ describe('concurrent writes', () => {
         return fn(prisma);
       },
       rewardMission: {
-        findMany: async () => [
-          {
-            id: 'mission-1',
-            title: 'Poste no Fórum',
-            description: 'Crie um tópico',
-            category: 'COMMUNITY',
-            period: 'DAILY',
-            target: 1,
-            pointsReward: 20,
-            imageKey: 'missionForum',
-            eventType: 'FORUM_TOPIC_CREATED',
-            active: true,
-          },
-        ],
+        findMany: async () => [poolMission()],
       },
       rewardEventReceipt: {
         createMany: async ({
@@ -249,6 +260,7 @@ describe('concurrent writes', () => {
         },
       },
       userMissionProgress: {
+        findMany: async () => [],
         findUnique: async () =>
           state.created
             ? {
@@ -280,6 +292,7 @@ describe('concurrent writes', () => {
           return { count: 1 };
         },
       },
+      userRewardCycleCompletion: cycleCompletionStub,
       rewardLedgerEntry: {
         create: async () => {
           state.ledger += 1;
@@ -311,21 +324,10 @@ describe('concurrent writes', () => {
     const prisma = {
       $transaction: (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
       rewardMission: {
-        findMany: async () => [
-          {
-            id: 'mission-1',
-            title: 'Poste no Fórum',
-            description: 'Crie um tópico',
-            category: 'COMMUNITY',
-            period: 'DAILY',
-            target: 1,
-            pointsReward: 20,
-            imageKey: 'missionForum',
-            eventType: 'FORUM_TOPIC_CREATED',
-            active: true,
-          },
-        ],
+        findMany: async () => [poolMission()],
       },
+      userMissionProgress: { findMany: async () => [] },
+      userRewardCycleCompletion: cycleCompletionStub,
       rewardEventReceipt: {
         createMany: async () => {
           throw new Error('database unavailable');
@@ -792,18 +794,14 @@ describe('concurrent writes', () => {
       },
       rewardMission: {
         findMany: async () => [
-          {
-            id: 'mission-1',
+          poolMission({
             title: 'Comentários',
             description: 'Faça 2 comentários',
-            category: 'COMMUNITY',
-            period: 'DAILY',
             target: 2,
             pointsReward: 25,
-            imageKey: 'missionForum',
             eventType: 'FORUM_COMMENT_CREATED',
-            active: true,
-          },
+            catalogKey: 'TAVERN_VOICE',
+          }),
         ],
       },
       rewardEventReceipt: {
@@ -837,12 +835,14 @@ describe('concurrent writes', () => {
         },
       },
       userMissionProgress: {
+        findMany: async () => [],
         findUnique: async () => ({
           id: 'progress-1',
           progress: state.progress,
           completed: state.completed,
           completedAt: null,
         }),
+        createMany: async () => ({ count: 0 }),
         findUniqueOrThrow: async () => ({
           id: 'progress-1',
           progress: state.progress,
@@ -870,6 +870,7 @@ describe('concurrent writes', () => {
             return { count: 1 };
           }),
       },
+      userRewardCycleCompletion: cycleCompletionStub,
       rewardLedgerEntry: { create: async () => ({}) },
     };
 

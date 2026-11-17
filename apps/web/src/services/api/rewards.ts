@@ -14,11 +14,17 @@ export type RewardMission = {
   period: string;
   imageKey?: string | null;
   eventType?: string | null;
+  catalogKey?: string | null;
+  role?: string | null;
+  eventImplemented?: boolean;
+  functional?: boolean;
   current: number;
   target: number;
   rewardPoints: number;
   completed: boolean;
   periodEnd?: string;
+  daysCompleted?: number;
+  weeksCompleted?: number;
 };
 
 export type RewardCatalogItem = {
@@ -91,5 +97,12 @@ export function redeemReward(catalogItemId: string) {
   return apiRequest<{ wallet: RewardWallet; redemption?: { status?: string; message?: string } }>("/rewards/redeem", {
     method: "POST",
     json: { catalogItemId },
+  });
+}
+
+export function trackRewardActivity(eventType: string, referenceId: string, referenceType = "ClientActivity") {
+  return apiRequest<{ eventType: string }>("/rewards/activity", {
+    method: "POST",
+    json: { eventType, referenceId, referenceType },
   });
 }

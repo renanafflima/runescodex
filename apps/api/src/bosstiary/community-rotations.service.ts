@@ -325,6 +325,21 @@ export class CommunityRotationsService {
         });
 
         await this.recordPublishReward(tx, userId, created.id);
+        await this.softRecordReward(
+          tx,
+          userId,
+          'GUIDE_PUBLISHED',
+          { referenceType: 'CommunityRotation', referenceId: created.id },
+        );
+        await this.softRecordReward(
+          tx,
+          userId,
+          'ROTATION_EDITED',
+          {
+            referenceType: 'CommunityRotation',
+            referenceId: `${created.id}:create`,
+          },
+        );
 
         if (idempotencyKey) {
           await tx.communityRotationPublishIdempotency.create({
@@ -398,6 +413,11 @@ export class CommunityRotationsService {
       });
     });
 
+    await this.softRecordReward(this.prisma, userId, 'ROTATION_EDITED', {
+      referenceType: 'CommunityRotation',
+      referenceId: `${row.id}:${row.updatedAt.toISOString()}`,
+    });
+
     const engagement = await this.rotationEngagement([row.id], userId);
     const images = await this.bossImages([row]);
     const featuredSet = new Set(await this.weeklyFeaturedRotationIds(3));
@@ -428,6 +448,10 @@ export class CommunityRotationsService {
       }
       throw error;
     }
+    await this.rewardsService.recordEvent(userId, 'COMMUNITY_CONTENT_LIKED', {
+      referenceType: 'CommunityRotationLike',
+      referenceId: `${id}:${userId}`,
+    });
     return this.socialState(id, userId);
   }
 
@@ -920,14 +944,23 @@ export class CommunityRotationsService {
     userId: string,
     rotationId: string,
   ) {
+    await this.softRecordReward(tx, userId, COMMUNITY_ROTATION_PUBLISHED_EVENT, {
+      referenceType: 'CommunityRotation',
+      referenceId: rotationId,
+    });
+  }
+
+  private async softRecordReward(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    eventType: string,
+    metadata: { referenceType: string; referenceId: string },
+  ) {
     try {
       await this.rewardsService.recordEvent(
         userId,
-        COMMUNITY_ROTATION_PUBLISHED_EVENT,
-        {
-          referenceType: 'CommunityRotation',
-          referenceId: rotationId,
-        },
+        eventType,
+        metadata,
         new Date(),
         tx,
       );

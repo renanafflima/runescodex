@@ -1,0 +1,66 @@
+<noinclude>{{clear}}
+{{warning|Esta página pode conter spoiler, o que pode estragar parte da diversão do jogo. Se você não quiser ver, sugerimos que [[Home|saia desta página]].}}
+{{Protegida}}
+{{TOC left}}
+{{clear}}</noinclude>
+== Sobre Bosstiário ==
+[[Arquivo:Summer Update 2022 - Teaser 5 01.png|right|300px]]
+O Bosstiary é uma nova adição à [[Cyclopedia]] do Tibia que permite verificar quais bosses você matou e com que frequência. Ele recompensa seu personagem com benefícios úteis e extravagantes a medida que avança.
+
+A primeira morte de um boss abrirá sua entrada no bosstiary. Cada boss tem três níveis de progresso. Um contador lhe mostrará a quantidade de mortes necessárias para atingir o próximo nível para este boss. Você também recebe ''Boss Points'' por desbloquear um novo nível de progresso. Níveis de progresso mais altos rendem mais ''Boss Points''.
+
+=== Categorias ===
+[[Arquivo:Summer Update 2022 - Teaser 5 04.png|right|300px]]
+Estes são os três níveis de progresso que você pode desbloquear para cada boss:
+* [[Arquivo:Bosstiary Prowess.png]] '''Prowess''' permite que você atribua este boss a um '''boss slot'''.
+** Você recebe o primeiro slot de boss ao desbloquear o Prowess pela primeira vez.
+** Se você selecionar um boss para o slot de boss, você se beneficia de um bônus de 25% de saque de equipamento. Isto significa que há uma chance de 25% para você receber outro conjunto de saque de equipamento do boss.
+*** Este bônus só se aplica a itens que podem ser equipados a menos que sejam limitados a um drop por boss, por exemplo, o ''Ferumbras' Hat''. Tais drops únicos não são afetadas por este bônus.
+
+* [[Arquivo:Bosstiary Expertise.png]] '''Expertise''' permite que você exiba este boss em um [[Podium of Vigour]] em sua casa ou guildhall.
+** Seu personagem receberá um pódio gratuito por desbloquear a Expertise pela primeira vez.
+** Depois disso, você pode comprar pódios adicionais por ouro em um NPC.
+** O Podium of Vigour pode ser configurado através de uma janela específica semelhante ao [[Podium of Renown]].
+
+* [[Arquivo:Bosstiary Mastery.png]] '''Mastery''' concede a você um bônus adicional de 25% de saque de equipamento quando este boss é designado a um "boss slot".
+
+Completar as etapas do boss para coletar ''Boss Points'' compensa: O bônus de loot de equipamento do boss slot pode ser aumentado gradualmente até 182%, acumulando pontos. Além disso, um segundo "boss slot" será desbloqueado quando você atingir 1500 ''Boss Points''.
+
+A quantidade vezes que você deve matar um boss para completar cada nível de progresso depende da frequência com que o respectivo boss pode ser morto dentro de um determinado período de tempo. Há três categorias:
+
+* [[Arquivo:Bosstiary Bane.png|link=]] '''Bane''': Bosses que podem ser mortos mais de uma vez por um personagem dentro de 20 horas, por exemplo, [[Zugurosh]].
+* [[Arquivo:Bosstiary Archfoe.png|link=]] '''Archfoe''': Bosses que não se enquadram na categoria '''Bane''' e que podem ser mortos uma vez a cada 20 até 48 horas, por exemplo, [[Scarlett Etzel]].
+* [[Arquivo:Bosstiary Nemesis.png|link=]] '''Nemesis''': Bosses que não se enquadram na categoria '''Bane''' nem na categoria '''Archfoe''', pois aparecem com menos frequência ou têm um ''cooldown'' mais longo do que 48 horas, por exemplo, [[Ferumbras]].
+
+O progresso no Bosstiary também conferirá títulos temporários e permanentes ao seu personagem. Além disso, o novo Highscore "Boss Points" será adicionado.
+
+=== Impulso Diário de Bosses ===
+A cada ''Server Save'', um boss da categoria '''Archfoe''', será sorteado aleatoriamente, e receberá um impulso temporário até o próximo server save. Durante esse tempo, matar o '''Archfoe''' escolhido contará como três mortes para seu Bosstiary e o boss também carregará mais loot do que o normal. Este reforço será sempre maior do que o bônus máximo de loot do equipamento que pode ser alcançado através do Bosstiary.
+
+Se um boss for selecionado como boss impulsionado diário, seu cooldown será reiniciado para cada personagem para garantir que ele possa ser morto a tempo.
+
+Semelhante à criatura diariamente impulsionada, o boss impulsionado diário será mostrado no cliente e também no website, que também será expandido pela seção "Bosses Boostable". Ele também será exibido no aplicativo do [[Tibia Observer]].
+
+=== Cooldown de Bosses ===
+[[Arquivo:Summer Update 2022 - Teaser 6 02.png|right|150px]]
+O novo widget ''Boss Cooldowns'' ajuda você a acompanhar o tempo restante de cooldown dos bosses '''Archfoe''' que você já matou pelo menos uma vez.
+
+Em vez de ter que lembrar ou anotar quando você matou um boss, basta abrir o widget para verificar o tempo restante antes de poder lutar contra o boss novamente. Você pode colocar o widget em uma de suas barras laterais para sempre ficar de olho nele enquanto joga.
+
+Você pode ordenar os bosses Archfoe desbloqueados pelo tempo restante de cooldown ou pelo nome. E se você quiser verificar a entrada no Bosstiary de um dos bosses exibidos, basta clicar em seu ícone para abri-lo.
+
+=== Estatísticas ===
+{{DASH|Atualmente existem '''{{PAGESINCATEGORY:Bosses}}''' bosses, no entanto nem todos estão no bosstiário.</br>Esses bosses atualmente estão divididos entre 03 categorias:</br>
+* '''Bane:''' {{PAGESINCATEGORY:Bosses Bane}} bosses.
+* '''Archfoe:''' {{PAGESINCATEGORY:Bosses Archfoe}} bosses.
+* '''Nemesis:''' {{PAGESINCATEGORY:Bosses Nemesis}} bosses.
+}}
+<noinclude>
+{{#dpl:
+| mode=userformat
+| category=Bosses
+| category=Bosstiário
+| namespace=
+| include           = {Infobox_Criatura}/BossesDPL/Include
+| table             = {{Infobox Criatura/BossesDPL/Table}}
+}}

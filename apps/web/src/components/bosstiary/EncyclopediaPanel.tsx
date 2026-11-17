@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CatalogImage } from "../catalog/CatalogImage";
 import { CatalogEmpty, CatalogError, CatalogLoading } from "../catalog/CatalogState";
 import { ButtonLink } from "../ui/Button";
@@ -12,6 +12,7 @@ import {
   formatBosstiaryReachLine,
   type BosstiaryEntry,
 } from "../../domain/bosstiary";
+import { reportRewardActivity } from "../../domain/rewards-activity";
 
 type EncyclopediaPanelProps = {
   entries: BosstiaryEntry[];
@@ -56,9 +57,17 @@ export function EncyclopediaPanel({ entries, loading, error, onRetry }: Encyclop
         <label className="bosstiary-encyclopedia__category">
           <span>Categoria Bosstiário</span>
           <select
-            onChange={(event) =>
-              setOfficialCategory(event.target.value as (typeof CATEGORY_OPTIONS)[number]["value"])
-            }
+            onChange={(event) => {
+              const next = event.target.value as (typeof CATEGORY_OPTIONS)[number]["value"];
+              setOfficialCategory(next);
+              if (next !== "all") {
+                reportRewardActivity(
+                  "BESTIARY_FILTER_USED",
+                  `boss-category:${next}`,
+                  "BosstiaryFilter",
+                );
+              }
+            }}
             value={officialCategory}
           >
             {CATEGORY_OPTIONS.map((option) => (
@@ -117,6 +126,16 @@ function BossDetail({ entry }: { entry: BosstiaryEntry }) {
   const location = formatBosstiaryLocationLine(entry);
   const reach = formatBosstiaryReachLine(entry);
   const mechanics = entry.mechanics?.trim() || null;
+
+  useEffect(() => {
+    const category = entry.officialCategory;
+    if (category === "Archfoe" || category === "Nemesis") {
+      reportRewardActivity("ARCHFOE_BOSS_VIEWED", entry.slug, "Boss");
+    }
+    if (loot?.trim()) {
+      reportRewardActivity("LOOT_ITEM_VIEWED", `boss-loot:${entry.slug}`, "BossLoot");
+    }
+  }, [entry.officialCategory, entry.slug, loot]);
 
   return (
     <div className="bosstiary-detail">

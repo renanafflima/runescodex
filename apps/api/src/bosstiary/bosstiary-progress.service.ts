@@ -15,6 +15,7 @@ import {
 import { ListSharedActivitiesQueryDto } from './dto/party.dto';
 import { pageResult, resolvePage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
+import { RewardsService } from '../rewards/rewards.service';
 import {
   CreateProgressActivityDto,
   ListProgressActivitiesQueryDto,
@@ -29,7 +30,10 @@ const ACTIVITY_INCLUDE = {
 
 @Injectable()
 export class BosstiaryProgressService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly rewardsService: RewardsService,
+  ) {}
 
   async summary(userId: string) {
     const [defeatedDistinct, drops, activities, checklistTotal, checklistDone] =
@@ -274,6 +278,12 @@ export class BosstiaryProgressService {
     const row = await this.prisma.$transaction((tx) =>
       this.upsertChecklist(tx, userId, boss.id, defeated, defeated ? now : null),
     );
+    if (defeated) {
+      await this.rewardsService.recordEvent(userId, 'BOSS_DEFEATED_RECORDED', {
+        referenceType: 'BosstiaryBossChecklist',
+        referenceId: `${userId}:${boss.id}:${row.lastDefeatedAt?.toISOString() ?? now.toISOString()}`,
+      });
+    }
     const images = await this.bossImages([boss.slug]);
     return {
       bossId: boss.id,

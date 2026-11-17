@@ -90,6 +90,7 @@ model User {
   rewardRedemptions      RewardRedemption[]
   rewardLedgerEntries    RewardLedgerEntry[]
   rewardEventReceipts    RewardEventReceipt[]
+  rewardCycleCompletions UserRewardCycleCompletion[]
   approvedRedemptions    RewardRedemption[]              @relation("RedemptionApprovedBy")
   deliveredRedemptions   RewardRedemption[]              @relation("RedemptionDeliveredBy")
   cancelledRedemptions   RewardRedemption[]              @relation("RedemptionCancelledBy")
@@ -127,6 +128,8 @@ model User {
   communityRotationCommentLikes CommunityRotationCommentLike[]
   communityRotationTests CommunityRotationTest[]
   communityRotationPublishIdempotencies CommunityRotationPublishIdempotency[]
+  adMobRewardSessions              AdMobRewardSession[]
+  adMobSsvTransactions             AdMobSsvTransaction[]
   bosstiaryProgressActivities BosstiaryProgressActivity[]
   bosstiaryBossChecklists     BosstiaryBossChecklist[]
   partiesCreated              Party[]                    @relation("PartyCreator")
@@ -712,15 +715,41 @@ model RewardMission {
   imageKey     String
   /// Real app event that increments this mission. Null = not automatable yet.
   eventType    String?
+  /// Stable catalog identity shared across DAILY/WEEKLY/MONTHLY variants (e.g. TAVERN_VOICE).
+  catalogKey   String?
+  /// COMMUNITY | BESTIARY | BOSSES | TOOLS | SYSTEM
+  pillar       String?
+  /// LEGACY | POOL | FIXED_ADS | FIXED_WEEKLY_STREAK | FIXED_MONTHLY_STREAK
+  role         String                 @default("LEGACY")
+  /// false = never offered in rotation or credited until emitter ships.
+  eventImplemented Boolean            @default(false)
   active       Boolean                @default(true)
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
   progress     UserMissionProgress[]
   eventReceipts RewardEventReceipt[]
 
+  @@index([catalogKey, period])
   @@index([active, period])
   @@index([category])
   @@index([eventType, active])
+  @@index([role, period, active])
+}
+
+/// Persists completed daily/weekly aggregator cycles for Devoção / Lenda.
+model UserRewardCycleCompletion {
+  id          String   @id @default(uuid())
+  userId      String
+  /// DAILY_ALL | WEEKLY_ALL
+  cycle       String
+  periodStart DateTime
+  periodEnd   DateTime
+  completedAt DateTime @default(now())
+  metadata    Json?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cycle, periodStart])
+  @@index([userId, cycle])
 }
 
 /// Recurring progress is scoped by periodStart (daily/weekly/monthly window).
@@ -757,6 +786,40 @@ model RewardEventReceipt {
 
   @@unique([userId, eventType, referenceId, missionId, periodStart])
   @@index([userId, eventType])
+}
+
+/// Server-issued session bound to custom_data for AdMob SSV (maps to user, no client trust).
+model AdMobRewardSession {
+  id            String    @id @default(uuid())
+  userId        String
+  expiresAt     DateTime
+  consumedAt    DateTime?
+  transactionId String?   @unique
+  createdAt     DateTime  @default(now())
+
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ssvTransactions AdMobSsvTransaction[]
+
+  @@index([userId, createdAt])
+}
+
+/// Idempotent record of a verified AdMob SSV transaction_id.
+model AdMobSsvTransaction {
+  transactionId String   @id
+  userId        String
+  sessionId     String
+  adUnitId      String
+  adNetwork     String?
+  rewardAmount  Int?
+  rewardItem    String?
+  eventAt       DateTime?
+  createdAt     DateTime @default(now())
+
+  user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session AdMobRewardSession @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([sessionId])
 }
 
 model RewardCatalogItem {

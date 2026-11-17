@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AdminModule } from './admin/admin.module';
+import { AdsModule } from './ads/ads.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AppController } from './app.controller';
 import { AuditModule } from './audit/audit.module';
@@ -37,6 +38,7 @@ import { TicketsModule } from './tickets/tickets.module';
     ReferralsModule,
     TicketsModule,
     AnalyticsModule,
+    AdsModule,
     AdminModule,
   ],
   controllers: [AppController],

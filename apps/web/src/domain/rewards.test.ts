@@ -11,31 +11,38 @@ import {
 } from "./rewards";
 
 describe("web rewards presentation", () => {
-  it("keeps only missions the server can record", () => {
-    expect(isPlayableRewardMission({
-      eventType: "FORUM_TOPIC_CREATED",
-      title: "Poste no Fórum",
-      description: "Crie um tópico.",
-      category: "COMMUNITY",
-    })).toBe(true);
-    expect(isPlayableRewardMission({
-      eventType: "HUNT_ACTION",
-      title: "Complete 3 Hunts",
-      description: "Registre uma hunt.",
-      category: "HUNT",
-    })).toBe(false);
-    expect(isPlayableRewardMission({
-      eventType: "AD_WATCHED",
-      title: "Assista anúncios",
-      description: "Ganhe pontos.",
-      category: "ADS",
-    })).toBe(false);
-    expect(isPlayableRewardMission({
-      eventType: null,
-      title: "Poste no Fórum",
-      description: "",
-      category: "COMMUNITY",
-    })).toBe(false);
+  it("keeps API-featured missions and shows FIXED_ADS slot", () => {
+    expect(
+      isPlayableRewardMission({
+        eventType: "FORUM_TOPIC_CREATED",
+        title: "Poste no Fórum",
+        description: "Crie um tópico.",
+        category: "COMMUNITY",
+        functional: true,
+        eventImplemented: true,
+      }),
+    ).toBe(true);
+    expect(
+      isPlayableRewardMission({
+        eventType: "WATCH_AD",
+        title: "Tributo aos Deuses",
+        description: "Anúncios",
+        category: "PROMOTION",
+        role: "FIXED_ADS",
+        eventImplemented: false,
+        functional: false,
+      }),
+    ).toBe(true);
+    expect(
+      isPlayableRewardMission({
+        eventType: "DAILY_INFO_VIEWED",
+        title: "Oráculo",
+        description: "",
+        category: "KNOWLEDGE",
+        functional: false,
+        eventImplemented: false,
+      }),
+    ).toBe(false);
   });
 
   it("maps mission and catalog art without inventing a picture", () => {

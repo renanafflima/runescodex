@@ -28,6 +28,7 @@ import { HuntComments } from "../components/hunts/HuntComments";
 import { HuntUpdateRequests } from "../components/hunts/HuntUpdateRequests";
 import { ReportProblem } from "../components/tickets/ReportProblem";
 import { describeApiError } from "../services/api/errors";
+import { reportRewardActivity } from "../domain/rewards-activity";
 import { recordContentView } from "../services/api/admin-portal";
 import { getHuntBySlug } from "../services/api/hunts";
 
@@ -79,6 +80,7 @@ export function HuntDetailPage() {
   useEffect(() => {
     if (hunt?.id && /^[0-9a-f-]{36}$/i.test(hunt.id)) {
       recordContentView("HUNT", hunt.id);
+      reportRewardActivity("HUNT_VIEWED", hunt.id, "Hunt");
     }
   }, [hunt?.id]);
 
@@ -95,15 +97,17 @@ export function HuntDetailPage() {
   const bestiarySummary = hunt ? formatHuntCardBestiarySummary(hunt.bestiarySummary) : null;
 
   async function shareHunt() {
+    if (!hunt?.id) return;
     const url = window.location.href;
     try {
       if (navigator.share) {
-        await navigator.share({ title: hunt?.name || "RuneCodex", url });
-        return;
+        await navigator.share({ title: hunt.name || "RuneCodex", url });
+      } else {
+        await navigator.clipboard.writeText(url);
       }
-      await navigator.clipboard.writeText(url);
+      reportRewardActivity("SHARE_LINK_CLICKED", hunt.id, "HuntShare");
     } catch {
-      /* user cancelled share */
+      /* user cancelled share — do not credit */
     }
   }
 

@@ -18,4 +18,7 @@ export const RATE_LIMITS = {
   deviceChallenge: { limit: 20, windowMs: 60_000 },
   deviceRemove: { limit: 5, windowMs: 60_000 },
   billingWebhook: { limit: 120, windowMs: 60_000 },
+  admobSsv: { limit: 240, windowMs: 60_000 },
+  admobRewardedPrepare: { limit: 30, windowMs: 60_000 },
+  admobRewardedStatus: { limit: 120, windowMs: 60_000 },
 } as const;

@@ -100,6 +100,10 @@ test("only missions the server can record stay playable", () => {
     false,
   );
   assert.equal(
+    isPlayableRewardMission({ eventType: "WATCH_AD", title: "Assista 3 anúncios", category: "PROMOTION" }),
+    false,
+  );
+  assert.equal(
     isPlayableRewardMission({ eventType: "AD_WATCHED", title: "Assistir anúncio", category: "ADS" }),
     false,
   );
@@ -108,6 +112,7 @@ test("only missions the server can record stay playable", () => {
 test("only recorded reward events open an in-app activity", () => {
   assert.equal(missionActivityPath("FORUM_TOPIC_CREATED"), "/(tabs)/forum");
   assert.equal(missionActivityPath("FORUM_COMMENT_CREATED"), "/(tabs)/forum");
+  assert.equal(missionActivityPath("WATCH_AD"), "WATCH_AD");
   assert.equal(missionActivityPath("HUNT_ACTION"), null);
   assert.equal(missionActivityPath("BESTIARY_ACTION"), null);
   assert.equal(missionActivityPath(null), null);

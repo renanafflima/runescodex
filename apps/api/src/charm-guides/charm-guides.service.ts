@@ -18,6 +18,7 @@ import {
 import { createTicketProtocol } from '../admin/insights/admin-text';
 import { pageResult, resolvePage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
+import { RewardsService } from '../rewards/rewards.service';
 import {
   computeCharmGuideTotals,
   markRepeatedCreatures,
@@ -78,7 +79,10 @@ const GUIDE_DETAIL_INCLUDE = {
 
 @Injectable()
 export class CharmGuidesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly rewardsService: RewardsService,
+  ) {}
 
   async categorySummary() {
     const rows = await this.prisma.charmGuide.groupBy({
@@ -344,11 +348,20 @@ export class CharmGuidesService {
 
   async like(userId: string, id: string) {
     await this.requirePublished(id);
+    const before = await this.prisma.charmGuideLike.findUnique({
+      where: { guideId_userId: { guideId: id, userId } },
+    });
     await this.prisma.charmGuideLike.upsert({
       where: { guideId_userId: { guideId: id, userId } },
       create: { guideId: id, userId },
       update: {},
     });
+    if (!before) {
+      await this.rewardsService.recordEvent(userId, 'COMMUNITY_CONTENT_LIKED', {
+        referenceType: 'CharmGuideLike',
+        referenceId: `${id}:${userId}`,
+      });
+    }
     return { liked: true };
   }
 
@@ -404,6 +417,14 @@ export class CharmGuidesService {
         userId,
         dto.characterId,
         dto.creatureId,
+      );
+      await this.rewardsService.recordEvent(
+        userId,
+        'CHARM_CREATURE_COMPLETED',
+        {
+          referenceType: 'CharmGuideCreature',
+          referenceId: `${dto.characterId}:${dto.creatureId}`,
+        },
       );
     } else {
       await this.prisma.charmGuideCreatureProgress.deleteMany({
@@ -800,7 +821,7 @@ export class CharmGuidesService {
           });
         }
       }
-      return this.serializeDetail(
+      const detail = this.serializeDetail(
         {
           ...updated,
           ticket: ticket
@@ -816,6 +837,23 @@ export class CharmGuidesService {
           favorited: new Set(),
         },
       );
+      if (status === CharmGuideStatus.PUBLISHED) {
+        await this.rewardsService.recordEvent(
+          updated.userId,
+          'GUIDE_PUBLISHED',
+          { referenceType: 'CharmGuide', referenceId: updated.id },
+          new Date(),
+          tx,
+        );
+        await this.rewardsService.recordEvent(
+          updated.userId,
+          'CHARM_BUILD_SAVED',
+          { referenceType: 'CharmGuide', referenceId: updated.id },
+          new Date(),
+          tx,
+        );
+      }
+      return detail;
     });
   }
 

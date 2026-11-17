@@ -1,10 +1,5 @@
 import type { RewardCatalogItem, RewardMission } from "../services/api/rewards";
 
-const SUPPORTED_EVENTS = new Set([
-  "FORUM_TOPIC_CREATED",
-  "FORUM_COMMENT_CREATED",
-  "BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED",
-]);
 const AD_MISSION_PATTERN = /an[uú]ncios?|advertis|rewarded|\bads?\b|propaganda/i;
 
 const MISSION_ART: Record<string, string> = {
@@ -55,8 +50,22 @@ export function formatRewardAmount(value: number) {
   return amount.toLocaleString("pt-BR");
 }
 
-export function isPlayableRewardMission(mission: Pick<RewardMission, "eventType" | "title" | "description" | "category">) {
-  if (!mission.eventType || !SUPPORTED_EVENTS.has(mission.eventType)) return false;
+/**
+ * Trust API featured list. Keep FIXED_ADS visible (non-playable) until Web SSV ships.
+ * Drop only legacy junk without eventType.
+ */
+export function isPlayableRewardMission(
+  mission: Pick<
+    RewardMission,
+    "eventType" | "title" | "description" | "category" | "functional" | "role" | "eventImplemented"
+  >,
+) {
+  if (!mission.eventType) return false;
+  if (mission.role === "FIXED_ADS" || mission.eventType === "WATCH_AD") {
+    return true; // shown; progress blocked server-side until ads Web is ready
+  }
+  if (mission.functional === false || mission.eventImplemented === false) return false;
+  if (mission.functional === true || mission.eventImplemented === true) return true;
   const text = [mission.title, mission.description, mission.category, mission.eventType].filter(Boolean).join(" ");
   return !AD_MISSION_PATTERN.test(text);
 }
@@ -156,6 +165,12 @@ export function missionActivityPath(eventType: string | null | undefined): strin
   }
   if (eventType === "BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED") {
     return "/bosstiary";
+  }
+  if (eventType === "FORUM_COMMENT_CREATED") {
+    return "/forum";
+  }
+  if (eventType === "WATCH_AD") {
+    return "/rewards";
   }
   return null;
 }

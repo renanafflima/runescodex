@@ -29,6 +29,18 @@ import {
   redeemReward,
 } from "@/src/api/rewards";
 import {
+  getAdMobRewardedSessionStatus,
+  prepareAdMobRewardedSession,
+} from "@/src/api/ads";
+import { pickRewardedAdUnit } from "@/src/api/admob-config";
+import {
+  getRewardedAdState,
+  loadRewardedAd,
+  markRewardedAdConfirmed,
+  showRewardedAd,
+} from "@/src/services/rewarded-ad";
+import { REWARDED_AD_STATES } from "@/src/services/rewarded-ad.logic";
+import {
   affordancePercent,
   chunkRows,
   finiteCount,
@@ -525,6 +537,8 @@ export default function ShopScreen() {
   const hasDataRef = useRef(false);
   const tokenRef = useRef(token);
   const actionGate = useRef(false);
+  const [adBusy, setAdBusy] = useState(false);
+  const [adNotice, setAdNotice] = useState("");
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
@@ -753,6 +767,62 @@ export default function ShopScreen() {
       actionGate.current = false;
       setPromptOpen(false);
       setBusy(false);
+    }
+  }
+
+  async function pollAdSessionConfirmation(sessionId) {
+    const attempts = 24;
+    for (let index = 0; index < attempts; index += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const status = await getAdMobRewardedSessionStatus(token, sessionId);
+      if (status?.status === "confirmed") {
+        markRewardedAdConfirmed();
+        await refreshAfterAction(status.wallet);
+        setAdNotice("Recompensa confirmada pelo servidor.");
+        return true;
+      }
+      if (status?.status === "expired") {
+        setAdNotice("A sessão do anúncio expirou antes da confirmação.");
+        return false;
+      }
+    }
+    setAdNotice("Aguardando confirmação do Google. Atualize em alguns instantes.");
+    return false;
+  }
+
+  async function runWatchRewardedAd() {
+    if (!token || adBusy || busy || actionsLocked) return;
+    setAdBusy(true);
+    setAdNotice("");
+    try {
+      setAdNotice("Preparando anúncio...");
+      const session = await prepareAdMobRewardedSession(token);
+      const adUnitId = pickRewardedAdUnit(session);
+      setAdNotice("Carregando anúncio...");
+      await loadRewardedAd({
+        sessionId: session.sessionId,
+        customData: session.customData,
+        adUnitId,
+      });
+      setAdNotice("Anúncio pronto.");
+      const result = await showRewardedAd();
+      if (!result?.rewarded) {
+        setAdNotice("Anúncio encerrado antes da recompensa.");
+        return;
+      }
+      setAdNotice("Aguardando confirmação do servidor...");
+      await pollAdSessionConfirmation(session.sessionId);
+    } catch (err) {
+      const phase = getRewardedAdState();
+      if (phase === REWARDED_AD_STATES.UNAVAILABLE) {
+        setAdNotice("Nenhum anúncio disponível no momento.");
+      } else if (err?.status === 429) {
+        setAdNotice("Aguarde antes de assistir outro anúncio.");
+      } else {
+        setAdNotice(mapRewardsError(err, t));
+      }
+    } finally {
+      setAdBusy(false);
     }
   }
 
@@ -1143,11 +1213,28 @@ export default function ShopScreen() {
                 <Text style={[styles.modalText, openMission.completed && styles.modalDone]}>
                   {openMission.completed
                     ? t("rewardsScreen.completed")
-                    : activityPath
-                      ? t("rewardsScreen.missionAuto")
-                      : t("rewardsScreen.missionUnavailable")}
+                    : openMission.eventType === "WATCH_AD"
+                      ? "Assista o anúncio até o fim. Os pontos só são creditados após confirmação do servidor."
+                      : activityPath
+                        ? t("rewardsScreen.missionAuto")
+                        : t("rewardsScreen.missionUnavailable")}
                 </Text>
-                {activityPath ? (
+                {adNotice ? <Text style={styles.modalText}>{adNotice}</Text> : null}
+                {openMission.eventType === "WATCH_AD" && !openMission.completed ? (
+                  <Pressable
+                    disabled={adBusy}
+                    style={styles.storeBtn}
+                    onPress={() => {
+                      void runWatchRewardedAd();
+                    }}
+                  >
+                    <LinearGradient colors={["#f0cd68", "#b78524"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                    <Text style={styles.storeBtnText}>
+                      {adBusy ? "PROCESSANDO..." : "ASSISTIR ANÚNCIO"}
+                    </Text>
+                  </Pressable>
+                ) : null}
+                {activityPath && activityPath !== "WATCH_AD" ? (
                   <Pressable
                     style={styles.storeBtn}
                     onPress={() => {

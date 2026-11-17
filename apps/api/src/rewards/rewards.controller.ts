@@ -15,6 +15,7 @@ import { PremiumGuard } from '../billing/premium.guard';
 import { ConvertRewardsDto } from './dto/convert-rewards.dto';
 import { ListMissionsQueryDto } from './dto/list-missions-query.dto';
 import { RedeemRewardDto } from './dto/redeem-reward.dto';
+import { TrackRewardActivityDto } from './dto/track-reward-activity.dto';
 import { RewardsService } from './rewards.service';
 
 @Controller('rewards')
@@ -33,6 +34,14 @@ export class RewardsController {
     @Query() query: ListMissionsQueryDto,
   ) {
     return this.rewardsService.listMissions(user.userId, query);
+  }
+
+  @Post('activity')
+  trackActivity(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: TrackRewardActivityDto,
+  ) {
+    return this.rewardsService.trackActivity(user.userId, dto);
   }
 
   @Get('catalog')

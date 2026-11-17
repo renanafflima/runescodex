@@ -333,6 +333,15 @@ export function RewardsPage() {
                           </span>
                           <span className="rewards-mission__title">{mission.title}</span>
                           <span className="rewards-mission__desc">{mission.description}</span>
+                          {mission.role === "FIXED_ADS" && mission.eventImplemented === false ? (
+                            <span className="rewards-mission__desc">Anúncios Web ainda não disponíveis.</span>
+                          ) : null}
+                          {typeof mission.daysCompleted === "number" ? (
+                            <span className="rewards-mission__desc">Dias: {mission.daysCompleted}/7</span>
+                          ) : null}
+                          {typeof mission.weeksCompleted === "number" ? (
+                            <span className="rewards-mission__desc">Semanas: {mission.weeksCompleted}/4</span>
+                          ) : null}
                           <span className="rewards-progress">
                             <i><i style={{ width: `${percent}%` }} /></i>
                             <b>{mission.current} / {mission.target}</b>

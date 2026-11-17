@@ -33,7 +33,7 @@ function walletRow(overrides = {}) {
   };
 }
 
-function missionRow(overrides = {}) {
+function missionRow(overrides: Record<string, unknown> = {}) {
   return {
     id: MISSION_ID,
     title: 'Poste no Fórum',
@@ -44,6 +44,10 @@ function missionRow(overrides = {}) {
     pointsReward: 30,
     imageKey: 'missionForum',
     eventType: 'FORUM_TOPIC_CREATED',
+    catalogKey: 'KINGDOM_SCRIBE',
+    pillar: 'COMMUNITY',
+    role: 'POOL',
+    eventImplemented: true,
     active: true,
     createdAt: new Date('2026-09-21T00:00:00.000Z'),
     updatedAt: new Date('2026-09-21T00:00:00.000Z'),
@@ -125,7 +129,62 @@ describe('RewardsService', () => {
     rewardEventReceipt: {
       createMany: jest.fn(),
     },
+    userRewardCycleCompletion: {
+      createMany: jest.fn(),
+      count: jest.fn(),
+      findMany: jest.fn(),
+    },
   };
+
+  function matchesImplemented(
+    mission: { eventImplemented?: boolean },
+    where?: Record<string, unknown>,
+  ) {
+    if (where?.eventImplemented === true) {
+      return mission.eventImplemented === true;
+    }
+    return true;
+  }
+
+  function installMissionCatalog(
+    catalog = [missionRow()],
+    options?: { listMissionsCatalog?: typeof catalog },
+  ) {
+    const listCatalog = options?.listMissionsCatalog ?? catalog;
+    prisma.rewardMission.findMany.mockImplementation(
+      ({ where }: { where?: Record<string, unknown> }) => {
+        if (where?.eventType) {
+          return Promise.resolve(
+            catalog.filter(
+              (mission) =>
+                mission.active &&
+                mission.eventType === where.eventType &&
+                matchesImplemented(mission, where),
+            ),
+          );
+        }
+        if (where?.period === 'DAILY' && where?.active === true) {
+          return Promise.resolve(
+            catalog.filter(
+              (mission) => mission.active && mission.period === 'DAILY',
+            ),
+          );
+        }
+        if (where?.active === true && where?.period) {
+          return Promise.resolve(
+            listCatalog.filter(
+              (mission) =>
+                mission.active && mission.period === where.period,
+            ),
+          );
+        }
+        if (where?.active === true) {
+          return Promise.resolve(catalog.filter((mission) => mission.active));
+        }
+        return Promise.resolve(catalog);
+      },
+    );
+  }
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -134,6 +193,9 @@ describe('RewardsService', () => {
     prisma.userMissionProgress.findUniqueOrThrow.mockResolvedValue(
       progressRow({ progress: 1 }),
     );
+    prisma.userRewardCycleCompletion.createMany.mockResolvedValue({ count: 0 });
+    prisma.userRewardCycleCompletion.count.mockResolvedValue(0);
+    installMissionCatalog();
 
     const moduleRef = await Test.createTestingModule({
       providers: [RewardsService, { provide: PrismaService, useValue: prisma }],
@@ -196,10 +258,28 @@ describe('RewardsService', () => {
       const monthly = currentPeriodWindow('MONTHLY', now).periodStart;
       const previousDay = new Date('2026-09-20T00:00:00.000Z');
       prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
-      prisma.rewardMission.findMany.mockResolvedValue([
-        { id: 'daily-mission', period: 'DAILY' },
-        { id: 'weekly-mission', period: 'WEEKLY' },
-        { id: 'monthly-mission', period: 'MONTHLY' },
+      installMissionCatalog([
+        missionRow({
+          id: 'daily-mission',
+          period: 'DAILY',
+          catalogKey: 'KINGDOM_SCRIBE',
+          pillar: 'COMMUNITY',
+          eventType: 'FORUM_TOPIC_CREATED',
+        }),
+        missionRow({
+          id: 'weekly-mission',
+          period: 'WEEKLY',
+          catalogKey: 'KINGDOM_SCRIBE',
+          pillar: 'COMMUNITY',
+          eventType: 'FORUM_TOPIC_CREATED',
+        }),
+        missionRow({
+          id: 'monthly-mission',
+          period: 'MONTHLY',
+          catalogKey: 'KINGDOM_SCRIBE',
+          pillar: 'COMMUNITY',
+          eventType: 'FORUM_TOPIC_CREATED',
+        }),
       ]);
       prisma.userMissionProgress.findMany.mockResolvedValue([
         progressRow({
@@ -221,18 +301,17 @@ describe('RewardsService', () => {
 
       const result = await service.getMe(USER_A);
 
-      expect(prisma.userMissionProgress.findMany).toHaveBeenCalledWith({
-        where: {
-          userId: USER_A,
-          missionId: {
-            in: ['daily-mission', 'weekly-mission', 'monthly-mission'],
-          },
-          periodStart: { in: [daily, weekly, monthly] },
-        },
-      });
-      const starts =
-        prisma.userMissionProgress.findMany.mock.calls[0][0].where.periodStart
-          .in;
+      const progressCall =
+        prisma.userMissionProgress.findMany.mock.calls[0][0];
+      expect(progressCall.where.userId).toBe(USER_A);
+      expect(progressCall.where.missionId.in).toEqual(
+        expect.arrayContaining([
+          'daily-mission',
+          'weekly-mission',
+          'monthly-mission',
+        ]),
+      );
+      const starts = progressCall.where.periodStart.in;
       expect(
         starts.some((start: Date) => start.getTime() === previousDay.getTime()),
       ).toBe(false);
@@ -282,7 +361,7 @@ describe('RewardsService', () => {
   });
 
   it('lists only active missions for the requested period with user progress', async () => {
-    prisma.rewardMission.findMany.mockResolvedValue([missionRow()]);
+    installMissionCatalog();
     prisma.userMissionProgress.findMany.mockResolvedValue([
       progressRow({ progress: 1 }),
     ]);
@@ -299,8 +378,68 @@ describe('RewardsService', () => {
     expect(result[0].rewardPoints).toBe(30);
   });
 
+  it('lists three daily featured missions: FIXED_ADS + two pool', async () => {
+    const day = new Date('2026-11-15T12:00:00.000Z');
+    const catalog = [
+      missionRow({
+        id: 'daily-ads',
+        title: 'Tributo aos Deuses',
+        eventType: 'WATCH_AD',
+        category: 'PROMOTION',
+        catalogKey: 'TRIBUTE_TO_GODS',
+        pillar: 'PROMOTION',
+        role: 'FIXED_ADS',
+        eventImplemented: false,
+        target: 3,
+        pointsReward: 120,
+      }),
+      missionRow({
+        id: 'daily-forum-topic',
+        eventType: 'FORUM_TOPIC_CREATED',
+        catalogKey: 'KINGDOM_SCRIBE',
+        pillar: 'COMMUNITY',
+      }),
+      missionRow({
+        id: 'daily-forum-comment',
+        title: 'Faça 3 comentários',
+        eventType: 'FORUM_COMMENT_CREATED',
+        catalogKey: 'TAVERN_VOICE',
+        pillar: 'COMMUNITY',
+        target: 3,
+      }),
+      missionRow({
+        id: 'daily-bosstiary',
+        title: 'Compartilhe uma rotação',
+        eventType: 'BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED',
+        catalogKey: 'ROTATION_STRATEGIST',
+        pillar: 'BOSSES',
+        target: 1,
+        pointsReward: 35,
+      }),
+      missionRow({
+        id: 'daily-creature',
+        title: 'Estudioso',
+        eventType: 'CREATURE_VIEWED',
+        catalogKey: 'BESTIARY_SCHOLAR',
+        pillar: 'BESTIARY',
+        target: 5,
+      }),
+    ];
+    installMissionCatalog(catalog, { listMissionsCatalog: catalog });
+    prisma.userMissionProgress.findMany.mockResolvedValue([]);
+
+    jest.useFakeTimers().setSystemTime(day);
+    const result = await service.listMissions(USER_A, { period: 'DAILY' });
+    jest.useRealTimers();
+
+    expect(result).toHaveLength(3);
+    expect(result.map((mission) => mission.id)).toContain('daily-ads');
+    expect(result.filter((mission) => mission.role === 'POOL')).toHaveLength(2);
+    expect(result.every((mission) => mission.period === 'DAILY')).toBe(true);
+  });
+
   it('increments an active mission from a valid event', async () => {
-    prisma.rewardMission.findMany.mockResolvedValue([missionRow()]);
+    installMissionCatalog();
     prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
     prisma.userMissionProgress.findUnique.mockResolvedValue(progressRow());
@@ -321,7 +460,7 @@ describe('RewardsService', () => {
   });
 
   it('completes a mission and credits points once', async () => {
-    prisma.rewardMission.findMany.mockResolvedValue([missionRow()]);
+    installMissionCatalog([missionRow()]);
     prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
     prisma.userMissionProgress.findUnique.mockResolvedValue(
@@ -357,7 +496,7 @@ describe('RewardsService', () => {
   });
 
   it('does not duplicate a repeated event reference', async () => {
-    prisma.rewardMission.findMany.mockResolvedValue([missionRow()]);
+    installMissionCatalog([missionRow()]);
     prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 0 });
 
     const result = await service.recordEvent(USER_A, 'FORUM_TOPIC_CREATED', {
@@ -378,14 +517,20 @@ describe('RewardsService', () => {
       referenceId: 'thread-3',
     });
 
-    expect(prisma.rewardMission.findMany).toHaveBeenCalledWith({
-      where: { active: true, eventType: 'FORUM_TOPIC_CREATED' },
-    });
+    expect(prisma.rewardMission.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          active: true,
+          eventType: 'FORUM_TOPIC_CREATED',
+          eventImplemented: true,
+        },
+      }),
+    );
     expect(result.applied).toEqual([]);
   });
 
   it('scopes event progress to the authenticated user', async () => {
-    prisma.rewardMission.findMany.mockResolvedValue([missionRow()]);
+    installMissionCatalog([missionRow()]);
     prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
     prisma.userMissionProgress.findUnique.mockResolvedValue(progressRow());
@@ -418,8 +563,43 @@ describe('RewardsService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('accepts WATCH_AD and queries active WATCH_AD missions', async () => {
+    installMissionCatalog([
+      missionRow({
+        eventType: 'WATCH_AD',
+        title: 'Assistir anúncios',
+        target: 3,
+        catalogKey: 'TRIBUTE_TO_GODS',
+        pillar: 'PROMOTION',
+        role: 'FIXED_ADS',
+        eventImplemented: true,
+      }),
+    ]);
+    prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
+    prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
+    prisma.userMissionProgress.findUnique.mockResolvedValue(progressRow());
+    prisma.userMissionProgress.update.mockResolvedValue(
+      progressRow({ progress: 1 }),
+    );
+
+    await service.recordEvent(USER_A, 'WATCH_AD', {
+      referenceType: 'AdMobSsvTransaction',
+      referenceId: 'admob-tx-1',
+    });
+
+    expect(prisma.rewardMission.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          active: true,
+          eventType: 'WATCH_AD',
+          eventImplemented: true,
+        },
+      }),
+    );
+  });
+
   it('allows a DAILY mission again on the next UTC day', async () => {
-    prisma.rewardMission.findMany.mockResolvedValue([missionRow()]);
+    installMissionCatalog([missionRow()]);
     prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
     prisma.userMissionProgress.findUnique.mockResolvedValue(progressRow());
@@ -449,8 +629,8 @@ describe('RewardsService', () => {
   });
 
   it('uses the weekly UTC window for WEEKLY missions', async () => {
-    prisma.rewardMission.findMany.mockResolvedValue([
-      missionRow({ period: 'WEEKLY' }),
+    installMissionCatalog([
+      missionRow({ period: 'WEEKLY', catalogKey: 'KINGDOM_SCRIBE' }),
     ]);
     prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
@@ -472,8 +652,8 @@ describe('RewardsService', () => {
   });
 
   it('uses the monthly UTC window for MONTHLY missions', async () => {
-    prisma.rewardMission.findMany.mockResolvedValue([
-      missionRow({ period: 'MONTHLY' }),
+    installMissionCatalog([
+      missionRow({ period: 'MONTHLY', catalogKey: 'KINGDOM_SCRIBE' }),
     ]);
     prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow());
@@ -725,7 +905,7 @@ describe('RewardsService', () => {
   });
 
   it('does not credit again when the mission is already completed', async () => {
-    prisma.rewardMission.findMany.mockResolvedValue([missionRow()]);
+    installMissionCatalog([missionRow()]);
     prisma.rewardEventReceipt.createMany.mockResolvedValue({ count: 1 });
     prisma.rewardWallet.findUnique.mockResolvedValue(walletRow({ points: 30 }));
     prisma.userMissionProgress.findUnique.mockResolvedValue(

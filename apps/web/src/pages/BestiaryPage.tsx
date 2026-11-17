@@ -19,6 +19,7 @@ import {
   type BestiaryDifficultyFilter,
 } from "../domain/bestiary";
 import { formatCount } from "../domain/format";
+import { reportRewardActivity } from "../domain/rewards-activity";
 import { describeApiError } from "../services/api/errors";
 import { listBestiaryPage } from "../services/api/bestiary";
 import { CATALOG_PAGE_SIZE } from "../services/api/page";
@@ -176,7 +177,16 @@ export function BestiaryPage() {
                   <Chip
                     active={difficulty === item}
                     key={item}
-                    onClick={() => setDifficulty(item)}
+                    onClick={() => {
+                      setDifficulty(item);
+                      if (item !== "All") {
+                        reportRewardActivity(
+                          "BESTIARY_FILTER_USED",
+                          `difficulty:${item}`,
+                          "BestiaryFilter",
+                        );
+                      }
+                    }}
                   >
                     {item}
                   </Chip>

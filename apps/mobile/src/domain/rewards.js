@@ -146,6 +146,7 @@ export const MISSION_ACTIVITY_ROUTES = {
   FORUM_TOPIC_CREATED: "/(tabs)/forum",
   FORUM_COMMENT_CREATED: "/(tabs)/forum",
   BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED: "/(tabs)/bosstiary",
+  WATCH_AD: "WATCH_AD",
 };
 
 export function missionActivityPath(eventType) {
@@ -155,10 +156,11 @@ export function missionActivityPath(eventType) {
 
 const AD_MISSION_PATTERN = /an[uú]ncios?|advertis|rewarded|\bads?\b|propaganda/i;
 
-/** Missions the API can actually advance. Ads and future events stay out of the playable list. */
+/** Server-driven rotation; hide ad missions and unsupported rows on the client. */
 export function isPlayableRewardMission(mission) {
   const eventType = mission?.eventType;
   if (!eventType || !MISSION_ACTIVITY_ROUTES[eventType]) return false;
+  if (eventType === "WATCH_AD") return false;
   const text = [mission.title, mission.name, mission.description, mission.category, eventType]
     .filter(Boolean)
     .join(" ");
