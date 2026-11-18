@@ -18,10 +18,11 @@ import {
   type PointsToGoldAmount,
   type RewardCurrencyCode,
 } from './rewards.constants';
+import { ensureRewardsCatalogV2IfNeeded } from './rewards.catalog-ensure';
 import {
-  ensureRewardsCatalogV2,
-  isRewardsCatalogV2Missing,
-} from './rewards.catalog-ensure';
+  getOrCreateGlobalRotation,
+  getOrCreateGlobalRotationsForPeriods,
+} from './rewards.global-rotation';
 import {
   selectFeaturedForPeriod,
   weeklyPeriodStartsInMonth,
@@ -75,16 +76,33 @@ export class RewardsService {
     await this.ensureCatalogIfNeeded();
     const wallet = await this.readWallet(userId);
     const now = new Date();
-    const periodStarts = (['DAILY', 'WEEKLY', 'MONTHLY'] as const).map(
-      (period) => currentPeriodWindow(period, now).periodStart,
-    );
-
-    const missions = await this.prisma.rewardMission.findMany({
-      where: { active: true },
-      select: MISSION_SELECT,
+    const windows = (['DAILY', 'WEEKLY', 'MONTHLY'] as const).map((period) => {
+      const { periodStart, periodEnd } = currentPeriodWindow(period, now);
+      return { period, periodStart, periodEnd };
     });
+    const rotations = await getOrCreateGlobalRotationsForPeriods(
+      this.prisma as unknown as Parameters<
+        typeof getOrCreateGlobalRotationsForPeriods
+      >[0],
+      now,
+      windows,
+    );
+    const featuredIds = new Set<string>();
+    const periodStarts: Date[] = [];
+    for (const window of windows) {
+      periodStarts.push(window.periodStart);
+      const rotation = rotations.get(window.period);
+      for (const id of rotation?.missionIds ?? []) featuredIds.add(id);
+    }
 
-    const featuredIds = this.featuredIdsForAllPeriods(missions, now);
+    const missions =
+      featuredIds.size === 0
+        ? []
+        : await this.prisma.rewardMission.findMany({
+            where: { id: { in: [...featuredIds] } },
+            select: MISSION_SELECT,
+          });
+
     const progressRows = await this.prisma.userMissionProgress.findMany({
       where: {
         userId,
@@ -110,23 +128,32 @@ export class RewardsService {
   async listMissions(userId: string, query: ListMissionsQueryDto) {
     await this.ensureCatalogIfNeeded();
     const { periodStart, periodEnd } = currentPeriodWindow(query.period);
-    const missions = await this.prisma.rewardMission.findMany({
-      where: { active: true, period: query.period },
-      select: MISSION_SELECT,
-      orderBy: { createdAt: 'asc' },
-    });
-
-    const visibleMissions = this.filterFeaturedMissions(
-      missions,
+    const rotation = await getOrCreateGlobalRotation(
+      this.prisma as unknown as Parameters<typeof getOrCreateGlobalRotation>[0],
       query.period,
       periodStart,
+      periodEnd,
+    );
+
+    const visibleMissions =
+      rotation.missionIds.length === 0
+        ? []
+        : await this.prisma.rewardMission.findMany({
+            where: { id: { in: rotation.missionIds } },
+            select: MISSION_SELECT,
+          });
+    const order = new Map(
+      rotation.missionIds.map((id, index) => [id, index]),
+    );
+    visibleMissions.sort(
+      (a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0),
     );
 
     const progressRows = await this.prisma.userMissionProgress.findMany({
       where: {
         userId,
         periodStart,
-        missionId: { in: visibleMissions.map((mission) => mission.id) },
+        missionId: { in: rotation.missionIds },
       },
     });
     const progressByMission = new Map(
@@ -839,21 +866,19 @@ export class RewardsService {
   }
 
   /**
-   * After schema migration alone, missions remain LEGACY / eventImplemented=false
-   * and rotation returns []. Ensure upserts catalog v2 once (wallets untouched).
-   * In-process callers share one promise; cross-instance races are handled by
-   * unique (catalogKey, period) + P2002 recovery inside ensureRewardsCatalogV2.
+   * Catalog ensure is off the hot path once the process-local ready cache is set.
+   * Cold start: one COUNT; only if incomplete, bulk createMany (no interactive tx).
    */
   private async ensureCatalogIfNeeded() {
     if (this.catalogEnsurePromise) {
       await this.catalogEnsurePromise;
       return;
     }
-    const pending = (async () => {
-      if (await isRewardsCatalogV2Missing(this.prisma)) {
-        await ensureRewardsCatalogV2(this.prisma);
-      }
-    })();
+    const pending = ensureRewardsCatalogV2IfNeeded(
+      this.prisma as unknown as Parameters<
+        typeof ensureRewardsCatalogV2IfNeeded
+      >[0],
+    ).then(() => undefined);
     this.catalogEnsurePromise = pending;
     try {
       await pending;
@@ -907,41 +932,22 @@ export class RewardsService {
       .filter((mission): mission is T => mission != null);
   }
 
-  private featuredIdsForAllPeriods(
-    missions: RotationMissionPick[],
-    now: Date,
-  ): Set<string> {
-    const ids = new Set<string>();
-    for (const period of ['DAILY', 'WEEKLY', 'MONTHLY'] as const) {
-      const { periodStart } = currentPeriodWindow(period, now);
-      for (const pick of selectFeaturedForPeriod(
-        missions.map((m) => this.asRotationPick(m)),
-        period,
-        periodStart,
-      )) {
-        ids.add(pick.id);
-      }
-    }
-    return ids;
-  }
-
   private async loadFeaturedIdsByPeriod(
     tx: Prisma.TransactionClient,
     at: Date,
   ): Promise<Map<MissionPeriod, Set<string>>> {
-    const missions = await tx.rewardMission.findMany({
-      where: { active: true },
-      select: MISSION_SELECT,
+    const windows = (['DAILY', 'WEEKLY', 'MONTHLY'] as const).map((period) => {
+      const { periodStart, periodEnd } = currentPeriodWindow(period, at);
+      return { period, periodStart, periodEnd };
     });
+    const rotations = await getOrCreateGlobalRotationsForPeriods(
+      tx as unknown as Parameters<typeof getOrCreateGlobalRotationsForPeriods>[0],
+      at,
+      windows,
+    );
     const map = new Map<MissionPeriod, Set<string>>();
     for (const period of ['DAILY', 'WEEKLY', 'MONTHLY'] as const) {
-      const { periodStart } = currentPeriodWindow(period, at);
-      const picks = selectFeaturedForPeriod(
-        missions.map((m) => this.asRotationPick(m)),
-        period,
-        periodStart,
-      );
-      map.set(period, new Set(picks.map((p) => p.id)));
+      map.set(period, new Set(rotations.get(period)?.missionIds ?? []));
     }
     return map;
   }
@@ -982,98 +988,122 @@ export class RewardsService {
     userId: string,
     at: Date,
   ) {
-    const missions = await tx.rewardMission.findMany({
-      where: { active: true },
-      select: MISSION_SELECT,
-    });
-
     const dailyWindow = currentPeriodWindow('DAILY', at);
-    const dailyFeatured = selectFeaturedForPeriod(
-      missions.map((m) => this.asRotationPick(m)),
-      'DAILY',
-      dailyWindow.periodStart,
-    ).filter((m) => m.role !== 'FIXED_ADS' || m.eventImplemented);
-
-    // Require all featured daily slots that are functional (ads excluded until Web SSV).
-    const requiredDaily = dailyFeatured.filter((m) => m.eventImplemented);
-    if (requiredDaily.length >= 2) {
-      const progress = await tx.userMissionProgress.findMany({
-        where: {
-          userId,
+    const weeklyWindow = currentPeriodWindow('WEEKLY', at);
+    const rotations = await getOrCreateGlobalRotationsForPeriods(
+      tx as unknown as Parameters<typeof getOrCreateGlobalRotationsForPeriods>[0],
+      at,
+      [
+        {
+          period: 'DAILY',
           periodStart: dailyWindow.periodStart,
-          missionId: { in: requiredDaily.map((m) => m.id) },
-          completed: true,
+          periodEnd: dailyWindow.periodEnd,
         },
+        {
+          period: 'WEEKLY',
+          periodStart: weeklyWindow.periodStart,
+          periodEnd: weeklyWindow.periodEnd,
+        },
+      ],
+    );
+
+    const dailyIds = rotations.get('DAILY')?.missionIds ?? [];
+    if (dailyIds.length > 0) {
+      const dailyMissions = await tx.rewardMission.findMany({
+        where: { id: { in: dailyIds } },
+        select: MISSION_SELECT,
       });
-      if (progress.length >= requiredDaily.length) {
-        const inserted = await tx.userRewardCycleCompletion.createMany({
-          data: [
-            {
-              id: crypto.randomUUID(),
-              userId,
-              cycle: 'DAILY_ALL',
-              periodStart: dailyWindow.periodStart,
-              periodEnd: dailyWindow.periodEnd,
-            },
-          ],
-          skipDuplicates: true,
-        });
-        if (inserted.count === 1) {
-          await this.recordEventWithin(
-            tx,
+      const requiredDaily = dailyMissions
+        .map((m) => this.asRotationPick(m))
+        .filter(
+          (m) =>
+            m.eventImplemented &&
+            (m.role !== 'FIXED_ADS' || m.eventImplemented),
+        )
+        .filter((m) => m.role !== 'FIXED_ADS');
+      if (requiredDaily.length >= 2) {
+        const progress = await tx.userMissionProgress.findMany({
+          where: {
             userId,
-            REWARD_EVENTS.DAILY_ALL_COMPLETED,
-            {
-              referenceType: 'DailyAll',
-              referenceId: dailyWindow.periodStart.toISOString(),
-            },
-            at,
-            false,
-          );
+            periodStart: dailyWindow.periodStart,
+            missionId: { in: requiredDaily.map((m) => m.id) },
+            completed: true,
+          },
+        });
+        if (progress.length >= requiredDaily.length) {
+          const inserted = await tx.userRewardCycleCompletion.createMany({
+            data: [
+              {
+                id: crypto.randomUUID(),
+                userId,
+                cycle: 'DAILY_ALL',
+                periodStart: dailyWindow.periodStart,
+                periodEnd: dailyWindow.periodEnd,
+              },
+            ],
+            skipDuplicates: true,
+          });
+          if (inserted.count === 1) {
+            await this.recordEventWithin(
+              tx,
+              userId,
+              REWARD_EVENTS.DAILY_ALL_COMPLETED,
+              {
+                referenceType: 'DailyAll',
+                referenceId: dailyWindow.periodStart.toISOString(),
+              },
+              at,
+              false,
+            );
+          }
         }
       }
     }
 
-    const weeklyWindow = currentPeriodWindow('WEEKLY', at);
-    const weeklyFeatured = selectFeaturedForPeriod(
-      missions.map((m) => this.asRotationPick(m)),
-      'WEEKLY',
-      weeklyWindow.periodStart,
-    ).filter((m) => m.eventImplemented);
-    if (weeklyFeatured.length >= 1) {
-      const progress = await tx.userMissionProgress.findMany({
-        where: {
-          userId,
-          periodStart: weeklyWindow.periodStart,
-          missionId: { in: weeklyFeatured.map((m) => m.id) },
-          completed: true,
-        },
+    const weeklyIds = rotations.get('WEEKLY')?.missionIds ?? [];
+    if (weeklyIds.length > 0) {
+      const weeklyMissions = await tx.rewardMission.findMany({
+        where: { id: { in: weeklyIds } },
+        select: MISSION_SELECT,
       });
-      if (progress.length >= weeklyFeatured.length) {
-        const inserted = await tx.userRewardCycleCompletion.createMany({
-          data: [
-            {
-              id: crypto.randomUUID(),
-              userId,
-              cycle: 'WEEKLY_ALL',
-              periodStart: weeklyWindow.periodStart,
-              periodEnd: weeklyWindow.periodEnd,
-            },
-          ],
-          skipDuplicates: true,
-        });
-        if (inserted.count === 1) {
-          await this.recordEventWithin(
-            tx,
+      const weeklyFeatured = weeklyMissions
+        .map((m) => this.asRotationPick(m))
+        .filter((m) => m.eventImplemented);
+      if (weeklyFeatured.length >= 1) {
+        const progress = await tx.userMissionProgress.findMany({
+          where: {
             userId,
-            REWARD_EVENTS.WEEKLY_ALL_COMPLETED,
-            {
-              referenceType: 'WeeklyAll',
-              referenceId: weeklyWindow.periodStart.toISOString(),
-            },
-            at,
-            false,
-          );
+            periodStart: weeklyWindow.periodStart,
+            missionId: { in: weeklyFeatured.map((m) => m.id) },
+            completed: true,
+          },
+        });
+        if (progress.length >= weeklyFeatured.length) {
+          const inserted = await tx.userRewardCycleCompletion.createMany({
+            data: [
+              {
+                id: crypto.randomUUID(),
+                userId,
+                cycle: 'WEEKLY_ALL',
+                periodStart: weeklyWindow.periodStart,
+                periodEnd: weeklyWindow.periodEnd,
+              },
+            ],
+            skipDuplicates: true,
+          });
+          if (inserted.count === 1) {
+            await this.recordEventWithin(
+              tx,
+              userId,
+              REWARD_EVENTS.WEEKLY_ALL_COMPLETED,
+              {
+                referenceType: 'WeeklyAll',
+                referenceId: weeklyWindow.periodStart.toISOString(),
+              },
+              at,
+              false,
+            );
+          }
         }
       }
     }

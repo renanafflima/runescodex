@@ -3,13 +3,14 @@ import { MISSION_ROLES } from './rewards.constants';
 
 /** Minimal Prisma surface used by catalog ensure (seed + runtime). */
 export type RewardsCatalogPrisma = {
-  $transaction?: <T>(
-    fn: (tx: RewardsCatalogPrisma) => Promise<T>,
-  ) => Promise<T>;
   rewardMission: {
     count: (args: {
       where: Record<string, unknown>;
     }) => Promise<number>;
+    findMany: (args: {
+      where: Record<string, unknown>;
+      select?: { catalogKey: true; period: true };
+    }) => Promise<Array<{ catalogKey: string | null; period: string }>>;
     findFirst: (args: {
       where: Record<string, unknown>;
       select?: { id: true };
@@ -19,6 +20,10 @@ export type RewardsCatalogPrisma = {
       data: Record<string, unknown>;
     }) => Promise<unknown>;
     create: (args: { data: Record<string, unknown> }) => Promise<unknown>;
+    createMany: (args: {
+      data: Array<Record<string, unknown>>;
+      skipDuplicates?: boolean;
+    }) => Promise<{ count: number }>;
     updateMany: (args: {
       where: Record<string, unknown>;
       data: Record<string, unknown>;
@@ -33,18 +38,25 @@ export const REQUIRED_CATALOG_V2_FIXED_KEYS = [
   'CODEX_LEGEND',
 ] as const;
 
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === 'P2002'
-  );
+/** Process-local cache: after a successful integrity check, skip further DB ensure work. */
+let catalogReadyCache = false;
+
+export function isRewardsCatalogReadyCached(): boolean {
+  return catalogReadyCache;
+}
+
+export function markRewardsCatalogReady(): void {
+  catalogReadyCache = true;
+}
+
+/** Test-only reset. */
+export function resetRewardsCatalogReadyCache(): void {
+  catalogReadyCache = false;
 }
 
 /**
  * True when the DB lacks a complete V2 fixed set (migration-only / partial ensure).
- * Requires all three fixed catalog keys so a partial upsert cannot skip remaining rows.
+ * Single COUNT — safe for the hot path when cache is cold.
  */
 export async function isRewardsCatalogV2Missing(
   prisma: RewardsCatalogPrisma,
@@ -58,62 +70,90 @@ export async function isRewardsCatalogV2Missing(
   return count < REQUIRED_CATALOG_V2_FIXED_KEYS.length;
 }
 
-async function upsertCatalogRow(
+/**
+ * Cheap gate for request handlers.
+ * - Cached ready → zero queries.
+ * - Otherwise one COUNT; if complete, mark ready and return.
+ * - Only when incomplete, run the (rare) bulk ensure without an interactive transaction.
+ */
+export async function ensureRewardsCatalogV2IfNeeded(
   prisma: RewardsCatalogPrisma,
-  data: Record<string, unknown>,
-) {
-  const existing = await prisma.rewardMission.findFirst({
-    where: { catalogKey: data.catalogKey, period: data.period },
-    select: { id: true },
-  });
-  if (existing) {
-    await prisma.rewardMission.update({
-      where: { id: existing.id },
-      data,
-    });
-    return;
+): Promise<{ skipped: boolean; upserted?: number; deactivatedLegacy?: number }> {
+  if (catalogReadyCache) {
+    return { skipped: true };
   }
-
-  try {
-    await prisma.rewardMission.create({ data });
-  } catch (error) {
-    // Concurrent ensure on another instance may have created the same row.
-    if (!isUniqueViolation(error)) throw error;
-    const raced = await prisma.rewardMission.findFirst({
-      where: { catalogKey: data.catalogKey, period: data.period },
-      select: { id: true },
-    });
-    if (!raced) throw error;
-    await prisma.rewardMission.update({
-      where: { id: raced.id },
-      data,
-    });
+  if (!(await isRewardsCatalogV2Missing(prisma))) {
+    catalogReadyCache = true;
+    return { skipped: true };
   }
+  const result = await ensureRewardsCatalogV2(prisma);
+  catalogReadyCache = true;
+  return { skipped: false, ...result };
 }
 
-async function ensureRewardsCatalogV2Within(
+/**
+ * Idempotent catalog bootstrap. Avoids interactive $transaction (P2028 on 63-row loops).
+ * Uses createMany(skipDuplicates) + targeted updates. Safe under multi-instance races.
+ * Does not touch wallets, ledger, receipts, redemptions, or progress.
+ */
+export async function ensureRewardsCatalogV2(
   prisma: RewardsCatalogPrisma,
 ): Promise<{ upserted: number; deactivatedLegacy: number }> {
   const rows = catalogRowsForSeed();
-  let upserted = 0;
+  const existing = await prisma.rewardMission.findMany({
+    where: {
+      catalogKey: { in: rows.map((row) => row.catalogKey) },
+    },
+    select: { catalogKey: true, period: true },
+  });
+  const have = new Set(
+    existing.map((row) => `${row.catalogKey}:${row.period}`),
+  );
+  const missing = rows.filter(
+    (row) => !have.has(`${row.catalogKey}:${row.period}`),
+  );
 
-  for (const row of rows) {
-    await upsertCatalogRow(prisma, {
-      title: row.title,
-      description: row.description,
-      category: row.category,
-      period: row.period,
-      target: row.target,
-      pointsReward: row.pointsReward,
-      imageKey: row.imageKey,
-      eventType: row.eventType,
-      catalogKey: row.catalogKey,
-      pillar: row.pillar,
-      role: row.role,
-      eventImplemented: row.eventImplemented,
-      active: row.active,
+  if (missing.length > 0) {
+    await prisma.rewardMission.createMany({
+      data: missing.map((row) => ({
+        title: row.title,
+        description: row.description,
+        category: row.category,
+        period: row.period,
+        target: row.target,
+        pointsReward: row.pointsReward,
+        imageKey: row.imageKey,
+        eventType: row.eventType,
+        catalogKey: row.catalogKey,
+        pillar: row.pillar,
+        role: row.role,
+        eventImplemented: row.eventImplemented,
+        active: row.active,
+      })),
+      skipDuplicates: true,
     });
-    upserted += 1;
+  }
+
+  // Ensure fixed slots are active with correct roles even if a prior partial insert left them wrong.
+  for (const key of REQUIRED_CATALOG_V2_FIXED_KEYS) {
+    const def = rows.find((row) => row.catalogKey === key);
+    if (!def) continue;
+    await prisma.rewardMission.updateMany({
+      where: { catalogKey: key, period: def.period },
+      data: {
+        title: def.title,
+        description: def.description,
+        category: def.category,
+        target: def.target,
+        pointsReward: def.pointsReward,
+        imageKey: def.imageKey,
+        eventType: def.eventType,
+        pillar: def.pillar,
+        role: def.role,
+        eventImplemented: def.eventImplemented,
+        active: true,
+      },
+    });
   }
 
   const deactivated = await prisma.rewardMission.updateMany({
@@ -124,20 +164,8 @@ async function ensureRewardsCatalogV2Within(
     data: { active: false, eventImplemented: false },
   });
 
-  return { upserted, deactivatedLegacy: deactivated.count };
-}
-
-/**
- * Idempotent upsert of catalog v2 + deactivate LEGACY.
- * Does not touch wallets, ledger, receipts, redemptions, or progress rows.
- * Uses a transaction when available so a crash cannot leave a partial catalog
- * that would skip further ensures.
- */
-export async function ensureRewardsCatalogV2(
-  prisma: RewardsCatalogPrisma,
-): Promise<{ upserted: number; deactivatedLegacy: number }> {
-  if (typeof prisma.$transaction === 'function') {
-    return prisma.$transaction((tx) => ensureRewardsCatalogV2Within(tx));
-  }
-  return ensureRewardsCatalogV2Within(prisma);
+  return {
+    upserted: rows.length,
+    deactivatedLegacy: deactivated.count,
+  };
 }

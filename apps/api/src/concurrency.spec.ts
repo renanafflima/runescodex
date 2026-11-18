@@ -68,6 +68,47 @@ const cycleCompletionStub = {
   findMany: async () => [],
 };
 
+function globalRotationStub(missionIds: string[] = ['mission-1']) {
+  return {
+    findUnique: async ({
+      where,
+    }: {
+      where: {
+        period_periodStart: { period: string; periodStart: Date };
+      };
+    }) => ({
+      id: `rot-${where.period_periodStart.period}`,
+      cycleKey: where.period_periodStart.period,
+      period: where.period_periodStart.period,
+      periodStart: where.period_periodStart.periodStart,
+      periodEnd: where.period_periodStart.periodStart,
+      missionIds,
+      createdAt: new Date(),
+    }),
+    findMany: async ({
+      where,
+    }: {
+      where: {
+        OR: Array<{ period: string; periodStart: Date }>;
+      };
+    }) =>
+      where.OR.map((clause) => ({
+        id: `rot-${clause.period}`,
+        cycleKey: clause.period,
+        period: clause.period,
+        periodStart: clause.periodStart,
+        periodEnd: clause.periodStart,
+        missionIds,
+        createdAt: new Date(),
+      })),
+    create: async ({ data }: { data: { missionIds: string[] } }) => ({
+      ...data,
+      id: 'rot-created',
+      createdAt: new Date(),
+    }),
+  };
+}
+
 describe('concurrent writes', () => {
   it('keeps both mission increments and pays the reward once', async () => {
     const state = {
@@ -92,7 +133,9 @@ describe('concurrent writes', () => {
             catalogKey: 'TAVERN_VOICE',
           }),
         ],
+        count: async () => 3,
       },
+      rewardGlobalRotation: globalRotationStub(['mission-1']),
       rewardEventReceipt: {
         createMany: async ({
           data,
@@ -228,7 +271,9 @@ describe('concurrent writes', () => {
       },
       rewardMission: {
         findMany: async () => [poolMission()],
+        count: async () => 3,
       },
+      rewardGlobalRotation: globalRotationStub(['mission-1']),
       rewardEventReceipt: {
         createMany: async ({
           data,
@@ -325,7 +370,9 @@ describe('concurrent writes', () => {
       $transaction: (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
       rewardMission: {
         findMany: async () => [poolMission()],
+        count: async () => 3,
       },
+      rewardGlobalRotation: globalRotationStub(['mission-1']),
       userMissionProgress: { findMany: async () => [] },
       userRewardCycleCompletion: cycleCompletionStub,
       rewardEventReceipt: {
@@ -803,7 +850,9 @@ describe('concurrent writes', () => {
             catalogKey: 'TAVERN_VOICE',
           }),
         ],
+        count: async () => 3,
       },
+      rewardGlobalRotation: globalRotationStub(['mission-1']),
       rewardEventReceipt: {
         createMany: async ({
           data,

@@ -736,6 +736,23 @@ model RewardMission {
   @@index([role, period, active])
 }
 
+/// Global mission rotation for a UTC cycle (same missions for every Premium user).
+model RewardGlobalRotation {
+  id          String               @id @default(uuid())
+  /// Deterministic cycle id, e.g. D:2026-11-18 / W:2026-11-17 / M:2026-11
+  cycleKey    String
+  period      RewardMissionPeriod
+  periodStart DateTime
+  periodEnd   DateTime
+  /// Ordered RewardMission ids selected for this cycle (3 daily / 2 weekly / 2 monthly).
+  missionIds  String[]
+  createdAt   DateTime             @default(now())
+
+  @@unique([period, periodStart])
+  @@index([cycleKey])
+  @@index([period, periodStart])
+}
+
 /// Persists completed daily/weekly aggregator cycles for Devoção / Lenda.
 model UserRewardCycleCompletion {
   id          String   @id @default(uuid())

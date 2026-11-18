@@ -5,8 +5,11 @@ import {
 import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { RewardConversionKind } from './dto/convert-rewards.dto';
+import { resetRewardsCatalogReadyCache } from './rewards.catalog-ensure';
+import { resetGlobalRotationCache } from './rewards.global-rotation';
 import { RewardsService } from './rewards.service';
 import { currentPeriodWindow } from './rewards.periods';
+import { selectFeaturedForPeriod } from './rewards.rotation';
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */
 
@@ -104,8 +107,14 @@ describe('RewardsService', () => {
       findFirst: jest.fn(),
       count: jest.fn(),
       create: jest.fn(),
+      createMany: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
+    },
+    rewardGlobalRotation: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
     },
     userMissionProgress: {
       findMany: jest.fn(),
@@ -156,8 +165,39 @@ describe('RewardsService', () => {
     options?: { listMissionsCatalog?: typeof catalog },
   ) {
     const listCatalog = options?.listMissionsCatalog ?? catalog;
+    const all = catalog;
+
+    function picksFor(
+      period: 'DAILY' | 'WEEKLY' | 'MONTHLY',
+      periodStart: Date,
+    ) {
+      const source = listCatalog.filter(
+        (mission) => mission.active && mission.period === period,
+      );
+      return selectFeaturedForPeriod(
+        source.map((mission) => ({
+          id: mission.id,
+          period: mission.period,
+          catalogKey: mission.catalogKey ?? null,
+          pillar: mission.pillar ?? null,
+          role: mission.role ?? 'LEGACY',
+          eventType: mission.eventType ?? null,
+          active: mission.active,
+          eventImplemented: Boolean(mission.eventImplemented),
+        })),
+        period,
+        periodStart,
+      );
+    }
+
     prisma.rewardMission.findMany.mockImplementation(
       ({ where }: { where?: Record<string, unknown> }) => {
+        if (where?.id && typeof where.id === 'object' && 'in' in where.id) {
+          const ids = where.id.in as string[];
+          return Promise.resolve(
+            all.filter((mission) => ids.includes(mission.id)),
+          );
+        }
         if (where?.eventType) {
           return Promise.resolve(
             catalog.filter(
@@ -189,10 +229,57 @@ describe('RewardsService', () => {
         return Promise.resolve(catalog);
       },
     );
+
+    prisma.rewardGlobalRotation.findUnique.mockImplementation(
+      ({
+        where,
+      }: {
+        where: {
+          period_periodStart: {
+            period: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+            periodStart: Date;
+          };
+        };
+      }) => {
+        const { period, periodStart } = where.period_periodStart;
+        const picks = picksFor(period, periodStart);
+        return Promise.resolve({
+          id: `rot-${period}`,
+          cycleKey: `${period}:${periodStart.toISOString()}`,
+          period,
+          periodStart,
+          periodEnd: new Date(periodStart.getTime() + 86_400_000),
+          missionIds: picks.map((pick) => pick.id),
+          createdAt: new Date(),
+        });
+      },
+    );
+
+    prisma.rewardGlobalRotation.findMany.mockImplementation(
+      ({
+        where,
+      }: {
+        where: {
+          OR: Array<{
+            period: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+            periodStart: Date;
+          }>;
+        };
+      }) =>
+        Promise.all(
+          where.OR.map((clause) =>
+            prisma.rewardGlobalRotation.findUnique({
+              where: { period_periodStart: clause },
+            }),
+          ),
+        ).then((rows) => rows.filter(Boolean)),
+    );
   }
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    resetRewardsCatalogReadyCache();
+    resetGlobalRotationCache();
     prisma.$transaction.mockImplementation((fn) => fn(prisma));
     prisma.userMissionProgress.updateMany.mockResolvedValue({ count: 1 });
     prisma.userMissionProgress.findUniqueOrThrow.mockResolvedValue(
@@ -202,6 +289,7 @@ describe('RewardsService', () => {
     prisma.userRewardCycleCompletion.count.mockResolvedValue(0);
     // Catalog already present — skip ensure upserts in unit tests.
     prisma.rewardMission.count.mockResolvedValue(3);
+    prisma.rewardMission.createMany.mockResolvedValue({ count: 0 });
     installMissionCatalog();
 
     const moduleRef = await Test.createTestingModule({
@@ -352,6 +440,25 @@ describe('RewardsService', () => {
         findMany: async () => [],
         count: async () => 3,
       },
+      rewardGlobalRotation: {
+        findUnique: async ({
+          where,
+        }: {
+          where: {
+            period_periodStart: { period: string; periodStart: Date };
+          };
+        }) => ({
+          id: `rot-${where.period_periodStart.period}`,
+          cycleKey: where.period_periodStart.period,
+          period: where.period_periodStart.period,
+          periodStart: where.period_periodStart.periodStart,
+          periodEnd: where.period_periodStart.periodStart,
+          missionIds: [],
+          createdAt: new Date(),
+        }),
+        findMany: async () => [],
+        create: async () => ({ missionIds: [] }),
+      },
       userMissionProgress: { findMany: async () => [] },
     };
     const moduleRef = await Test.createTestingModule({
@@ -380,7 +487,7 @@ describe('RewardsService', () => {
 
     expect(prisma.rewardMission.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { active: true, period: 'DAILY' },
+        where: { id: { in: [MISSION_ID] } },
       }),
     );
     expect(result[0].current).toBe(1);
@@ -389,55 +496,91 @@ describe('RewardsService', () => {
   });
 
   it('ensures catalog v2 when rotation rows are missing after migration', async () => {
-    const created: Array<{ catalogKey: string; period: string; role: string }> =
-      [];
+    const createdRows: Array<Record<string, unknown>> = [];
     prisma.rewardMission.count.mockResolvedValue(0);
-    prisma.rewardMission.findFirst.mockResolvedValue(null);
-    prisma.rewardMission.create.mockImplementation(
-      ({ data }: { data: { catalogKey: string; period: string; role: string } }) => {
-        created.push({
-          catalogKey: data.catalogKey,
-          period: data.period,
-          role: data.role,
-        });
-        return Promise.resolve({ id: `${data.catalogKey}-${data.period}` });
+    prisma.rewardMission.findMany.mockImplementation(
+      ({ where }: { where?: Record<string, unknown> }) => {
+        if (where?.catalogKey) {
+          return Promise.resolve([]);
+        }
+        if (where?.id && typeof where.id === 'object' && 'in' in where.id) {
+          const ids = where.id.in as string[];
+          return Promise.resolve(
+            createdRows
+              .filter((row) => ids.includes(String(row.id)))
+              .map((row) => missionRow(row)),
+          );
+        }
+        if (where?.active === true && where?.period) {
+          return Promise.resolve(
+            createdRows
+              .filter((row) => row.period === where.period)
+              .map((row) => missionRow(row)),
+          );
+        }
+        return Promise.resolve(createdRows.map((row) => missionRow(row)));
+      },
+    );
+    prisma.rewardMission.createMany.mockImplementation(
+      ({ data }: { data: Array<Record<string, unknown>> }) => {
+        for (const row of data) {
+          createdRows.push({
+            ...row,
+            id: `${row.catalogKey}-${row.period}`,
+          });
+        }
+        return Promise.resolve({ count: data.length });
       },
     );
     prisma.rewardMission.updateMany.mockResolvedValue({ count: 2 });
-
-    // After ensure, listMissions reloads active DAILY rows — serve created catalog.
-    prisma.rewardMission.findMany.mockImplementation(
-      ({ where }: { where?: Record<string, unknown> }) => {
-        const rows = created
-          .filter((row) => !where?.period || row.period === where.period)
-          .map((row, index) =>
-            missionRow({
-              id: `ensured-${index}`,
-              catalogKey: row.catalogKey,
-              period: row.period,
-              role: row.role,
-              eventType:
-                row.role === 'FIXED_ADS'
-                  ? 'WATCH_AD'
-                  : row.role === 'FIXED_WEEKLY_STREAK'
-                    ? 'DAILY_ALL_COMPLETED'
-                    : row.role === 'FIXED_MONTHLY_STREAK'
-                      ? 'WEEKLY_ALL_COMPLETED'
-                      : 'FORUM_TOPIC_CREATED',
-              eventImplemented: row.role !== 'FIXED_ADS',
-              pillar: row.role === 'FIXED_ADS' ? 'SYSTEM' : `P${index}`,
-            }),
-          );
-        return Promise.resolve(rows);
+    prisma.userMissionProgress.findMany.mockResolvedValue([]);
+    prisma.rewardGlobalRotation.findUnique.mockImplementation(
+      ({
+        where,
+      }: {
+        where: {
+          period_periodStart: {
+            period: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+            periodStart: Date;
+          };
+        };
+      }) => {
+        const { period, periodStart } = where.period_periodStart;
+        const source = createdRows
+          .filter((row) => row.period === period)
+          .map((row) => missionRow(row));
+        const picks = selectFeaturedForPeriod(
+          source.map((mission) => ({
+            id: mission.id,
+            period: mission.period,
+            catalogKey: mission.catalogKey ?? null,
+            pillar: mission.pillar ?? null,
+            role: mission.role ?? 'LEGACY',
+            eventType: mission.eventType ?? null,
+            active: mission.active,
+            eventImplemented: Boolean(mission.eventImplemented),
+          })),
+          period,
+          periodStart,
+        );
+        return Promise.resolve({
+          id: `rot-${period}`,
+          cycleKey: `${period}`,
+          period,
+          periodStart,
+          periodEnd: new Date(periodStart.getTime() + 86_400_000),
+          missionIds: picks.map((pick) => pick.id),
+          createdAt: new Date(),
+        });
       },
     );
-    prisma.userMissionProgress.findMany.mockResolvedValue([]);
+    resetGlobalRotationCache();
 
     const result = await service.listMissions(USER_A, { period: 'DAILY' });
-    expect(prisma.rewardMission.create).toHaveBeenCalled();
-    expect(created.some((row) => row.catalogKey === 'TRIBUTE_TO_GODS')).toBe(
-      true,
-    );
+    expect(prisma.rewardMission.createMany).toHaveBeenCalled();
+    expect(
+      createdRows.some((row) => row.catalogKey === 'TRIBUTE_TO_GODS'),
+    ).toBe(true);
     expect(result.length).toBeGreaterThanOrEqual(1);
     expect(result.some((mission) => mission.role === 'FIXED_ADS')).toBe(true);
   });
