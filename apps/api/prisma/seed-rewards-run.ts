@@ -1,8 +1,12 @@
 /**
- * Seeds only Rewards missions/catalog. Does not touch hunts, users, or other tables.
+ * Seeds only Rewards missions/catalog. Does not touch hunts, users, wallets,
+ * ledger, receipts, or redemptions beyond catalog mission upserts.
  *
  * Usage:
  *   npx tsx prisma/seed-rewards-run.ts
+ *
+ * Production catalog recovery (explicit opt-in only):
+ *   ALLOW_PRODUCTION_REWARDS_CATALOG_SEED=1 APP_ENV=production npx tsx prisma/seed-rewards-run.ts
  */
 import "dotenv/config";
 import { assertRuntimeEnvironment } from "../src/common/database-target.js";
@@ -12,7 +16,21 @@ import { PrismaClient } from "../generated/prisma/client.js";
 import { seedRewards } from "./seed/rewards.js";
 
 async function main() {
-  assertRuntimeEnvironment(process.env, { seed: true });
+  const allowProductionCatalog =
+    process.env.ALLOW_PRODUCTION_REWARDS_CATALOG_SEED === "1";
+  const appEnv = (process.env.APP_ENV || "").toLowerCase();
+
+  if (appEnv === "production" && allowProductionCatalog) {
+    // Catalog-only recovery path: still validates JWT/DB target, but permits
+    // the rewards catalog upsert that seed normally refuses in production.
+    assertRuntimeEnvironment(process.env);
+    console.warn(
+      "ALLOW_PRODUCTION_REWARDS_CATALOG_SEED=1: upserting Rewards catalog v2 only (no wallet/ledger changes).",
+    );
+  } else {
+    assertRuntimeEnvironment(process.env, { seed: true });
+  }
+
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set.");

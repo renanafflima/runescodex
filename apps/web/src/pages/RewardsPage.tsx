@@ -315,9 +315,13 @@ export function RewardsPage() {
                 ))}
               </div>
               {pendingPeriod ? <p className="rewards-loading">Carregando missões</p> : null}
-              {!pendingPeriod && playable.length === 0 ? (
-                <p className="rewards-empty">Nenhuma missão disponível neste período.</p>
-              ) : (
+              {!pendingPeriod && !error && playable.length === 0 ? (
+                <p className="rewards-empty">
+                  Nenhuma missão disponível neste período. Se o problema persistir após atualizar, o catálogo V2
+                  pode precisar ser ativado no servidor.
+                </p>
+              ) : null}
+              {!pendingPeriod && !error && playable.length > 0 ? (
                 <div className="rewards-missions">
                   {playable.map((mission) => {
                     const file = missionArtFile(mission);
@@ -355,7 +359,7 @@ export function RewardsPage() {
                     );
                   })}
                 </div>
-              )}
+              ) : null}
             </section>
 
             <section className="rewards-block" aria-labelledby="rewards-economy-title">

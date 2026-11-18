@@ -1,7 +1,5 @@
 import type { RewardCatalogItem, RewardMission } from "../services/api/rewards";
 
-const AD_MISSION_PATTERN = /an[uú]ncios?|advertis|rewarded|\bads?\b|propaganda/i;
-
 const MISSION_ART: Record<string, string> = {
   missionExploration: "mission-exploracao.png",
   missionBestiary: "mission-bestiario.png",
@@ -51,8 +49,8 @@ export function formatRewardAmount(value: number) {
 }
 
 /**
- * Trust API featured list. Keep FIXED_ADS visible (non-playable) until Web SSV ships.
- * Drop only legacy junk without eventType.
+ * Trust API featured list for fixed slots. Keep FIXED_ADS visible until Web SSV.
+ * Hide unimplemented pool leftovers that should never have been returned.
  */
 export function isPlayableRewardMission(
   mission: Pick<
@@ -61,13 +59,16 @@ export function isPlayableRewardMission(
   >,
 ) {
   if (!mission.eventType) return false;
-  if (mission.role === "FIXED_ADS" || mission.eventType === "WATCH_AD") {
-    return true; // shown; progress blocked server-side until ads Web is ready
+  if (
+    mission.role === "FIXED_ADS" ||
+    mission.role === "FIXED_WEEKLY_STREAK" ||
+    mission.role === "FIXED_MONTHLY_STREAK" ||
+    mission.eventType === "WATCH_AD"
+  ) {
+    return true;
   }
   if (mission.functional === false || mission.eventImplemented === false) return false;
-  if (mission.functional === true || mission.eventImplemented === true) return true;
-  const text = [mission.title, mission.description, mission.category, mission.eventType].filter(Boolean).join(" ");
-  return !AD_MISSION_PATTERN.test(text);
+  return true;
 }
 
 export function missionArtFile(mission: Pick<RewardMission, "imageKey" | "category">) {

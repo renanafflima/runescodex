@@ -12,11 +12,16 @@ import {
   POINTS_TO_GOLD_PACKAGES,
   REWARD_EVENTS,
   UNCONFIGURED_PRICE,
+  isImplementedRewardEvent,
   isSupportedRewardEvent,
   type MissionPeriod,
   type PointsToGoldAmount,
   type RewardCurrencyCode,
 } from './rewards.constants';
+import {
+  ensureRewardsCatalogV2,
+  isRewardsCatalogV2Missing,
+} from './rewards.catalog-ensure';
 import {
   selectFeaturedForPeriod,
   weeklyPeriodStartsInMonth,
@@ -62,9 +67,12 @@ const WALLET_SELECT = {
 
 @Injectable()
 export class RewardsService {
+  private catalogEnsurePromise: Promise<void> | null = null;
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getMe(userId: string) {
+    await this.ensureCatalogIfNeeded();
     const wallet = await this.readWallet(userId);
     const now = new Date();
     const periodStarts = (['DAILY', 'WEEKLY', 'MONTHLY'] as const).map(
@@ -100,6 +108,7 @@ export class RewardsService {
   }
 
   async listMissions(userId: string, query: ListMissionsQueryDto) {
+    await this.ensureCatalogIfNeeded();
     const { periodStart, periodEnd } = currentPeriodWindow(query.period);
     const missions = await this.prisma.rewardMission.findMany({
       where: { active: true, period: query.period },
@@ -188,10 +197,19 @@ export class RewardsService {
     at: Date,
     runAggregators = true,
   ) {
-    const missions = await tx.rewardMission.findMany({
-      where: { active: true, eventType, eventImplemented: true },
-      select: MISSION_SELECT,
-    });
+    // Prefer DB flag; also accept code-side implemented emitters so stale
+    // eventImplemented=false after migration does not drop real progress.
+    const missions = (
+      await tx.rewardMission.findMany({
+        where: { active: true, eventType },
+        select: MISSION_SELECT,
+      })
+    ).filter((mission) =>
+      this.resolveEventImplemented(
+        mission.eventType,
+        Boolean(mission.eventImplemented),
+      ),
+    );
 
     const featuredByPeriod =
       eventType === REWARD_EVENTS.WATCH_AD
@@ -714,7 +732,10 @@ export class RewardsService {
     cycleExtra?: { daysCompleted?: number; weeksCompleted?: number } | null,
   ) {
     const current = progress?.progress ?? 0;
-    const implemented = Boolean(mission.eventImplemented);
+    const implemented = this.resolveEventImplemented(
+      mission.eventType,
+      Boolean(mission.eventImplemented),
+    );
     const payload = {
       id: mission.id,
       title: mission.title,
@@ -817,18 +838,56 @@ export class RewardsService {
     };
   }
 
+  /**
+   * After schema migration alone, missions remain LEGACY / eventImplemented=false
+   * and rotation returns []. Ensure upserts catalog v2 once (wallets untouched).
+   * In-process callers share one promise; cross-instance races are handled by
+   * unique (catalogKey, period) + P2002 recovery inside ensureRewardsCatalogV2.
+   */
+  private async ensureCatalogIfNeeded() {
+    if (this.catalogEnsurePromise) {
+      await this.catalogEnsurePromise;
+      return;
+    }
+    const pending = (async () => {
+      if (await isRewardsCatalogV2Missing(this.prisma)) {
+        await ensureRewardsCatalogV2(this.prisma);
+      }
+    })();
+    this.catalogEnsurePromise = pending;
+    try {
+      await pending;
+    } finally {
+      if (this.catalogEnsurePromise === pending) {
+        this.catalogEnsurePromise = null;
+      }
+    }
+  }
+
+  private resolveEventImplemented(
+    eventType: string | null | undefined,
+    stored: boolean | undefined,
+  ): boolean {
+    if (stored) return true;
+    return Boolean(eventType && isImplementedRewardEvent(eventType));
+  }
+
   private asRotationPick(
     mission: RotationMissionPick & Record<string, unknown>,
   ): RotationMissionPick {
+    const eventType = mission.eventType ?? null;
     return {
       id: mission.id,
       period: mission.period,
       catalogKey: (mission.catalogKey as string | null) ?? null,
       pillar: (mission.pillar as string | null) ?? null,
       role: (mission.role as string) ?? 'LEGACY',
-      eventType: mission.eventType ?? null,
+      eventType,
       active: mission.active,
-      eventImplemented: Boolean(mission.eventImplemented),
+      eventImplemented: this.resolveEventImplemented(
+        eventType,
+        Boolean(mission.eventImplemented),
+      ),
     };
   }
 

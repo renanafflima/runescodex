@@ -43,6 +43,17 @@ describe("web rewards presentation", () => {
         eventImplemented: false,
       }),
     ).toBe(false);
+    expect(
+      isPlayableRewardMission({
+        eventType: "DAILY_ALL_COMPLETED",
+        title: "Devoção Inabalável",
+        description: "",
+        category: "COMMUNITY",
+        role: "FIXED_WEEKLY_STREAK",
+        functional: true,
+        eventImplemented: true,
+      }),
+    ).toBe(true);
   });
 
   it("maps mission and catalog art without inventing a picture", () => {

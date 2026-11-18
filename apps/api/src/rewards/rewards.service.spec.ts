@@ -101,6 +101,11 @@ describe('RewardsService', () => {
     rewardMission: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      count: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
     },
     userMissionProgress: {
       findMany: jest.fn(),
@@ -195,6 +200,8 @@ describe('RewardsService', () => {
     );
     prisma.userRewardCycleCompletion.createMany.mockResolvedValue({ count: 0 });
     prisma.userRewardCycleCompletion.count.mockResolvedValue(0);
+    // Catalog already present — skip ensure upserts in unit tests.
+    prisma.rewardMission.count.mockResolvedValue(3);
     installMissionCatalog();
 
     const moduleRef = await Test.createTestingModule({
@@ -341,7 +348,10 @@ describe('RewardsService', () => {
         },
         findUniqueOrThrow: async () => walletRow(),
       },
-      rewardMission: { findMany: async () => [] },
+      rewardMission: {
+        findMany: async () => [],
+        count: async () => 3,
+      },
       userMissionProgress: { findMany: async () => [] },
     };
     const moduleRef = await Test.createTestingModule({
@@ -376,6 +386,60 @@ describe('RewardsService', () => {
     expect(result[0].current).toBe(1);
     expect(result[0].completed).toBe(false);
     expect(result[0].rewardPoints).toBe(30);
+  });
+
+  it('ensures catalog v2 when rotation rows are missing after migration', async () => {
+    const created: Array<{ catalogKey: string; period: string; role: string }> =
+      [];
+    prisma.rewardMission.count.mockResolvedValue(0);
+    prisma.rewardMission.findFirst.mockResolvedValue(null);
+    prisma.rewardMission.create.mockImplementation(
+      ({ data }: { data: { catalogKey: string; period: string; role: string } }) => {
+        created.push({
+          catalogKey: data.catalogKey,
+          period: data.period,
+          role: data.role,
+        });
+        return Promise.resolve({ id: `${data.catalogKey}-${data.period}` });
+      },
+    );
+    prisma.rewardMission.updateMany.mockResolvedValue({ count: 2 });
+
+    // After ensure, listMissions reloads active DAILY rows — serve created catalog.
+    prisma.rewardMission.findMany.mockImplementation(
+      ({ where }: { where?: Record<string, unknown> }) => {
+        const rows = created
+          .filter((row) => !where?.period || row.period === where.period)
+          .map((row, index) =>
+            missionRow({
+              id: `ensured-${index}`,
+              catalogKey: row.catalogKey,
+              period: row.period,
+              role: row.role,
+              eventType:
+                row.role === 'FIXED_ADS'
+                  ? 'WATCH_AD'
+                  : row.role === 'FIXED_WEEKLY_STREAK'
+                    ? 'DAILY_ALL_COMPLETED'
+                    : row.role === 'FIXED_MONTHLY_STREAK'
+                      ? 'WEEKLY_ALL_COMPLETED'
+                      : 'FORUM_TOPIC_CREATED',
+              eventImplemented: row.role !== 'FIXED_ADS',
+              pillar: row.role === 'FIXED_ADS' ? 'SYSTEM' : `P${index}`,
+            }),
+          );
+        return Promise.resolve(rows);
+      },
+    );
+    prisma.userMissionProgress.findMany.mockResolvedValue([]);
+
+    const result = await service.listMissions(USER_A, { period: 'DAILY' });
+    expect(prisma.rewardMission.create).toHaveBeenCalled();
+    expect(created.some((row) => row.catalogKey === 'TRIBUTE_TO_GODS')).toBe(
+      true,
+    );
+    expect(result.length).toBeGreaterThanOrEqual(1);
+    expect(result.some((mission) => mission.role === 'FIXED_ADS')).toBe(true);
   });
 
   it('lists three daily featured missions: FIXED_ADS + two pool', async () => {
@@ -522,7 +586,6 @@ describe('RewardsService', () => {
         where: {
           active: true,
           eventType: 'FORUM_TOPIC_CREATED',
-          eventImplemented: true,
         },
       }),
     );
@@ -592,7 +655,6 @@ describe('RewardsService', () => {
         where: {
           active: true,
           eventType: 'WATCH_AD',
-          eventImplemented: true,
         },
       }),
     );
