@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { CharmGuideStatus } from '../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service';
+import { RewardsService } from '../rewards/rewards.service';
 import { CharmGuideCommentsService } from './charm-guide-comments.service';
 
 jest.mock('../prisma/prisma.service', () => ({
@@ -10,18 +11,30 @@ jest.mock('../prisma/prisma.service', () => ({
 
 describe('CharmGuideCommentsService', () => {
   let service: CharmGuideCommentsService;
+  const rewards = { recordEvent: jest.fn().mockResolvedValue({ applied: [] }) };
   const prisma: any = {
     charmGuide: { findUnique: jest.fn() },
-    charmGuideComment: { count: jest.fn(), findMany: jest.fn() },
-    charmGuideCommentLike: { findMany: jest.fn(), groupBy: jest.fn() },
+    charmGuideComment: {
+      count: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+    },
+    charmGuideCommentLike: {
+      findMany: jest.fn(),
+      groupBy: jest.fn(),
+      createMany: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
     jest.resetAllMocks();
+    rewards.recordEvent.mockResolvedValue({ applied: [] });
     const moduleRef = await Test.createTestingModule({
       providers: [
         CharmGuideCommentsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: RewardsService, useValue: rewards },
       ],
     }).compile();
     service = moduleRef.get(CharmGuideCommentsService);
@@ -72,5 +85,56 @@ describe('CharmGuideCommentsService', () => {
 
     const page = await service.list('guide-1', { page: 1, limit: 20 }, 'other');
     expect(page.items).toEqual([]);
+  });
+
+  it('emits FORUM_COMMENT_CREATED when a charm guide comment is created', async () => {
+    prisma.charmGuide.findUnique.mockResolvedValue({
+      status: CharmGuideStatus.PUBLISHED,
+      userId: 'owner',
+    });
+    prisma.charmGuideComment.create.mockResolvedValue({
+      id: 'comment-1',
+      guideId: 'guide-1',
+      userId: 'user-1',
+      parentId: null,
+      content: 'Great guide',
+      isEdited: false,
+      isDeleted: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      user: { id: 'user-1', activeCharacter: { name: 'Knight' } },
+    });
+
+    await service.create('guide-1', 'user-1', { content: 'Great guide' });
+
+    expect(rewards.recordEvent).toHaveBeenCalledWith(
+      'user-1',
+      'FORUM_COMMENT_CREATED',
+      { referenceType: 'CharmGuideComment', referenceId: 'comment-1' },
+    );
+  });
+
+  it('emits COMMUNITY_CONTENT_LIKED only on the first like', async () => {
+    prisma.charmGuideComment.findFirst.mockResolvedValue({
+      id: 'comment-1',
+      guideId: 'guide-1',
+      isDeleted: false,
+    });
+    prisma.charmGuideCommentLike.createMany.mockResolvedValue({ count: 1 });
+
+    await service.like('guide-1', 'comment-1', 'user-1');
+    expect(rewards.recordEvent).toHaveBeenCalledWith(
+      'user-1',
+      'COMMUNITY_CONTENT_LIKED',
+      {
+        referenceType: 'CharmGuideCommentLike',
+        referenceId: 'comment-1:user-1',
+      },
+    );
+
+    rewards.recordEvent.mockClear();
+    prisma.charmGuideCommentLike.createMany.mockResolvedValue({ count: 0 });
+    await service.like('guide-1', 'comment-1', 'user-1');
+    expect(rewards.recordEvent).not.toHaveBeenCalled();
   });
 });

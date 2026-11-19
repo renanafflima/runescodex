@@ -6,6 +6,7 @@ import {
   formatRenewal,
   isPlayableRewardMission,
   missionArtFile,
+  missionStartPath,
   progressPercent,
   rewardsActionMessage,
 } from "./rewards";
@@ -54,6 +55,21 @@ describe("web rewards presentation", () => {
         eventImplemented: true,
       }),
     ).toBe(true);
+  });
+
+  it("maps Começar missão to real routes without inventing ads links", () => {
+    expect(missionStartPath({ eventType: "FORUM_TOPIC_CREATED" })).toBe("/forum");
+    expect(missionStartPath({ eventType: "CREATURE_VIEWED" })).toBe("/bestiary");
+    expect(missionStartPath({ eventType: "HUNT_VIEWED" })).toBe("/hunts");
+    expect(missionStartPath({ eventType: "BOSSTIARY_OPENED" })).toBe("/bosstiary");
+    expect(
+      missionStartPath({
+        eventType: "WATCH_AD",
+        role: "FIXED_ADS",
+        eventImplemented: false,
+      }),
+    ).toBeNull();
+    expect(missionStartPath({ eventType: "DAILY_ALL_COMPLETED" })).toBeNull();
   });
 
   it("maps mission and catalog art without inventing a picture", () => {

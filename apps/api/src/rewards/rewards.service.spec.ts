@@ -479,20 +479,94 @@ describe('RewardsService', () => {
 
   it('lists only active missions for the requested period with user progress', async () => {
     installMissionCatalog();
+    const { periodStart } = currentPeriodWindow('DAILY', new Date());
     prisma.userMissionProgress.findMany.mockResolvedValue([
-      progressRow({ progress: 1 }),
+      progressRow({ progress: 1, periodStart }),
     ]);
 
     const result = await service.listMissions(USER_A, { period: 'DAILY' });
 
     expect(prisma.rewardMission.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: { in: [MISSION_ID] } },
+        where: { id: { in: expect.arrayContaining([MISSION_ID]) } },
       }),
     );
     expect(result[0].current).toBe(1);
     expect(result[0].completed).toBe(false);
     expect(result[0].rewardPoints).toBe(30);
+  });
+
+  it('loads all three periods in one missions-board response', async () => {
+    const catalog = [
+      missionRow({
+        id: 'daily-1',
+        period: 'DAILY',
+        catalogKey: 'KINGDOM_SCRIBE',
+        pillar: 'COMMUNITY',
+      }),
+      missionRow({
+        id: 'weekly-1',
+        period: 'WEEKLY',
+        catalogKey: 'KINGDOM_SCRIBE',
+        pillar: 'COMMUNITY',
+        eventType: 'FORUM_TOPIC_CREATED',
+      }),
+      missionRow({
+        id: 'monthly-1',
+        period: 'MONTHLY',
+        catalogKey: 'KINGDOM_SCRIBE',
+        pillar: 'COMMUNITY',
+        eventType: 'FORUM_TOPIC_CREATED',
+      }),
+      missionRow({
+        id: 'weekly-fixed',
+        period: 'WEEKLY',
+        catalogKey: 'UNBREAKABLE_DEVOTION',
+        pillar: 'SYSTEM',
+        role: 'FIXED_WEEKLY_STREAK',
+        eventType: 'DAILY_ALL_COMPLETED',
+        target: 7,
+        pointsReward: 400,
+      }),
+      missionRow({
+        id: 'monthly-fixed',
+        period: 'MONTHLY',
+        catalogKey: 'CODEX_LEGEND',
+        pillar: 'SYSTEM',
+        role: 'FIXED_MONTHLY_STREAK',
+        eventType: 'WEEKLY_ALL_COMPLETED',
+        target: 4,
+        pointsReward: 1500,
+      }),
+      missionRow({
+        id: 'daily-ads',
+        period: 'DAILY',
+        catalogKey: 'TRIBUTE_TO_GODS',
+        pillar: 'SYSTEM',
+        role: 'FIXED_ADS',
+        eventType: 'WATCH_AD',
+        eventImplemented: false,
+        target: 3,
+        pointsReward: 120,
+      }),
+      missionRow({
+        id: 'daily-2',
+        period: 'DAILY',
+        catalogKey: 'TAVERN_VOICE',
+        pillar: 'COMMUNITY',
+        eventType: 'FORUM_COMMENT_CREATED',
+      }),
+    ];
+    installMissionCatalog(catalog, { listMissionsCatalog: catalog });
+    prisma.userMissionProgress.findMany.mockResolvedValue([]);
+
+    const board = await service.listMissionsBoard(USER_A);
+    expect(board.DAILY.length).toBeGreaterThanOrEqual(1);
+    expect(board.WEEKLY.length).toBeGreaterThanOrEqual(1);
+    expect(board.MONTHLY.length).toBeGreaterThanOrEqual(1);
+    expect(board.DAILY.every((mission) => mission.period === 'DAILY')).toBe(
+      true,
+    );
   });
 
   it('ensures catalog v2 when rotation rows are missing after migration', async () => {

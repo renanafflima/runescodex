@@ -21,4 +21,6 @@ export const RATE_LIMITS = {
   admobSsv: { limit: 240, windowMs: 60_000 },
   admobRewardedPrepare: { limit: 30, windowMs: 60_000 },
   admobRewardedStatus: { limit: 120, windowMs: 60_000 },
+  /** Client-reported Rewards activities (views/shares/filters/banners). */
+  rewardsActivity: { limit: 60, windowMs: 60_000 },
 } as const;

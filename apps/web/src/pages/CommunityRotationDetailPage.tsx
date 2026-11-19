@@ -103,10 +103,12 @@ export function CommunityRotationDetailPage() {
     try {
       if (navigator.share) {
         await navigator.share({ title: rotation.title, url });
-        return;
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareHint("Link copiado.");
       }
-      await navigator.clipboard.writeText(url);
-      setShareHint("Link copiado.");
+      const { reportRewardActivity } = await import("../domain/rewards-activity");
+      reportRewardActivity("SHARE_LINK_CLICKED", rotation.id, "CommunityRotationShare");
     } catch {
       setShareHint("");
     }

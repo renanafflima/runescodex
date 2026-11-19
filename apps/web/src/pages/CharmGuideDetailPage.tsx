@@ -101,10 +101,13 @@ export function CharmGuideDetailPage() {
   }
 
   async function share() {
+    if (!guide?.id) return;
     const url = window.location.href;
     try {
       if (navigator.share) await navigator.share({ title: guide?.title, url });
       else await navigator.clipboard.writeText(url);
+      const { reportRewardActivity } = await import("../domain/rewards-activity");
+      reportRewardActivity("SHARE_LINK_CLICKED", guide.id, "CharmGuideShare");
       setNotice("Link copiado.");
     } catch {
       /* cancelled */

@@ -126,55 +126,100 @@ export class RewardsService {
   }
 
   async listMissions(userId: string, query: ListMissionsQueryDto) {
+    const board = await this.listMissionsBoard(userId);
+    return board[query.period];
+  }
+
+  /**
+   * Loads DAILY + WEEKLY + MONTHLY featured missions and user progress in one
+   * round-trip friendly batch (shared rotations + one missions query + one progress query).
+   */
+  async listMissionsBoard(userId: string) {
     await this.ensureCatalogIfNeeded();
-    const { periodStart, periodEnd } = currentPeriodWindow(query.period);
-    const rotation = await getOrCreateGlobalRotation(
-      this.prisma as unknown as Parameters<typeof getOrCreateGlobalRotation>[0],
-      query.period,
-      periodStart,
-      periodEnd,
+    const now = new Date();
+    const windows = (['DAILY', 'WEEKLY', 'MONTHLY'] as const).map((period) => {
+      const { periodStart, periodEnd } = currentPeriodWindow(period, now);
+      return { period, periodStart, periodEnd };
+    });
+    const rotations = await getOrCreateGlobalRotationsForPeriods(
+      this.prisma as unknown as Parameters<
+        typeof getOrCreateGlobalRotationsForPeriods
+      >[0],
+      now,
+      windows,
     );
 
-    const visibleMissions =
-      rotation.missionIds.length === 0
+    const allIds = [
+      ...new Set(
+        windows.flatMap(
+          (window) => rotations.get(window.period)?.missionIds ?? [],
+        ),
+      ),
+    ];
+    const missionRows =
+      allIds.length === 0
         ? []
         : await this.prisma.rewardMission.findMany({
-            where: { id: { in: rotation.missionIds } },
+            where: { id: { in: allIds } },
             select: MISSION_SELECT,
           });
-    const order = new Map(
-      rotation.missionIds.map((id, index) => [id, index]),
-    );
-    visibleMissions.sort(
-      (a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0),
-    );
+    const missionById = new Map(missionRows.map((row) => [row.id, row]));
 
-    const progressRows = await this.prisma.userMissionProgress.findMany({
-      where: {
-        userId,
-        periodStart,
-        missionId: { in: rotation.missionIds },
-      },
-    });
-    const progressByMission = new Map(
-      progressRows.map((row) => [row.missionId, row]),
-    );
+    const periodStarts = windows.map((window) => window.periodStart);
+    const progressRows =
+      allIds.length === 0
+        ? []
+        : await this.prisma.userMissionProgress.findMany({
+            where: {
+              userId,
+              missionId: { in: allIds },
+              periodStart: { in: periodStarts },
+            },
+          });
 
-    const cycleExtra =
-      query.period === 'WEEKLY' || query.period === 'MONTHLY'
-        ? await this.loadCycleProgress(userId, query.period, periodStart)
-        : null;
+    const [weeklyExtra, monthlyExtra] = await Promise.all([
+      this.loadCycleProgress(userId, 'WEEKLY', windows[1].periodStart),
+      this.loadCycleProgress(userId, 'MONTHLY', windows[2].periodStart),
+    ]);
 
-    return visibleMissions.map((mission) =>
-      this.serializeMission(
-        mission,
-        progressByMission.get(mission.id),
-        periodStart,
-        periodEnd,
-        undefined,
-        cycleExtra,
-      ),
-    );
+    const board = {
+      DAILY: [] as ReturnType<RewardsService['serializeMission']>[],
+      WEEKLY: [] as ReturnType<RewardsService['serializeMission']>[],
+      MONTHLY: [] as ReturnType<RewardsService['serializeMission']>[],
+    };
+
+    for (const window of windows) {
+      const rotation = rotations.get(window.period);
+      const ids = rotation?.missionIds ?? [];
+      const cycleExtra =
+        window.period === 'WEEKLY'
+          ? weeklyExtra
+          : window.period === 'MONTHLY'
+            ? monthlyExtra
+            : null;
+      board[window.period] = ids
+        .map((id) => missionById.get(id))
+        .filter((mission): mission is NonNullable<typeof mission> =>
+          Boolean(mission),
+        )
+        .map((mission) => {
+          const progress = progressRows.find(
+            (row) =>
+              row.missionId === mission.id &&
+              row.periodStart.getTime() === window.periodStart.getTime(),
+          );
+          return this.serializeMission(
+            mission,
+            progress,
+            window.periodStart,
+            window.periodEnd,
+            undefined,
+            cycleExtra,
+          );
+        });
+    }
+
+    return board;
   }
 
   async trackActivity(userId: string, dto: TrackRewardActivityDto) {

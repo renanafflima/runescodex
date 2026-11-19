@@ -11,6 +11,7 @@ import {
   goldArtFile,
   isPlayableRewardMission,
   missionArtFile,
+  missionStartPath,
   progressPercent,
   rewardsActionMessage,
 } from "../domain/rewards";
@@ -21,7 +22,7 @@ import {
   convertRewards,
   getRewardsMe,
   listRewardCatalog,
-  listRewardMissions,
+  listRewardMissionsBoard,
   listRewardRedemptions,
   redeemReward,
   type RewardCatalogItem,
@@ -29,7 +30,10 @@ import {
   type RewardPackage,
   type RewardRedemption,
   type RewardWallet,
+  type RewardsMissionsBoard,
 } from "../services/api/rewards";
+
+const EMPTY_BOARD: RewardsMissionsBoard = { DAILY: [], WEEKLY: [], MONTHLY: [] };
 
 type DiamondConversion = {
   enabled?: boolean;
@@ -95,11 +99,10 @@ export function RewardsPage() {
   const requests = useLatestRequest();
   const { activeCharacter } = useAuth();
   const [period, setPeriod] = useState<(typeof PERIODS)[number]["id"]>("DAILY");
-  const [dataPeriod, setDataPeriod] = useState<string | null>(null);
   const [wallet, setWallet] = useState<RewardWallet>(emptyWallet);
   const [packages, setPackages] = useState<RewardPackage[]>([]);
   const [diamondRate, setDiamondRate] = useState<DiamondConversion | null>(null);
-  const [missions, setMissions] = useState<RewardMission[]>([]);
+  const [board, setBoard] = useState<RewardsMissionsBoard>(EMPTY_BOARD);
   const [catalog, setCatalog] = useState<RewardCatalogItem[]>([]);
   const [redemptions, setRedemptions] = useState<RewardRedemption[]>([]);
   const [selected, setSelected] = useState<RewardMission | null>(null);
@@ -124,39 +127,62 @@ export function RewardsPage() {
     setDiamondRate(me?.conversions?.goldToDiamond ?? null);
   }, []);
 
-  const load = useCallback(
-    async (nextPeriod = period) => {
-      const current = requests.start();
-      if (!hasDataRef.current) setLoading(true);
-      setError("");
-      try {
-        const [me, missionList, catalogList, history] = await Promise.all([
-          getRewardsMe(),
-          listRewardMissions(nextPeriod),
-          listRewardCatalog(),
-          listRewardRedemptions(),
-        ]);
-        if (!current()) return;
-        applyMe(me);
-        setMissions(Array.isArray(missionList) ? missionList : []);
-        setCatalog(Array.isArray(catalogList) ? catalogList : []);
-        setRedemptions(Array.isArray(history) ? history : []);
-        setDataPeriod(nextPeriod);
-        hasDataRef.current = true;
-        setHasData(true);
-      } catch (err) {
-        if (!current()) return;
-        setError(describeApiError(err));
-      } finally {
-        if (current()) setLoading(false);
-      }
-    },
-    [applyMe, period, requests],
-  );
+  const load = useCallback(async () => {
+    const current = requests.start();
+    if (!hasDataRef.current) setLoading(true);
+    setError("");
+    try {
+      const [me, missionBoard, catalogList, history] = await Promise.all([
+        getRewardsMe(),
+        listRewardMissionsBoard(),
+        listRewardCatalog(),
+        listRewardRedemptions(),
+      ]);
+      if (!current()) return;
+      applyMe(me);
+      setBoard({
+        DAILY: Array.isArray(missionBoard?.DAILY) ? missionBoard.DAILY : [],
+        WEEKLY: Array.isArray(missionBoard?.WEEKLY) ? missionBoard.WEEKLY : [],
+        MONTHLY: Array.isArray(missionBoard?.MONTHLY) ? missionBoard.MONTHLY : [],
+      });
+      setCatalog(Array.isArray(catalogList) ? catalogList : []);
+      setRedemptions(Array.isArray(history) ? history : []);
+      hasDataRef.current = true;
+      setHasData(true);
+    } catch (err) {
+      if (!current()) return;
+      setError(describeApiError(err));
+    } finally {
+      if (current()) setLoading(false);
+    }
+  }, [applyMe, requests]);
+
+  const refreshMissions = useCallback(async () => {
+    try {
+      const missionBoard = await listRewardMissionsBoard();
+      setBoard({
+        DAILY: Array.isArray(missionBoard?.DAILY) ? missionBoard.DAILY : [],
+        WEEKLY: Array.isArray(missionBoard?.WEEKLY) ? missionBoard.WEEKLY : [],
+        MONTHLY: Array.isArray(missionBoard?.MONTHLY) ? missionBoard.MONTHLY : [],
+      });
+    } catch {
+      /* keep cached board; user can retry via full load */
+    }
+  }, []);
 
   useEffect(() => {
-    void load(period);
-  }, [load, period]);
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && hasDataRef.current) {
+        void refreshMissions();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [refreshMissions]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -164,15 +190,15 @@ export function RewardsPage() {
   }, []);
 
   const playable = useMemo(
-    () => (dataPeriod === period ? missions.filter(isPlayableRewardMission) : []),
-    [dataPeriod, missions, period],
+    () => (board[period] ?? []).filter(isPlayableRewardMission),
+    [board, period],
   );
   const offers = useMemo(() => diamondOffers(diamondRate), [diamondRate]);
   const periodMeta = PERIODS.find((item) => item.id === period) ?? PERIODS[0];
-  const renewal = formatRenewal(playable[0]?.periodEnd ?? missions.find((item) => item.period === period)?.periodEnd, now);
+  const renewal = formatRenewal(playable[0]?.periodEnd, now);
   const completed = playable.filter((mission) => mission.completed).length;
-  const pendingPeriod = hasData && dataPeriod !== period;
   const openMission = selected && playable.some((mission) => mission.id === selected.id) ? selected : null;
+  const startPath = openMission ? missionStartPath(openMission) : null;
 
   async function runAction(work: () => Promise<string>) {
     if (busy) return;
@@ -196,7 +222,7 @@ export function RewardsPage() {
       });
     }
     try {
-      await load(period);
+      await load();
     } catch (err) {
       setError(describeApiError(err));
     }
@@ -284,7 +310,7 @@ export function RewardsPage() {
         {error ? (
           <div className="rewards-banner" role="alert">
             <p>{error}</p>
-            <button type="button" onClick={() => void load(period)}>Tentar novamente</button>
+            <button type="button" onClick={() => void load()}>Tentar novamente</button>
           </div>
         ) : null}
         {notice ? <p className="rewards-notice" role="status">{notice}</p> : null}
@@ -298,7 +324,7 @@ export function RewardsPage() {
                   <h2 id="rewards-missions-title">Missões <span>{periodMeta.label}</span></h2>
                   <p>Escolha um período e complete as atividades para acumular pontos.</p>
                 </div>
-                <p>{pendingPeriod ? "—" : `${completed} / ${playable.length} concluídas`}</p>
+                <p>{`${completed} / ${playable.length} concluídas`}</p>
               </div>
               <div className="rewards-tabs" role="tablist" aria-label="Período das missões">
                 {PERIODS.map((item) => (
@@ -310,18 +336,20 @@ export function RewardsPage() {
                     role="tab"
                     type="button"
                   >
-                    {item.label} {item.id === period && !pendingPeriod ? <span>{playable.length}</span> : null}
+                    {item.label}{" "}
+                    {hasData ? (
+                      <span>{(board[item.id] ?? []).filter(isPlayableRewardMission).length}</span>
+                    ) : null}
                   </button>
                 ))}
               </div>
-              {pendingPeriod ? <p className="rewards-loading">Carregando missões</p> : null}
-              {!pendingPeriod && !error && playable.length === 0 ? (
+              {!error && playable.length === 0 ? (
                 <p className="rewards-empty">
                   Nenhuma missão disponível neste período. Se o problema persistir após atualizar, o catálogo V2
                   pode precisar ser ativado no servidor.
                 </p>
               ) : null}
-              {!pendingPeriod && !error && playable.length > 0 ? (
+              {!error && playable.length > 0 ? (
                 <div className="rewards-missions">
                   {playable.map((mission) => {
                     const file = missionArtFile(mission);
@@ -531,9 +559,17 @@ export function RewardsPage() {
               <b>{openMission.current} / {openMission.target}</b>
             </span>
             <p className="rewards-modal__reward">Recompensa: +{formatRewardAmount(openMission.rewardPoints)} pontos</p>
-            <p>{openMission.completed ? "CONCLUÍDA" : "O progresso atualiza quando você conclui a ação e o servidor confirma."}</p>
-            {openMission.eventType === "FORUM_TOPIC_CREATED" || openMission.eventType === "FORUM_COMMENT_CREATED" ? (
-              <Link to="/forum">Ir para o fórum</Link>
+            <p>
+              {openMission.completed
+                ? "CONCLUÍDA"
+                : openMission.role === "FIXED_ADS" && openMission.eventImplemented === false
+                  ? "Anúncios Web ainda não disponíveis. As demais missões continuam ativas."
+                  : "O progresso atualiza quando você conclui a ação e o servidor confirma. Nenhum botão concede pontos."}
+            </p>
+            {startPath && !openMission.completed ? (
+              <Link to={startPath} onClick={() => setSelected(null)}>
+                Começar missão
+              </Link>
             ) : null}
           </div>
         </div>

@@ -71,6 +71,47 @@ export function isPlayableRewardMission(
   return true;
 }
 
+/** Deep-link for “Começar missão”. Never grants points — navigation only. */
+export function missionStartPath(
+  mission: Pick<RewardMission, "eventType" | "role" | "eventImplemented">,
+): string | null {
+  if (mission.role === "FIXED_ADS" || mission.eventType === "WATCH_AD") {
+    return null;
+  }
+  switch (mission.eventType) {
+    case "FORUM_TOPIC_CREATED":
+    case "FORUM_COMMENT_CREATED":
+      return "/forum";
+    case "COMMUNITY_CONTENT_LIKED":
+      return "/bestiary";
+    case "GUIDE_PUBLISHED":
+    case "CHARM_CREATURE_COMPLETED":
+    case "CHARM_BUILD_SAVED":
+      return "/bestiary";
+    case "CREATURE_VIEWED":
+    case "BESTIARY_FILTER_USED":
+    case "LOOT_ITEM_VIEWED":
+      return "/bestiary";
+    case "HUNT_VIEWED":
+    case "HUNT_FAVORITED":
+    case "SHARE_LINK_CLICKED":
+      return "/hunts";
+    case "BOSS_DEFEATED_RECORDED":
+    case "ROTATION_EDITED":
+    case "BOSSTIARY_OPENED":
+    case "ARCHFOE_BOSS_VIEWED":
+    case "BOSSTIARY_COMMUNITY_ROTATION_PUBLISHED":
+      return "/bosstiary";
+    case "PROMO_BANNER_OPENED":
+      return "/";
+    case "DAILY_ALL_COMPLETED":
+    case "WEEKLY_ALL_COMPLETED":
+      return null;
+    default:
+      return null;
+  }
+}
+
 export function missionArtFile(mission: Pick<RewardMission, "imageKey" | "category">) {
   const key = mission.imageKey?.trim();
   if (key && MISSION_ART[key]) return MISSION_ART[key];

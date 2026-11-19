@@ -12,6 +12,8 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PremiumGuard } from '../billing/premium.guard';
+import { RATE_LIMITS } from '../common/rate-limit.config';
+import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 import { ConvertRewardsDto } from './dto/convert-rewards.dto';
 import { ListMissionsQueryDto } from './dto/list-missions-query.dto';
 import { RedeemRewardDto } from './dto/redeem-reward.dto';
@@ -36,7 +38,15 @@ export class RewardsController {
     return this.rewardsService.listMissions(user.userId, query);
   }
 
+  /** All periods in one response for the Rewards page first paint. */
+  @Get('missions-board')
+  listMissionsBoard(@CurrentUser() user: AuthUser) {
+    return this.rewardsService.listMissionsBoard(user.userId);
+  }
+
   @Post('activity')
+  @UseGuards(RateLimitGuard)
+  @RateLimit({ ...RATE_LIMITS.rewardsActivity, scope: 'user' })
   trackActivity(
     @CurrentUser() user: AuthUser,
     @Body() dto: TrackRewardActivityDto,

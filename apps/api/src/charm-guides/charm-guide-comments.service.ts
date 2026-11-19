@@ -8,6 +8,8 @@ import { CharmGuideStatus, Prisma } from '../../generated/prisma/client.js';
 import { PageQueryDto } from '../common/dto/page-query.dto';
 import { pageResult, resolvePage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
+import { REWARD_EVENTS } from '../rewards/rewards.constants';
+import { RewardsService } from '../rewards/rewards.service';
 import {
   CreateCharmGuideCommentDto,
   UpdateCharmGuideCommentDto,
@@ -17,7 +19,10 @@ const REMOVED = '[comentário removido]';
 
 @Injectable()
 export class CharmGuideCommentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly rewardsService: RewardsService,
+  ) {}
 
   async list(guideId: string, query: PageQueryDto, userId: string) {
     await this.requireReadable(guideId, userId);
@@ -89,6 +94,11 @@ export class CharmGuideCommentsService {
       },
       include: this.authorInclude(),
     });
+    await this.rewardsService.recordEvent(
+      userId,
+      REWARD_EVENTS.FORUM_COMMENT_CREATED,
+      { referenceType: 'CharmGuideComment', referenceId: created.id },
+    );
     return this.serialize(created, new Set(), new Map([[created.id, 0]]));
   }
 
@@ -120,11 +130,20 @@ export class CharmGuideCommentsService {
 
   async like(guideId: string, commentId: string, userId: string) {
     await this.requireComment(guideId, commentId);
-    await this.prisma.charmGuideCommentLike.upsert({
-      where: { commentId_userId: { commentId, userId } },
-      create: { commentId, userId },
-      update: {},
+    const created = await this.prisma.charmGuideCommentLike.createMany({
+      data: [{ commentId, userId }],
+      skipDuplicates: true,
     });
+    if (created.count === 1) {
+      await this.rewardsService.recordEvent(
+        userId,
+        REWARD_EVENTS.COMMUNITY_CONTENT_LIKED,
+        {
+          referenceType: 'CharmGuideCommentLike',
+          referenceId: `${commentId}:${userId}`,
+        },
+      );
+    }
     return { liked: true };
   }
 

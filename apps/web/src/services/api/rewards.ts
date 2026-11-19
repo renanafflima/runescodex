@@ -78,6 +78,17 @@ export function listRewardMissions(period: string) {
   return apiRequest<RewardMission[]>(withQuery("/rewards/missions", { period }));
 }
 
+export type RewardsMissionsBoard = {
+  DAILY: RewardMission[];
+  WEEKLY: RewardMission[];
+  MONTHLY: RewardMission[];
+};
+
+/** First-paint board: all three periods in one request. */
+export function listRewardMissionsBoard() {
+  return apiRequest<RewardsMissionsBoard>("/rewards/missions-board");
+}
+
 export function listRewardCatalog() {
   return apiRequest<RewardCatalogItem[]>("/rewards/catalog");
 }
